@@ -11,7 +11,8 @@ plugin is the judgment layer; the mechanics live in an external `crier` CLI.
 ## External dependency: the MCP server is not in-tree
 
 `.mcp.json` does NOT bundle a server. It shells out to a globally-installed
-`crier` CLI run as `crier mcp` (`pip install crier`). The SessionStart hook
+`crier` CLI run as `crier mcp` (`pip install "crier[mcp]"`; plain `pip install
+crier` omits the `mcp` package and `crier mcp` fails). The SessionStart hook
 (`hooks/scripts/detect-crier-setup.sh`) warns the user if the CLI is missing.
 Editors must not expect a bundled server, and must not add `${CLAUDE_PLUGIN_ROOT}`
 to the `.mcp.json` command: invoking the global `crier` binary is correct by
@@ -54,6 +55,12 @@ sync or drop the number.
 - **Two-step confirmation** for destructive ops (publish, delete): call once
   without a token to get a preview plus token, then call again with the token to
   execute. Agents and commands all depend on this.
+- **Remote-published failures**: `crier_publish` can return
+  `remote_published: true` (live on the platform, registry write failed). Every
+  failure path in this plugin must route that case to `crier_record` or
+  `crier audit --retry`, never back to `crier_publish`: the MCP publish path does
+  not consult recovery receipts, so a retry double-posts. The canonical wording
+  lives in the skill's "Failures" section.
 
 ## Boundary with the mf plugin
 
@@ -64,4 +71,4 @@ site-management logic here.
 ## Version bumps
 
 Keep `.claude-plugin/plugin.json` and the `crier` entry in the root
-`.claude-plugin/marketplace.json` in sync (both currently 1.2.0).
+`.claude-plugin/marketplace.json` in sync (both currently 1.3.1).

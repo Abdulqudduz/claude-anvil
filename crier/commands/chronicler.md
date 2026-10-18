@@ -87,6 +87,8 @@ Run platforms in parallel where possible (single message, multiple tool calls).
 
 If a publish fails (length, API error), report it but continue with the others. Don't abort the batch.
 
+If a failure carries `"remote_published": true`, the post is live and only the registry write failed: never republish it. Repair the record with `crier_record` using the error's `article_id` and `url` (see "Failures" in the crier skill) and count it as a success.
+
 ### 5. Report
 
 Final summary table. Include URLs for successes, error messages for failures.
@@ -100,7 +102,7 @@ Cross-posted:
 Failures (1):
   dapple → hashnode: API rate limit
 
-Run again with /chronicler to retry.
+Retry with: crier audit --retry   (replays recovery receipts; never double-posts)
 ```
 
 ## Important rules
@@ -122,4 +124,4 @@ Run again with /chronicler to retry.
 - **One specific post, all platforms**: just use `/crier <file>`.
 - **Bulk publishing 20+ posts autonomously**: dispatch the `cross-poster` agent.
 - **"What should I cross-post?" without a date scope**: use the `auditor` agent for analysis-driven recommendations.
-- **Re-running failures**: `crier audit --retry` (CLI) or `crier_failures` (MCP) then targeted `crier_publish`.
+- **Re-running failures**: `crier audit --retry --dry-run`, then `crier audit --retry` (CLI). Avoid `crier_failures` plus `crier_publish`: the MCP publish path does not check recovery receipts, so it can republish a post that already went live.

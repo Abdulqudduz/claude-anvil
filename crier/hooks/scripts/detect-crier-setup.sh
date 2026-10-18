@@ -5,7 +5,7 @@
 set -euo pipefail
 
 if ! command -v crier &>/dev/null; then
-  echo "crier: CLI not found on PATH. Install via: pip install crier"
+  echo "crier: CLI not found on PATH. Install via: pip install 'crier[mcp]'"
   echo "  The crier MCP server, /crier command, and cross-poster agent all require the crier CLI."
   exit 0
 fi

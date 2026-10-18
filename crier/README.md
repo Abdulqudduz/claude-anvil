@@ -14,7 +14,7 @@ drive it through `mcp__crier__*` tools.
 
 ## Requirements
 
-- [crier](https://pypi.org/project/crier/) CLI installed (`pip install crier`); this is also the MCP server
+- [crier](https://pypi.org/project/crier/) CLI installed (`pip install "crier[mcp]"`); this is also the MCP server
 - API keys configured via `crier config set`
 
 ## Quick Start
