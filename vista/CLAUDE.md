@@ -59,9 +59,10 @@ without `--skip-analyze`. The MCP path never calls the Anthropic SDK; the
 in-conversation Claude does the synthesis.
 
 `OPENALEX_API_KEY` is optional for everything but strongly recommended: keyless
-OpenAlex requests share one small daily budget per IP address (about 1000
-calls), while a free key has its own budget, 10x larger. See "OpenAlex client"
-below.
+OpenAlex requests share one $0.10 daily budget per IP address, while a free key
+has its own $1/day. Searches (`/works?filter=...`) cost $0.001 each, so keyless
+access is about 100 searches a day; single-work lookups by id or DOI are free.
+See "OpenAlex client" below.
 
 ## Architecture
 
@@ -199,6 +200,14 @@ Contracts worth preserving:
   so callers' `except httpx.HTTPStatusError` for 404 actually fires). Never
   retry other 4xx. A 429 with `x-ratelimit-remaining: 0` is a spent daily
   budget, not throttling: it raises `OpenAlexBudgetExhausted` immediately.
+- **Free text in filters**: always build text-search filters with
+  `search_filter(field, text)`, never by f-string. A comma separates filters and
+  a pipe ORs values, so a raw title like "chess, shogi, and Go" makes OpenAlex
+  reject the whole request with a 400.
+- **arXiv ids** resolve through arXiv's DataCite DOI (`10.48550/arxiv.<id>`) as
+  one free single-work lookup, instead of a paid search that scans
+  arXiv-hosted works for a match (the earlier approach, which almost never found
+  the paper).
 - **Tests** inject `transport=httpx.MockTransport(...)` and stub the module's
   `_sleep`, so they stay offline and instant.
 

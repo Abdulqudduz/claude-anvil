@@ -22,12 +22,14 @@ import httpx
 from vista.config import ARXIV_SOURCE_ID, FIELDS, USER_AGENT
 from vista.pipeline.extract import extract_paper
 from vista.pipeline.fetch import fetch_pdf
-from vista.sources.openalex import OpenAlexClient, OpenAlexWork, build_filter
+from vista.sources.openalex import OpenAlexClient, OpenAlexWork, build_filter, search_filter
 from vista.storage.db import Paper, Section, Store
 
 log = logging.getLogger(__name__)
 
-ARXIV_RE = re.compile(r"^(?:arxiv:)?(\d{4}\.\d{4,5}|[a-z\-]+/\d{7})$", re.IGNORECASE)
+ARXIV_RE = re.compile(r"^(?:arxiv:)?(\d{4}\.\d{4,5}|[a-z\-]+/\d{7})(?:v\d+)?$", re.IGNORECASE)
+# arXiv mints a DataCite DOI for every paper; OpenAlex resolves it directly.
+ARXIV_DOI_PREFIX = "10.48550/arxiv."
 DOI_RE = re.compile(r"^(?:doi:|https?://(?:dx\.)?doi\.org/)?(10\.\d{4,9}/\S+)$", re.IGNORECASE)
 OPENALEX_RE = re.compile(r"^(?:https?://openalex\.org/)?(W\d+)$")
 
@@ -47,19 +49,10 @@ def resolve_identifier(identifier: str, client: OpenAlexClient) -> OpenAlexWork 
         return client.work_by_doi(m.group(1))
     m = ARXIV_RE.match(s)
     if m:
-        # Search by arXiv id via locations filter.
-        for w in client.works(
-            filter_str=f"locations.source.id:{ARXIV_SOURCE_ID}",
-            per_page=5,
-            max_results=5,
-            sort="cited_by_count:desc",
-        ):
-            if w.arxiv_id and w.arxiv_id.lower() == m.group(1).lower():
-                return w
-        return None
+        return client.work_by_doi(ARXIV_DOI_PREFIX + m.group(1).lower())
     # Fall back to title search.
     for w in client.works(
-        filter_str=f"title.search:{s}", per_page=5, max_results=5, sort="cited_by_count:desc"
+        filter_str=search_filter("title", s), per_page=5, max_results=5, sort="cited_by_count:desc"
     ):
         if w.title.lower().strip()[:80] == s.lower().strip()[:80]:
             return w

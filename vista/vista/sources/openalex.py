@@ -252,6 +252,17 @@ def _warn_no_key_once() -> None:
         )
 
 
+# Characters with syntactic meaning inside an OpenAlex `filter` string: a comma
+# separates filters and a pipe ORs values. Full-text search ignores punctuation,
+# so replacing them with spaces keeps the query's meaning.
+_FILTER_SEPARATORS = str.maketrans({",": " ", "|": " "})
+
+
+def search_filter(field: str, text: str) -> str:
+    """Build a `<field>.search:<text>` filter safe for arbitrary free text."""
+    return f"{field}.search:{' '.join(text.translate(_FILTER_SEPARATORS).split())}"
+
+
 def build_filter(
     *,
     concept_ids: list[str] | None = None,
@@ -283,5 +294,5 @@ def build_filter(
     if keyword_search:
         # OpenAlex supports `default.search` via the `search` param, but we
         # prefer filter-style: title_and_abstract.search
-        parts.append(f"title_and_abstract.search:{keyword_search}")
+        parts.append(search_filter("title_and_abstract", keyword_search))
     return ",".join(parts)

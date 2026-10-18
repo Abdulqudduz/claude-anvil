@@ -1,6 +1,6 @@
 [project]
 name = "vista"
-version = "0.3.0"
+version = "0.3.1"
 description = "Mine 'future work' sections from highly-cited papers to surface research directions"
 readme = "README.md"
 requires-python = ">=3.11"

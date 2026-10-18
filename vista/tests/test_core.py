@@ -57,12 +57,25 @@ def test_resolve_doi():
     assert c.calls[0] == ("by_doi", "10.1109/tnnls.2020.2978386")
 
 
-def test_resolve_arxiv_id_matches_within_results():
+def test_resolve_arxiv_id_via_datacite_doi():
+    # arXiv mints a DataCite DOI for every paper, and OpenAlex resolves it
+    # directly, so an arXiv id is one exact lookup, not a search.
     target = _work(id="Wx", arxiv_id="2106.01234")
-    c = FakeClient(works_list=[_work(id="Wo", arxiv_id="2000.99999"), target])
-    out = resolve_identifier("2106.01234", c)
-    assert out is target
-    assert c.calls[0][0] == "works"
+    c = FakeClient(work=target)
+    assert resolve_identifier("2106.01234", c) is target
+    assert c.calls == [("by_doi", "10.48550/arxiv.2106.01234")]
+
+
+def test_resolve_arxiv_prefix_and_version_suffix():
+    c = FakeClient(work=_work())
+    resolve_identifier("arXiv:2305.10601v2", c)
+    assert c.calls == [("by_doi", "10.48550/arxiv.2305.10601")]
+
+
+def test_resolve_old_style_arxiv_id():
+    c = FakeClient(work=_work())
+    resolve_identifier("hep-th/9901001", c)
+    assert c.calls == [("by_doi", "10.48550/arxiv.hep-th/9901001")]
 
 
 def test_resolve_title_fallback():

@@ -5,7 +5,7 @@ their URL prefix at parse time, abstracts are reconstructed from the inverted
 index, and arXiv ids are sniffed from any location URL.
 """
 
-from vista.sources.openalex import OpenAlexWork, _invert_abstract, build_filter
+from vista.sources.openalex import OpenAlexWork, _invert_abstract, build_filter, search_filter
 
 WORK = {
     "id": "https://openalex.org/W2907492528",
@@ -98,3 +98,16 @@ def test_build_filter_year_min_only():
 def test_build_filter_is_oa_toggle():
     assert "is_oa:true" in build_filter()  # default
     assert "is_oa:false" in build_filter(is_oa=False)
+
+
+def test_search_filter_neutralizes_filter_separators():
+    # A comma separates filters and a pipe ORs values, so free text carrying
+    # either one used to make OpenAlex reject the whole request with a 400.
+    f = search_filter("title", "masters chess, shogi, and Go | self-play")
+    assert f == "title.search:masters chess shogi and Go self-play"
+    assert "," not in f and "|" not in f
+
+
+def test_build_filter_keyword_with_comma_stays_one_filter():
+    f = build_filter(keyword_search="ransomware, detection", is_oa=None)
+    assert f == "title_and_abstract.search:ransomware detection"

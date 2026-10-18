@@ -12,7 +12,7 @@ from typing import Iterable, Iterator
 
 import bibtexparser  # type: ignore
 
-from vista.sources.openalex import OpenAlexClient
+from vista.sources.openalex import OpenAlexClient, search_filter
 from vista.storage.db import Paper, Store
 
 log = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ def _resolve(entry: dict, client: OpenAlexClient):
         return None
     title_clean = title.strip().strip("{}")
     # Use OpenAlex search filter
-    for w in client.works(filter_str=f"title.search:{title_clean}", per_page=5, max_results=5):
+    for w in client.works(filter_str=search_filter("title", title_clean), per_page=5, max_results=5):
         if w.title.lower().strip() == title_clean.lower().strip():
             return w
         # tolerate a slight prefix/suffix mismatch
