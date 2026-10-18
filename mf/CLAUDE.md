@@ -15,6 +15,10 @@ CLI is the mechanics. The skill turns a natural-language request into the right
 - **`skills/mf/SKILL.md`**: the site-architecture guide, `mf` CLI reference, and
   content workflows. This is the source of truth for CLI syntax and site
   conventions. Keep it factual; do not let it drift from the installed CLI.
+  Verify against `mf --help`, `mf <group> --help`, and `mf <group> fields`, and
+  prefer pointing at those over hardcoding lists that will drift. The skill's
+  preflight exists because TeX Live's `/usr/bin/mf` (Metafont) can shadow the
+  CLI; keep it.
 - **`commands/mf.md`**: thin wrapper that triggers the `mf` skill. Keep it thin.
 - **`skills/scribe/SKILL.md`** plus **`commands/scribe.md`**: latent-theme discovery
   across the corpus. `scribe` is its own skill (not part of the `mf` skill); the
@@ -40,7 +44,7 @@ These live in `skills/mf/SKILL.md`; do not "fix" them without understanding why:
 - Front matter references slugs, not paths.
 - Content lives under `content/post` (singular `post`).
 - Rich projects use `_index.md`; simple ones use `index.md`.
-- `mf generate` is read-only; `mf sync` mutates the database. Databases exist
+- `generate` verbs (e.g. `mf papers generate`) are read-only on the database; `sync` verbs (e.g. `mf projects sync`) mutate it. Neither is a top-level command. Databases exist
   only for content whose ground truth lives elsewhere (projects, papers,
   series), not for posts/writing.
 - Site-root resolution order: `MF_SITE_ROOT`, then walk up for a `.mf/`
@@ -51,7 +55,7 @@ These live in `skills/mf/SKILL.md`; do not "fix" them without understanding why:
 ## Version bumps
 
 Keep `.claude-plugin/plugin.json` and the `mf` entry in the root
-`.claude-plugin/marketplace.json` in sync (both currently 1.1.0). Never bump one
+`.claude-plugin/marketplace.json` in sync (check both before bumping). Never bump one
 without the other.
 
 ## Validation

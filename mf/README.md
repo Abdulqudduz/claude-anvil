@@ -1,10 +1,11 @@
 # mf — Claude Code Plugin
 
 Metafunctor site management for Claude Code. Manage papers, projects, series,
-and content for metafunctor.com — a Hugo site with blog architecture, content
-workflows, and cross-posting via crier.
+and content for metafunctor.com, a Hugo site, with blog architecture and content
+workflows. Cross-posting is handed off to the separate crier plugin.
 
-**Requires**: [mf](https://github.com/queelius/mf) CLI installed (`pip install -e ".[dev]"`).
+**Requires**: the [mf](https://github.com/queelius/mf) CLI on PATH, ahead of TeX
+Live's `/usr/bin/mf` (Metafont): `uv tool install -e <path-to-mf-checkout>`.
 
 ## Components
 
@@ -33,7 +34,7 @@ self-contained Glob path as fallbacks.
 - **Site health**: Taxonomy audits, broken link checks, metadata validation
 - **Cross-posting hand-off**: After content changes, route distribution to the crier plugin (`/crier`); mf itself never cross-posts
 
-The mf skill works from any directory — it resolves the site root automatically.
+The mf skill works from any directory: it resolves the site root automatically.
 
 ## License
 

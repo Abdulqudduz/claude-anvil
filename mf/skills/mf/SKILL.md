@@ -12,11 +12,15 @@ A CLI toolkit + site architecture guide for metafunctor.com. Works from any dire
 - **mf** does mechanics: database CRUD, Hugo content generation, metadata operations
 - **Claude** does judgment: choosing commands, interpreting intent, sequencing workflows, writing content
 
-**Install location:** `~/github/repos/mf` (editable install: `pip install -e ".[dev]"`)
+**Install location:** `~/github/repos/mf` (install on PATH: `uv tool install -e ~/github/repos/mf`)
 **Site root:** `~/github/repos/metafunctor`
-**Site URL:** `https://metafunctor.com` (also `https://queelius.github.io/metafunctor`)
+**Site URL:** `https://metafunctor.com` (mirror: `https://queelius.github.io/`)
 **Engine:** Hugo with Ananke theme
 **Deployment:** `docs/` committed to master, served by GitHub Pages
+
+## Preflight: make sure `mf` is the right binary
+
+TeX Live ships a `/usr/bin/mf` (Metafont) that shadows the metafunctor CLI when the latter is not earlier on PATH. Before the first `mf` command in a session, run `mf --version` and expect `mf, version ...`. Anything else (Metafont prints a `This is METAFONT` banner or waits for input) means the metafunctor mf CLI is not on PATH: stop and tell the user to install it with `uv tool install -e ~/github/repos/mf` (which puts it in `~/.local/bin`), rather than running commands against the wrong program.
 
 ## Site Architecture
 
@@ -24,16 +28,19 @@ A CLI toolkit + site architecture guide for metafunctor.com. Works from any dire
 
 | Directory | Type | Notes |
 |-----------|------|-------|
-| `content/post/` | Blog posts | Date-prefixed dirs: `2024-01-slug/index.md` |
+| `content/post/` | Blog posts | Date-prefixed dirs: `YYYY-MM-DD-slug/index.md` (what `mf posts create` writes; older posts use the legacy `YYYY-MM-slug` form) |
 | `content/papers/` | Research papers | Generated from paper_db via `mf papers generate` |
 | `content/publications/` | Publication lifecycle registry | Independent pubs_db managed via `mf pubs` (add, update, log, pull); NOT derived from paper_db at runtime |
 | `content/projects/` | Software projects | Generated from projects_db via `mf projects generate` |
 | `content/series/` | Multi-part series | Landing pages with `_index.md` |
-| `content/writing/` | Fiction/creative | `writing_type: "novel"`, `"essay"`, `"short-story"` |
+| `content/writing/` | Long-form fiction and books | `writing_type` values in use: `novel`, `novella`, `novelette`, `nonfiction`, `short-story-collection` (check `content/writing/` before adding a new one) |
+| `content/essays/` | Essays | Essays live here, not under `writing/` |
 | `content/medical/` | Medical records | Custom sidebar layout, Chart.js for labs |
 | `content/research/` | Research overviews | |
 | `content/probsets/` | Problem sets | Organized by course |
 | `content/media/` | Book/resource reviews | |
+
+Other sections exist (`computer-science/`, `reading/`, `arcade/`, `youtube/`, `packages/`, `featured/`, `infinigram/`, plus site pages like `about/`). `ls content/` in the site root is the authoritative list; read a section's `_index.md` before adding to it.
 
 **Content type separation is strict:** fiction goes in `/writing`, not `/papers`.
 
@@ -45,7 +52,8 @@ A CLI toolkit + site architecture guide for metafunctor.com. Works from any dire
 | `categories` | `/categories/` | Broad content categories |
 | `genres` | `/genres/` | Document types (paper, novel, etc.) |
 | `series` | `/series/` | Multi-part content grouping |
-| `linked_project` | `/linked-projects/` | Links content to projects |
+| `linked_project` | `/linked_project/` | Links content to projects |
+| `linked_book` | `/linked-books/` | Links posts to books in `content/writing/` |
 
 **Critical:** Use `linked_project` (NOT `projects`) — URL must not conflict with `content/projects/`.
 Use slugs, not paths:
@@ -68,11 +76,12 @@ tags: ["algorithms", "data-structures"]
 series: ["series-slug"]
 series_weight: 5
 featured: true
+featured_image: "cover.png"   # checked by `mf health images`
 toc: true
 ```
 
 **Papers:** `stars` (1-5), `pdf_file` (filename in `static/latex/`), `html_path`, `authors`, `abstract`
-**Projects:** `featured`, `project: { status, type, year_started }`, `tech: { languages, topics }`, `sources: { github }`, `packages: { pypi, crates }`
+**Projects:** run `mf projects fields` for the authoritative field list, types, and allowed values (it includes newer fields such as `documentation_url`); `mf papers fields`, `mf series fields`, and `mf packages fields` do the same for their databases.
 **Series membership (in posts):** `series: ["slug"]`, `series_weight: N`
 
 ### Bundle Types
@@ -86,12 +95,14 @@ Rich projects use `_index.md`. Regular projects use `index.md`.
 
 ```bash
 make serve          # Dev server with drafts (localhost:1313)
-make build          # Build to public/ (testing)
-make deploy         # Build to docs/ for production
-make push           # Build + git push to GitHub Pages
+make build          # Build to docs/ (the production output dir, per hugo.toml publishDir)
+make deploy         # Build to docs/ for production (also refreshes static/CNAME and docs/.nojekyll)
+make push           # deploy, then commit docs/ and git push to GitHub Pages
 ```
 
-`relativeURLs=true` — one build works on both domains.
+There is no separate test output dir: `make build` overwrites `docs/`. Use `make serve` (or `hugo --gc --minify --destination /tmp/<dir>`) to check a build without touching `docs/`.
+
+`relativeURLs = false`: the production build uses `baseURL = https://metafunctor.com/`. The `queelius.github.io` mirror is built separately by the site's GitHub Action (`.github/workflows/mirror-to-user-site.yml`) with its own `--baseURL`.
 
 ### Content Source Model
 
@@ -126,14 +137,14 @@ When users describe what they want, map to the right mf workflow:
 | "cross-post", "share on socials" | Use `/crier` skill instead |
 | "what content do I have" | `mf analytics summary` |
 | "find broken links" | `mf health links` |
-| "clean up tags" | `mf taxonomy audit` then `mf taxonomy normalize` |
+| "clean up tags" | `mf taxonomy audit`, then `mf taxonomy normalize --from <old> --to <new> [--field tags\|categories] --dry-run`, then rerun without `--dry-run` |
 
 ### New Paper
 1. Build the paper in its own repo first (`make html pdf` there); the slug must already exist in paper_db
 2. `mf papers ingest <slug>` (pulls the built HTML/PDF into the site)
 3. `mf papers set <slug> stars 5` (and any other metadata)
 4. `mf papers generate --slug <slug>`
-5. If peer-reviewed, register it in the independent publications registry: `mf pubs add` / `mf pubs update`
+5. If peer-reviewed, register it in the independent publications registry: `mf pubs add <slug>` / `mf pubs update`, then `mf pubs generate` (the registry does not render on its own)
 6. `make deploy`
 7. Cross-post: use `/crier`
 
@@ -175,19 +186,24 @@ Check staleness anytime with `mf papers status`; preview drift with `mf papers d
 
 | Group | Key verbs | Notes |
 |-------|-----------|-------|
-| `papers` | ingest, generate, diff, status, set, feature, tag, zenodo, fetch-cff | Built paper repo → DB → Hugo |
-| `projects` | import, sync, generate, refresh, set, feature, hide, make-rich, list-rich, clean, diff, fetch-codemeta | GitHub → DB → Hugo |
-| `series` | create, sync, add, set, feature, tag, delete | DB → landing pages |
-| `packages` | sync, generate, set, feature, tag | PyPI/CRAN → DB → Hugo |
+Most DB groups share a CRUD core: `list`, `show`, `set`, `unset`, `feature`, `tag`, `fields`, `stats`, `diff`. The table lists each group's distinctive verbs on top of that core; `mf <group> --help` is authoritative.
+
+| Group | Distinctive verbs | Notes |
+|-------|-------------------|-------|
+| `papers` | ingest, generate, status, zenodo, fetch-cff, cff-status | Built paper repo → DB → Hugo |
+| `projects` | import, sync, generate, refresh, hide, make-rich, list-rich, clean, fetch-codemeta, codemeta-status, rate-limit | GitHub → DB → Hugo |
+| `series` | create, sync, scan, add, remove, delete, add-featured, add-link, add-related, artifacts, audit, audit-nav, classify-frontmatter | DB → landing pages; `sync` pulls by default (`--push` to push, `--ours`/`--theirs` for conflicts, `--interactive`) |
+| `packages` | add, remove, sync, generate | PyPI/CRAN → DB → Hugo |
 | `posts` | create, list, set, unset, tag, feature | Direct front matter edits (no DB) |
-| `pubs` | add, update, log, pull, check, stats, zenodo | Independent lifecycle registry (`migrate` is a one-time paper_db seed) |
+| `pubs` | add, update, log, pull, check, generate, zenodo | Independent lifecycle registry (`migrate` is a one-time paper_db seed) |
 | `content` | match-projects, about, list-projects, audit | Cross-content linking |
 | `taxonomy` | audit, orphans, stats, normalize | Tag/category hygiene |
 | `health` | links, descriptions, images, drafts, stale | Content quality checks |
-| `analytics` | summary, gaps, tags, timeline, suggestions | Content insights |
+| `analytics` | summary, gaps, tags, timeline, suggestions, projects | Content insights |
 | `integrity` | check, fix, orphans | Database consistency |
 | `backup` | list, rollback, clean, status | Backup management |
-| `config` | show | Configuration display |
+| `config` | show, get, set, path, reset | Configuration |
+| (top level) | `init`, `status` | `init` creates `.mf/`; `status` is the read-only render-drift dashboard |
 
 ### Generate vs Sync
 
@@ -227,24 +243,9 @@ mf posts create --title "New release"     # Creates in metafunctor/content/post/
 mf posts list --tag python                # Lists metafunctor posts
 ```
 
-## mf-to-Crier Pipeline
+## Hand-off to crier
 
-Content flows: **mf (create/update) → Hugo (render) → crier (distribute)**
-
-After creating or updating content with mf, suggest cross-posting:
-```bash
-# 1. Create/update content
-mf papers generate --slug new-paper
-
-# 2. Build site
-make deploy
-
-# 3. Cross-post (see /crier skill for full workflow)
-crier audit content/papers/new-paper/index.md
-crier publish content/papers/new-paper/index.md --to devto
-```
-
-For short-form platforms (Bluesky, Mastodon), Claude writes the rewrite and passes it via `--rewrite`. See the `/crier` skill for detailed guidance.
+Content flows **mf (create/update) → Hugo (render) → crier (distribute)**. After content changes are deployed, suggest cross-posting and hand off to the crier plugin (`/crier`); it owns the publishing workflow, rewrites, and failure handling.
 
 ## Gotchas
 

@@ -25,6 +25,7 @@ Get title, date, description, and tags for every post. Three paths, in preferenc
    - `/scribe 5y` (time window): `mf posts list --json --since <ISO date>` (or months, e.g. `60m`; the CLI accepts `YYYY-MM-DD` or `30d/4w/3m` forms, not years)
    - `/scribe --tag philosophy`: `mf posts list --json -t philosophy`
    - Requires an mf build that includes `description` in the JSON (added 2026-06-09); if `description` is missing from the output, fall through.
+   - First confirm `mf --version` prints `mf, version ...`. TeX Live's `/usr/bin/mf` (Metafont) can shadow the metafunctor CLI; if that is what runs, or if the output is not a JSON array for any reason, fall through to the next path (and mention that `uv tool install -e ~/github/repos/mf` fixes it).
 2. **`crier_search` (if the crier plugin is installed)**: `crier_search(limit=300)`.
 3. **Glob fallback (fully self-contained)**: resolve the metafunctor site root the way the `mf` skill does (the `MF_SITE_ROOT` env var, or the configured site root), then `Glob` `content/post/**/index.md` and read the YAML front matter.
 
