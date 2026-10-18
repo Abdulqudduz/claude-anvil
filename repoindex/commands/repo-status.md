@@ -17,8 +17,8 @@ Quick, read-only status view. Two modes depending on whether a repo name is pass
 2. Format the response concisely, not as raw JSON. Include:
    - Total repos, total events, last refresh timestamp.
    - Language breakdown (top 5 by repo count).
-   - Publication registries represented (if included in manifest).
-   - Any staleness warning (if the last refresh was over 7 days ago, flag it and suggest `repoindex refresh`).
+   - Health counts from `summary`: `dirty`, `unpushed`, `stale` (no commit in 180 days), `published` / `unpublished`, `doi_count`.
+   - A staleness warning when `summary.refresh_stale` is true (last refresh over 7 days ago): flag it and suggest `mcp__repoindex__refresh()`.
 3. Keep the output under 15 lines. This is a glanceable dashboard.
 
 ## Mode 2: With a repo name argument

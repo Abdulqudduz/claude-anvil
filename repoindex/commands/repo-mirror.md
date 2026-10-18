@@ -46,10 +46,10 @@ Special flags:
 Run:
 
 ```bash
-repoindex config show 2>&1 | grep -A 30 "^forges:" || echo "NO_FORGES"
+repoindex config get forges 2>&1
 ```
 
-If there is no `forges:` section or no entries with `role: mirror`, stop and print a config template:
+It prints the `forges` mapping as JSON, or `Key not found: forges` (on stderr) when none is configured. If it is not found, or no entry has `role: mirror`, stop and print a config template:
 
 ```yaml
 forges:

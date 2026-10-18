@@ -189,7 +189,8 @@ For collection-wide polish across multiple repos:
 # Identify targets via MCP run_sql
 SELECT name, path FROM repos WHERE has_license = 0 AND language = 'Python'
 
-# Then loop over each repo, or use a single repoindex ops command with a query
+# Then loop over each repo, or use one ops command filtered by --language/--tag/--recent
+# (positional query strings were removed and now error)
 repoindex ops generate license --language python --dry-run
 ```
 

@@ -42,8 +42,11 @@ Run these queries in order and collect the findings:
 
 ### 1. Overview
 
-Call `get_manifest()` to see collection size and last refresh time. If the
-database hasn't been refreshed in >7 days, note this upfront.
+Call `get_manifest()` to see collection size and last refresh time. If
+`summary.refresh_stale` is true (last refresh over 7 days ago), note this
+upfront. The manifest's `summary` also gives the `dirty`, `unpushed`, and
+`stale` counts; use them as the headline numbers, and the queries below only to
+name the repos behind them.
 
 ### 2. Dirty repos (uncommitted changes)
 
@@ -77,17 +80,17 @@ LIMIT 30
 
 ### 5. Stale repos
 
-Repos with no activity in 90+ days that aren't archived:
+Stale is upstream's definition, the `v_stale_repos` view (no commit in 180
+days), so this matches the manifest's `stale` count. Exclude archived repos
+here (the manifest count includes them) and show each repo's last commit:
 
 ```sql
-SELECT r.name, MAX(e.timestamp) AS last_activity
-FROM repos r
-LEFT JOIN events e ON r.id = e.repo_id
-WHERE COALESCE(r.is_archived, 0) = 0
-GROUP BY r.id, r.name
-HAVING last_activity IS NULL
-   OR last_activity < datetime('now', '-90 days')
-ORDER BY last_activity
+SELECT s.name,
+  (SELECT MAX(e.timestamp) FROM events e
+   WHERE e.repo_id = s.id AND e.type = 'commit') AS last_commit
+FROM v_stale_repos s
+WHERE COALESCE(s.is_archived, 0) = 0
+ORDER BY last_commit
 LIMIT 20
 ```
 

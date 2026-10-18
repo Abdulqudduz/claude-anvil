@@ -32,12 +32,14 @@ ORDER BY commits DESC
 LIMIT 15
 ```
 
-### 2. Releases (git tags) in the window
+### 2. Releases in the window
+
+Git tags, plus forge `release` events when forge events have been refreshed (`refresh(forge_events=true)`; off by default). The same release often appears as both, so dedupe by `ref`.
 
 ```sql
-SELECT r.name, e.ref, e.timestamp, e.message
+SELECT r.name, e.type, e.ref, e.timestamp, e.message
 FROM events e JOIN repos r ON e.repo_id = r.id
-WHERE e.type = 'git_tag' AND e.timestamp > datetime('now', '-7 days')
+WHERE e.type IN ('git_tag', 'release') AND e.timestamp > datetime('now', '-7 days')
 ORDER BY e.timestamp DESC
 ```
 

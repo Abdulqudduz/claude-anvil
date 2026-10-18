@@ -72,7 +72,7 @@ Cap each repo list to the first 5 names plus a count for the rest.
 
 End with suggestions, do not execute them automatically:
 
-- To fix deterministic gaps across a subset: `repoindex ops generate <kind>` with a query filter.
+- To fix deterministic gaps across a subset: `repoindex ops generate <kind>` filtered with `--language`/`--tag`/`--recent`/`--dirty` (positional query strings were removed and now error).
 - To drill into one repo: use the `repo-polish` agent.
 - To re-run with tighter scope: `/repo-audit --severity critical --category essentials`.
 

@@ -48,7 +48,7 @@ Repos that detected a registry package and have commits since the last release t
 ```sql
 WITH last_tag AS (
   SELECT repo_id, MAX(timestamp) AS tagged FROM events
-  WHERE type = 'git_tag'
+  WHERE type IN ('git_tag', 'release')
   GROUP BY repo_id
 ),
 recent_commits AS (

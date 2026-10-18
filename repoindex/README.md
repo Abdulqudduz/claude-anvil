@@ -48,9 +48,10 @@ And the repoindex MCP server configured in `~/.claude.json`:
 ## Install
 
 ```bash
-# Symlink into your plugins workspace
-ln -s /path/to/this/repo ~/github/alex-claude-plugins/repoindex
+/plugin install repoindex@queelius
 ```
+
+The plugin needs the `repoindex` CLI on PATH (`uv tool install -e <repoindex checkout>`) and its MCP server configured at user scope (`claude mcp add -s user repoindex -- repoindex mcp`). The server's `refresh`, `tag`, and `export` tools shell out to the CLI, so PATH matters even for MCP-only use.
 
 ## Usage
 

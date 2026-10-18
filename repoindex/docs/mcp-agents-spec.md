@@ -1,5 +1,12 @@
 # Repoindex Plugin: MCP-First Agent Redesign
 
+> **Historical design document (superseded).** This records the reasoning for the
+> plugin's MCP-first redesign against repoindex CLI v0.15.0. It is not a current
+> reference: tool signatures below are out of date (see `CLAUDE.md` and the live
+> MCP tool descriptions), and some proposals were not carried out (for example,
+> `/repo-status` was kept and is a live command). Do not edit it to match the
+> current plugin; update `CLAUDE.md` instead.
+
 ## Background
 
 repoindex v0.15.0 has full MCP/CLI parity with 6 tools:

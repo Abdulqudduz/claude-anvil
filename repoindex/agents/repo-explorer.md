@@ -65,7 +65,7 @@ Four main tables, all joined through `repo_id`:
 - `url`, `doi`, `downloads_total`, `downloads_30d`
 
 **events**: git activity
-- `repo_id`, `type` (commit, git_tag, branch, merge)
+- `repo_id`, `type`: local git (commit, git_tag, branch, merge); forge (release, pull_request, issue), present only after `refresh(forge_events=true)`; registry publishes (pypi_publish, cran_publish, ...). `SELECT DISTINCT type FROM events` shows what this database actually has
 - `timestamp`, `ref`, `message`, `author`
 
 **tags**: classification labels (auto-derived + user-assigned)
