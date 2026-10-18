@@ -1,6 +1,7 @@
 #!/bin/bash
 DIR="$(cd "$(dirname "$0")" && pwd)"
-[ -d "$DIR/node_modules" ] || { echo "Run 'npm install' in $DIR first" >&2; exit 1; }
-# Use the local tsx binary (pinned via package-lock.json) instead of `npx tsx`,
-# which resolves to an unpinned version and incurs a network check on each start.
-exec "$DIR/node_modules/.bin/tsx" "$DIR/src/index.ts"
+TSX_CLI="$DIR/node_modules/tsx/dist/cli.mjs"
+[ -f "$TSX_CLI" ] || { echo "Run 'npm install' in $DIR first" >&2; exit 1; }
+# Invoke the pinned package entrypoint directly. Codex's plugin cache copies package files but
+# does not preserve the node_modules/.bin symlinks created by npm.
+exec node "$TSX_CLI" "$DIR/src/index.ts"

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Claude Code **plugin** (not a software project) that automates Amazon KDP (Kindle Direct Publishing) workflows for book authors: manuscript auditing, listing craft, and the full publishing pipeline. It handles technical books (LaTeX, math-heavy), fiction, and general nonfiction.
 
-There is no build system, no test suite, no compiled code. The entire plugin is Markdown files with YAML frontmatter. "Development" means editing skills, commands, and reference docs.
+There is no build system or compiled code. The plugin is mostly Markdown files with YAML frontmatter, so "development" usually means editing skills, commands, and reference docs. The exception is the TypeScript MCP server in `mcp/`, which has a vitest suite: run `npm test` in `mcp/` after changing it.
 
 ## Architecture
 
@@ -39,7 +39,7 @@ npm install
 - `kdp_generate_full_wrap`: generate a full-wrap paperback cover PDF (front + spine + back)
 - `kdp_validate_cover`: validate an existing cover file (eBook, paperback front, or full wrap) against KDP requirements via image metadata; mechanical, no generation
 
-The `.mcp.json` file at the plugin root registers the server so Claude Code starts it automatically when the plugin is active. The server is launched via `mcp/run.sh`, which handles `npm` invocation.
+The `.mcp.json` file at the plugin root registers the server so Claude Code starts it automatically when the plugin is active. The server is launched via `mcp/run.sh`, which runs the pinned tsx package entrypoint (`node node_modules/tsx/dist/cli.mjs`) directly rather than `node_modules/.bin/tsx`, because Codex's plugin cache does not preserve npm's `.bin` symlinks. `src/test/launcher.test.ts` guards both that path and the "run npm install" error.
 
 ### Skill → Command Mapping
 

@@ -1,0 +1,40 @@
+{
+  "name": "crier",
+  "version": "1.3.1+codex.20261018115100",
+  "description": "Cross-post blog content to multiple platforms: audit, publish, rewrite, and track content distribution via the crier CLI",
+  "author": {
+    "name": "Alexander Towell",
+    "email": "lex@metafunctor.com",
+    "url": "https://metafunctor.com"
+  },
+  "repository": "https://github.com/queelius/claude-anvil",
+  "license": "MIT",
+  "keywords": [
+    "cross-posting",
+    "blog",
+    "publishing",
+    "devto",
+    "hashnode",
+    "bluesky",
+    "mastodon",
+    "content-distribution"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Crier",
+    "shortDescription": "Cross-post and track blog content",
+    "longDescription": "Audit publication gaps, rewrite posts for each platform, publish content, and track distribution.",
+    "developerName": "Alexander Towell",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Find recent posts that have not been cross-posted.",
+      "Audit my publication status across platforms.",
+      "Prepare this article for cross-posting."
+    ]
+  }
+}

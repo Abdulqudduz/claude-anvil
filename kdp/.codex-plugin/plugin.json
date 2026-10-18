@@ -1,0 +1,38 @@
+{
+  "name": "kdp",
+  "version": "0.6.0+codex.20260818145517",
+  "description": "Amazon KDP book publishing: manuscript audit, listing craft, and submission workflow",
+  "author": {
+    "name": "Alexander Towell",
+    "email": "lex@metafunctor.com",
+    "url": "https://metafunctor.com"
+  },
+  "repository": "https://github.com/queelius/claude-anvil",
+  "license": "MIT",
+  "keywords": [
+    "KDP",
+    "Amazon",
+    "publishing",
+    "books",
+    "kindle",
+    "self-publishing"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "KDP",
+    "shortDescription": "Audit and publish books through Amazon KDP",
+    "longDescription": "Audit manuscripts, craft listings, generate covers, and guide Amazon KDP publishing workflows.",
+    "developerName": "Alexander Towell",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Audit this manuscript for KDP readiness.",
+      "Draft the listing for this book.",
+      "Guide me through publishing this book on KDP."
+    ]
+  }
+}
