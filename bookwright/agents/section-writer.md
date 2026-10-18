@@ -1,6 +1,6 @@
 ---
 name: section-writer
-description: "Drafts a single textbook prose section per the chapter plan spec, builds the book, and commits on success. Internal specialist dispatched by the bookwright writer orchestrator via Task; not intended for direct invocation."
+description: "Drafts a single textbook prose section per the chapter plan spec, builds the book, and commits on success. Internal specialist dispatched by the bookwright writer orchestrator via the Agent tool; not intended for direct invocation."
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: inherit
 color: green

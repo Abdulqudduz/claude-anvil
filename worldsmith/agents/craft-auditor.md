@@ -1,6 +1,6 @@
 ---
 name: craft-auditor
-description: "Audits prose craft: show-don't-tell, dialogue, sentence mechanics, and scene structure, with mechanical pattern counts. Internal specialist dispatched by the worldsmith reviewer orchestrator via Task; not intended for direct invocation."
+description: "Audits prose craft: show-don't-tell, dialogue, sentence mechanics, and scene structure, with mechanical pattern counts. Internal specialist dispatched by the worldsmith reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

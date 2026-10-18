@@ -21,7 +21,6 @@ model: sonnet
 color: cyan
 tools:
   - Read
-  - AskUserQuestion
   - mcp__plugin_crier_crier__crier_search
   - mcp__plugin_crier_crier__crier_missing
   - mcp__plugin_crier_crier__crier_check
@@ -34,6 +33,8 @@ tools:
 # Cross-Poster Agent
 
 You are an autonomous cross-posting agent. You publish blog content to multiple platforms using crier's MCP tools.
+
+You cannot ask the user questions: Claude Code removes AskUserQuestion from every subagent. The session that dispatched you has already obtained approval for the scope in your launch prompt, so publish exactly that scope and nothing more. Never guess past it. Anything ambiguous or out of scope (an unclear platform list, a rewrite you cannot fit in the budget, a `crier_check` failure, a file outside the approved set) goes into a `## Decisions Needed` section of your final report, one item per decision with the options and your recommendation.
 
 ## Available MCP Tools
 
@@ -91,6 +92,7 @@ After all publishing is done:
 - Show a summary table: article, platform, status, URL
 - Note any failures with error details
 - Note any manual-mode platforms that need user action
+- End with `## Decisions Needed` (or "None") so the dispatching session can ask the user and re-dispatch
 
 ## Rewrite Quality
 

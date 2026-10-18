@@ -1,6 +1,6 @@
 ---
 description: Autonomous review-fix-review loop until convergence or iteration cap
-allowed-tools: Read, Glob, Grep, Task
+allowed-tools: Read, Write, Glob, Grep, Agent, AskUserQuestion
 argument-hint: "[work-name] [--max-iterations N] [--threshold high|medium|zero] [--pause-on high|all|none] [--closing-review on|off]"
 ---
 
@@ -14,11 +14,31 @@ The iterator composes `/worldsmith:review` and `/worldsmith:revise` in a loop:
 2. Count findings; check convergence
 3. If not converged, run the rewriter in iterate-mode (best-guess on routine creative calls, defer high-stake judgments)
 4. Repeat until convergence, regression-plateau, or iteration cap
-5. At the end, batch all deferred high-stake judgments into one `AskUserQuestion` checkpoint
-6. Run one final revision pass with the user's answers
+5. At the end, return any deferred high-stake judgments to this command, which asks the author in one batched `AskUserQuestion` checkpoint
+6. Relaunch the iterator in finalize mode to apply the answers in one final revision pass
 7. Write a summary report
 
 The author resumes control only at the end-of-loop checkpoint, not per-finding. Use this for finishing-pass work on manuscripts that already have a complete draft.
+
+## Running the Checkpoint
+
+The iterator cannot ask questions itself (Claude Code removes AskUserQuestion from subagents), so this command runs the checkpoint between two launches:
+
+1. Launch the iterator with the resolved work name and flags (loop mode is the default).
+2. If it returns `status: complete`, present its summary and stop.
+3. If it returns `status: awaiting-decisions`, read the `deferred-judgments` list from its `## Decisions Needed` section (or `<session>/decisions-needed.md`). Follow the asking procedure in `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/decision-handoff.md`:
+   - More than 12 items: ask the meta question first. "Best-guess all" turns every item into a decision using its `recommended` option (rationale "best guess: author delegated"). "Stop here" makes every item unresolved.
+   - Otherwise batch AskUserQuestion calls (max 4 questions per call, 4 options each, related items grouped, recommended first, at most 16 questions). Items beyond 16 are unresolved.
+4. Relaunch the iterator to finish the session:
+
+```xml
+<mode>finalize</mode>
+<session>{session directory from the loop's return}</session>
+<decisions>{list of finding_id, location, chosen_option, rationale}</decisions>
+<unresolved>{finding ids not decided, or empty}</unresolved>
+```
+
+5. Present the finalize run's summary and the path to `summary.md`.
 
 ## Defaults
 
@@ -58,7 +78,8 @@ All session artifacts live under `.worldsmith/iterate/<timestamp>/<work>/`:
 - `summary.md`: final user-facing summary with cost estimate
 - `round-NNN/review.md` + `round-NNN/revision.md`: per-round artifacts
 - `final-revision/revision.md`: post-checkpoint revision (if user answered any deferred judgments)
-- `unresolved.md`: any judgments dropped from the checkpoint (only if more than 16 deferred)
+- `decisions-needed.md`: the deferred judgments the loop handed to this command (only if any were deferred)
+- `unresolved.md`: judgments not decided at the checkpoint (beyond 16, or the author chose "stop here")
 
 The default `.worldsmith/reviews/` directory is untouched. Direct `/worldsmith:review` invocations still write there as before.
 

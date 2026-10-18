@@ -21,7 +21,6 @@ model: sonnet
 color: yellow
 tools:
   - Read
-  - AskUserQuestion
   - mcp__plugin_crier_crier__crier_summary
   - mcp__plugin_crier_crier__crier_query
   - mcp__plugin_crier_crier__crier_missing
@@ -101,4 +100,4 @@ Always present findings as:
 1. **Summary** with key numbers
 2. **Findings table** with actionable items
 3. **Recommendations** prioritized by impact
-4. Ask the user what they want to act on before dispatching work
+4. **Decisions Needed**: end with the recommendations as a numbered menu of concrete actions. You cannot ask the user questions (Claude Code removes AskUserQuestion from subagents) or dispatch work; the main session presents the menu and asks

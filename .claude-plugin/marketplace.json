@@ -21,7 +21,7 @@
       "name": "papermill",
       "source": "./papermill",
       "description": "Research paper lifecycle management: thesis refinement, literature surveys, experimental design, multi-agent drafting, editorial review, and publication venue matching",
-      "version": "0.8.2",
+      "version": "0.9.0",
       "author": {
         "name": "Alexander Towell"
       }
@@ -30,7 +30,7 @@
       "name": "worldsmith",
       "source": "./worldsmith",
       "description": "Documentation-first worldbuilding methodology for fiction projects. The Silmarillion approach: docs ARE the world, story text derives from them.",
-      "version": "0.14.0",
+      "version": "0.15.0",
       "author": {
         "name": "Alexander Towell"
       }
@@ -75,7 +75,7 @@
       "name": "crier",
       "source": "./crier",
       "description": "Cross-post blog content to multiple platforms: audit, publish, rewrite, and track content distribution via the crier CLI",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "author": {
         "name": "Alexander Towell"
       }
@@ -102,7 +102,7 @@
       "name": "bookwright",
       "source": "./bookwright",
       "description": "Documentation-first methodology and multi-agent toolchain for technical non-fiction long-form manuscripts. The Bernoulli-textbook approach: design spec and chapter plans drive the manuscript.",
-      "version": "0.2.3",
+      "version": "0.3.0",
       "author": {
         "name": "Alexander Towell"
       }

@@ -1,6 +1,6 @@
 ---
 description: Heavy multi-agent editorial review (4 specialist auditors in parallel)
-allowed-tools: Read, Glob, Grep, Task
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion
 argument-hint: "[section | chapter | part | book] [name]"
 ---
 
@@ -14,6 +14,8 @@ Launch the `reviewer` orchestrator. Dispatches all four review specialists in pa
 - `chapter <name>`: all sections of the named chapter.
 - `part <name>`: all chapters of the named Part.
 - `book`: everything (heavy; do not use casually).
+
+If the reviewer returns a `decisions-needed` YAML block instead of a report (it stops when the scope is ambiguous, since subagents cannot ask questions), ask the author with AskUserQuestion: one question per item, using its `question`, its `options` (label as the option, consequence as the description), and the `recommended` option listed first with "(Recommended)". Batch at most 4 questions per call and group items that touch the same section. Then relaunch the reviewer with the chosen scope.
 
 ## Output
 

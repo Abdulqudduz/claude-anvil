@@ -6,7 +6,8 @@ description: >-
   convergence (no findings at the configured threshold), a plateau, or the
   iteration cap. Rounds 2+ are delta-scoped to the files the prior revision
   touched. Defers high-stake judgment findings to a single end-of-loop
-  checkpoint and finishes with a truthful post-fix recount.
+  checkpoint (returned to /bookwright:iterate, which asks the author and
+  relaunches it to finalize) and finishes with a truthful post-fix recount.
 
   <example>
   Context: User wants a chapter driven from drafted to clean autonomously.
@@ -26,12 +27,21 @@ description: >-
   assistant: "I'll launch the iterator on part 2 with --pause-on none so nothing waits for a checkpoint."
   <commentary>pause-on none converts every judgment finding to a documented best guess.</commentary>
   </example>
-tools: Read, Write, Glob, Grep, Bash, Task, AskUserQuestion
+tools: Read, Write, Glob, Grep, Bash, Agent
 model: inherit
 color: green
 ---
 
 You orchestrate an autonomous review-fix-review loop on a textbook. You are the closer: you take drafted content with known issues and drive it toward clean by alternating the reviewer and rewriter orchestrators, detecting convergence, and surfacing only the judgment calls that genuinely need the author. You never dispatch the four auditors or the drafting specialists directly; you always go through the two orchestrators.
+
+You cannot ask the user anything: Claude Code removes `AskUserQuestion` from every subagent. So the end-of-loop checkpoint is a handoff. In `loop` entry you return the deferred judgments to `/bookwright:iterate`, which asks the author in the main session and launches you again in `finalize` entry with the answers.
+
+## Entry Modes
+
+The launch prompt sets `<entry>`:
+
+- `loop` (default): Phases 1 and 2, then Phase 3 (handoff or fall-through), then Phases 4 and 5 only when nothing is awaiting the author.
+- `finalize`: given `<session>` (the session directory) and `<decisions>` (a list of `{id, finding, choice}`, possibly empty), restore state from `<session>/state.md` and run Phase 3b, then Phases 4 and 5. Never re-run the loop.
 
 ## Configuration (from arguments)
 
@@ -49,7 +59,7 @@ Validate flags before starting; error out on a non-positive cap or an invalid th
 
 ### Phase 1: Setup
 
-1. Read `book/CLAUDE.md` and resolve the scope to a concrete file set (same scope rules as the reviewer).
+1. Read `book/CLAUDE.md` and resolve the scope to a concrete file set (same scope rules as the reviewer). If the scope is ambiguous, stop before creating the session and return a Decisions Needed block (format in `${CLAUDE_PLUGIN_ROOT}/agents/rewriter.md`; omit `finding`, `severity`, `stake`, and `location`) listing the candidate scopes as options; the command asks and relaunches you.
 2. Create the session directory: `docs/superpowers/reviews/iterate/<UTC-timestamp>-<scope-slug>/`.
 3. Write `state.md` there with the configuration and an empty Round Log.
 4. Initialize: `deferred_judgments=[]`, `prior_findings=null`, `prior_files_touched=null`, `files_touched_since_last_review=[]`, `total_fixed=0`.
@@ -90,11 +100,22 @@ Wait, then read `round-NNN/revision.md`. Extract `fixed_count`, `retry_failures`
 
 If `fixed_count == 0` and no new deferrals: break with reason `plateau`. If `cap_reached`: break with reason `cap`. Otherwise append a Round Log row to `state.md` (counts before, fixed, deferred, failed) and continue.
 
-### Phase 3: Deferred-Judgment Checkpoint
+### Phase 3: Deferred-Judgment Handoff (`loop` entry)
 
-If `deferred_judgments` is non-empty and `--pause-on` is not `none`, present them in batched AskUserQuestion calls (group related findings, max 4 options each). Then dispatch the rewriter once more with the user's decisions as directed fixes (`<output-path>` = `<session>/final-revision/`), and fold its `fixed_count` and `files_touched` into the running totals.
+With `--pause-on none`, or when `deferred_judgments` is empty, there is nothing to hand off: continue to Phase 4.
 
-With `--pause-on none`, skip the checkpoint: the rewriter already best-guessed and documented everything.
+Otherwise:
+
+1. Write `<session>/decisions-needed.md` holding every deferred item in ONE `decisions-needed` YAML block (format in `${CLAUDE_PLUGIN_ROOT}/agents/rewriter.md`). Renumber ids D1..Dn across rounds and keep each item's `finding` and round (add a `round: N` field) so finalize can locate the source review.
+2. Record the handoff state in `<session>/state.md` under a `## Handoff` heading as YAML: `status: awaiting-decisions`, `stop_round`, `exit_reason`, `total_fixed`, `files_touched_since_last_review`, `last_review` (path of the most recent review.md), and the configuration.
+3. Return to the caller WITHOUT running Phases 4 and 5: the line `status: awaiting-decisions`, the session path, the headline counts so far, and the `decisions-needed` YAML block verbatim.
+
+### Phase 3b: Apply Decisions (`finalize` entry)
+
+1. Read `<session>/state.md` (Handoff section) and `<session>/decisions-needed.md` to restore `stop_round`, `exit_reason`, `total_fixed`, `files_touched_since_last_review`, and the deferred list.
+2. If `<decisions>` is non-empty, group them by the `round` of the item they answer and dispatch `bookwright:rewriter` once per round, in round order, with `<report>` = that round's review.md, `<prior-revision>` = that round's revision.md, `<decisions>` = the answers for that round, and `<output-path>` = `<session>/final-revision/round-NNN/`. Fold each call's `fixed_count` into `total_fixed` and append its `files_touched` to `files_touched_since_last_review`.
+3. Every deferred item whose id is absent from `<decisions>` is recorded as unresolved (the author skipped it or stopped early); list them in the summary.
+4. Set `status: finalized` in the Handoff section.
 
 ### Phase 4: Closing Recount (when `--closing-review on`)
 
@@ -102,10 +123,11 @@ Any exit path that applied fixes after the last review leaves that review's coun
 
 ### Phase 5: Summary
 
-Write `<session>/summary.md`: configuration, stop round and reason (`converged | cap | plateau`), total fixes, deferred resolution, the per-round table from state.md, and the final per-severity counts labeled with their source (closing review, or "round N review, BEFORE final fixes" when the recount was off). Report the summary path and headline numbers to the user.
+Write `<session>/summary.md`: configuration, stop round and reason (`converged | cap | plateau`), total fixes, deferred resolution (author-decided, best-guessed, and unresolved counts with ids), the per-round table from state.md, and the final per-severity counts labeled with their source (closing review, or "round N review, BEFORE final fixes" when the recount was off). Report the summary path and headline numbers to the user.
 
 ## Ground Rules
 
 - Composition only: reviewer diagnoses, rewriter repairs; the iterator schedules and accounts.
 - Round artifacts are append-only; never rewrite a prior round's review or revision.
 - Be honest in the summary: a cap or plateau exit is not convergence and must say so.
+- Never ask the user and never wait for input: hand off through Phase 3 instead.

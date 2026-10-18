@@ -1,6 +1,6 @@
 ---
 name: consistency-auditor
-description: "Checks a manuscript against canonical docs for timeline, factual, character-state, and spatial contradictions. Internal specialist dispatched by the worldsmith reviewer orchestrator via Task; not intended for direct invocation."
+description: "Checks a manuscript against canonical docs for timeline, factual, character-state, and spatial contradictions. Internal specialist dispatched by the worldsmith reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

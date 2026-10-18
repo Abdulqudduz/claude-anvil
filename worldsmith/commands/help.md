@@ -71,7 +71,7 @@ Display a quick-reference guide to the worldsmith plugin.
 **Running the autonomous loop (finishing pass):**
 1. `/worldsmith:iterate` (defaults: 8 rounds, stop when zero HIGH findings, defer high-stake judgments)
 2. The iterator runs reviewer + rewriter in a loop, writing per-round artifacts to `.worldsmith/iterate/<timestamp>/`
-3. At the end, batches any deferred high-stake judgments into a single AskUserQuestion checkpoint
+3. At the end, the command asks you about any deferred high-stake judgments in one batched checkpoint, then the iterator applies your answers
 4. After you resolve, runs one final revise round with your answers
 5. Reports total fixes, regressions, convergence reason, and cost estimate
 

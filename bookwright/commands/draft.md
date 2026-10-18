@@ -1,6 +1,6 @@
 ---
 description: Launch the writer orchestrator for prose drafting (whole chapter or single section)
-allowed-tools: Read, Glob, Grep, Task
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion
 argument-hint: "<chapter-name | section-path>"
 ---
 
@@ -20,6 +20,10 @@ For each section task in the relevant plan:
 3. After the draft commits, dispatches `spec-auditor` and `quality-auditor` in parallel for review.
 4. If either auditor surfaces substantive findings, re-dispatches section-writer with the finding as input and re-runs the relevant auditor to verify the fix.
 5. Reports the task's commit SHAs and word counts back to the user.
+
+## Scope questions
+
+The writer cannot ask questions itself (Claude Code removes AskUserQuestion from subagents). If the scope is ambiguous it stops before drafting and returns a `decisions-needed` YAML block instead. When that happens, ask the author with AskUserQuestion: one question per item, using its `question`, its `options` (label as the option, consequence as the description), and the `recommended` option listed first with "(Recommended)". Batch at most 4 questions per call and group items that touch the same section. Then relaunch the writer with the original argument plus a `<decisions>` block listing each item's `id` and the chosen `choice` label.
 
 ## When to use what
 

@@ -94,6 +94,8 @@ checks recovery receipts first, the MCP publish path does not.
 3. For bulk work, dispatch the **cross-poster** agent
 4. For analysis, dispatch the **auditor** agent
 
+Agents cannot ask the user anything (Claude Code removes AskUserQuestion from subagents), so the asking happens here, in the main session: get the user's approval for the exact scope BEFORE dispatching the cross-poster, and pass that scope in the launch prompt. When either agent returns, present its `## Decisions Needed` items (cross-poster) or recommendations menu (auditor) with AskUserQuestion, then act on the answers or re-dispatch with the decided scope.
+
 ### Important rules
 
 - DevTo sanitizes tags: no hyphens, max 4 tags, lowercase

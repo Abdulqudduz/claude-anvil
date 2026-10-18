@@ -1,6 +1,6 @@
 ---
 name: math-auditor
-description: "Recomputes arithmetic, derivations, and worked examples independently via Python. Internal specialist dispatched by the bookwright reviewer orchestrator via Task; not intended for direct invocation."
+description: "Recomputes arithmetic, derivations, and worked examples independently via Python. Internal specialist dispatched by the bookwright reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools: Read, Bash, Glob
 model: inherit
 color: purple

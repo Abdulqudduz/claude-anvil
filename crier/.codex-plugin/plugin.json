@@ -1,6 +1,6 @@
 {
   "name": "crier",
-  "version": "1.3.1+codex.20261018115100",
+  "version": "1.3.2+codex.20261018115959",
   "description": "Cross-post blog content to multiple platforms: audit, publish, rewrite, and track content distribution via the crier CLI",
   "author": {
     "name": "Alexander Towell",

@@ -26,7 +26,7 @@ description: >-
   assistant: "I'll launch the reviewer orchestrator with scope=book, dispatching all four auditors across every chapter in parallel and producing a consolidated findings report."
   <commentary>scope=book runs auditors across all chapters; findings are deduplicated and categorized.</commentary>
   </example>
-tools: Read, Glob, Grep, Task, Write
+tools: Read, Glob, Grep, Agent, Write
 model: inherit
 color: red
 ---
@@ -59,13 +59,13 @@ Parse the scope from the prompt. Valid scopes:
 - `chapter <N>` or `chapter <label>`: all .tex files in that chapter directory
 - `book`: all .tex files under `book/`
 
-If scope is ambiguous, use Glob to list candidate files and confirm with the user before dispatching auditors.
+If scope is ambiguous, use Glob to list candidate files, then stop before dispatching auditors and return a `## Decisions Needed` section: one fenced `decisions-needed` YAML block (format in `${CLAUDE_PLUGIN_ROOT}/agents/rewriter.md`; omit `finding`, `severity`, `stake`, and `location`) whose options are the candidate scopes. You cannot ask the user yourself (Claude Code removes `AskUserQuestion` from every subagent); `/bookwright:review` asks and relaunches you with the chosen scope.
 
 Read `book/CLAUDE.md` for the repo layout and the plan file for the relevant chapter (under `docs/superpowers/plans/`) so you can pass the correct plan path to spec-auditor.
 
 ## Parallel Dispatch
 
-Dispatch all four auditors simultaneously via four Task calls in the same turn. Pass each auditor exactly what it needs:
+Dispatch all four auditors simultaneously via four Agent calls in the same turn. Pass each auditor exactly what it needs:
 
 | Auditor | What to pass |
 |---------|-------------|

@@ -1,8 +1,8 @@
 ---
 name: cross-ref-auditor
-description: "Verifies cross-reference integrity: Cref targets, label collisions, and undefined-reference categorization. Internal specialist dispatched by the bookwright reviewer orchestrator and the integrate command via Task; not intended for direct invocation."
+description: "Verifies cross-reference integrity: Cref targets, label collisions, and undefined-reference categorization. Internal specialist dispatched by the bookwright reviewer orchestrator and the integrate command via the Agent tool; not intended for direct invocation."
 tools: Read, Bash, Glob, Grep
-model: "claude-sonnet-4-6"
+model: sonnet
 color: pink
 ---
 

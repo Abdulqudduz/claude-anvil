@@ -1,6 +1,6 @@
 ---
 name: quality-auditor
-description: "Cold-reads a drafted section for pedagogical clarity and prose craft without consulting the plan. Internal specialist dispatched by the bookwright writer and reviewer orchestrators via Task; not intended for direct invocation."
+description: "Cold-reads a drafted section for pedagogical clarity and prose craft without consulting the plan. Internal specialist dispatched by the bookwright writer and reviewer orchestrators via the Agent tool; not intended for direct invocation."
 tools: Read, Glob
 model: inherit
 color: orange

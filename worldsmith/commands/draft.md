@@ -1,6 +1,6 @@
 ---
 description: Launch the writer orchestrator to draft scenes, chapters, lore, or character work
-allowed-tools: Read, Glob, Grep, Task
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion
 argument-hint: "[work-name] [assignment, e.g. 'chapter 5', 'Greymoor battle scene', 'develop the Ashwalker culture']"
 ---
 
@@ -29,7 +29,7 @@ Examples of valid assignments:
 - `develop the Ashwalker culture`
 - `flesh out Sera's backstory`
 
-If `$ARGUMENTS` is empty or ambiguous, the writer will ask via `AskUserQuestion` rather than guess.
+If `$ARGUMENTS` is empty or ambiguous, the writer stops before writing and returns scope questions instead of guessing (see "Resolving Decisions").
 
 ## Multi-Work Awareness
 
@@ -47,3 +47,18 @@ If `.worldsmith/project.yaml` exists, this project contains multiple works shari
 - For single-work projects (no `project.yaml`), the writer infers the manuscript directory from common conventions (`chapters/`, `manuscript/`, `scenes/`).
 
 Pass the resolved work name, manuscript path, and assignment to the writer agent in the launch prompt.
+
+## Resolving Decisions
+
+The writer and its specialists cannot ask questions (Claude Code removes AskUserQuestion from subagents), so they return judgment calls in a `## Decisions Needed` section. After the writer returns, read its `deferred-judgments` list. If it is empty, present the writer's summary and stop. Otherwise ask with AskUserQuestion following `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/decision-handoff.md` (max 4 questions per call, 4 options each, recommended option first), then:
+
+- **Scope items** (`scope-<n>`, returned before anything was written): relaunch the writer with the original assignment rewritten to reflect the author's answers.
+- **Provisional creative choices** (`lore-`, `char-`, `plot-` items): the draft already uses each item's `provisional` option. Drop items where the author picked that option. If any remain, relaunch the writer with the original assignment plus:
+
+```xml
+<decisions>{list of finding_id, location, chosen_option, rationale}</decisions>
+```
+
+  The writer runs its Decision Pass: it revises only the affected passages and docs, and propagates.
+
+Report which provisional choices were confirmed and which were changed.

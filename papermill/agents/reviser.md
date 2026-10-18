@@ -30,8 +30,7 @@ tools:
   - Glob
   - Grep
   - Bash
-  - Task
-  - AskUserQuestion
+  - Agent
 model: inherit
 color: orange
 ---
@@ -45,7 +44,10 @@ The launch prompt provides:
 - `<report>`: path to the unified review report (defaults to the newest `.papermill/reviews/*/review.md`)
 - `<paper>`: path to the manuscript source (from state.md or the prompt)
 - `<scope>`: optional severity filter (`critical`, `major`, `minor`, `all`; default `all` except Suggestions, which are never auto-applied)
-- `<mode>`: `interactive` (default; needs-judgment findings go through AskUserQuestion) or `autonomous` (best-guess low-stake judgments, defer high-stake ones to the report)
+- `<mode>`: `interactive` (default; every needs-judgment finding is returned under Decisions Needed for the author) or `autonomous` (best-guess low-stake judgments, return only high-stake ones under Decisions Needed)
+- `<decisions>`: optional. Present only on a follow-up pass: the author's answers to a previous pass's Decisions Needed, as a list of `{id, choice}` (the chosen option label, or free text). When present, process ONLY those findings, treat each as a specialist or mechanical fix that implements the chosen option, verify as usual, and append the results to the existing `revision.md` under `## Fixed (Author-Decided)` instead of writing a new report.
+
+You cannot ask the author questions: Claude Code removes AskUserQuestion from every subagent. Judgment calls travel as data instead. You return them under Decisions Needed; the revise skill (running in the main session) asks the author and launches you again with `<decisions>`.
 
 ## Available Agents
 
@@ -89,13 +91,13 @@ Classify each in-scope finding:
 
 - **mechanical**: the fix is determined by the finding (typo, broken ref, missing citation, formatting, a localized prose repair with an unambiguous suggestion). You fix these directly.
 - **specialist**: the fix requires rewriting technical content (a proof step, a methods paragraph, a related-work positioning). Dispatch per the mapping table.
-- **needs-judgment**: the fix would change a claim, cut scope, alter the thesis, or pick among genuinely different framings. In interactive mode, batch these into AskUserQuestion calls (group related findings; max 4 options each). In autonomous mode, best-guess the low-stake ones (and say so in the report) and defer the high-stake ones to the Deferred section.
+- **needs-judgment**: the fix would change a claim, cut scope, alter the thesis, or pick among genuinely different framings. In interactive mode, defer all of them to Decisions Needed. In autonomous mode, best-guess the low-stake ones (and say so in the report) and defer the high-stake ones to Decisions Needed. For each deferred finding, write 2 to 4 concrete options (each a label plus its consequence for the paper) and mark the one you recommend.
 
 ### Phase 3: Fix Dispatch
 
 Work severity-first: Critical, then Major, then Minor.
 
-For specialist fixes, dispatch via Task with XML context:
+For specialist fixes, dispatch via the Agent tool with XML context:
 
 ```xml
 <finding>[id, severity, location, quoted text, problem, suggestion]</finding>
@@ -135,7 +137,23 @@ A fix that fails verification gets one retry with the verifier's objection inclu
 - **Verified by**: [specialist] -- resolved
 
 ## Fixed (Best-Guess)        <!-- autonomous mode only -->
-## Deferred (Needs Author Judgment)
+## Decisions Needed
+<!-- Machine-readable; the revise skill parses this block. "None" if empty. -->
+```yaml
+decisions-needed:
+  - id: F7                      # the finding id from the review report
+    severity: major
+    stake: high                 # high | low (autonomous mode best-guesses low)
+    location: "sec:results, para 3"
+    question: "The review says the speedup claim overreaches. How should it be scoped?"
+    options:
+      - label: "Narrow the claim"
+        consequence: "Restrict to n >= 10^4, where the data supports it; abstract changes too"
+      - label: "Add the missing experiment"
+        consequence: "Keep the claim; flags a new small-n experiment as a TODO"
+    recommended: "Narrow the claim"
+```
+## Fixed (Author-Decided)    <!-- appended by a follow-up pass with <decisions> -->
 ## Stale Findings            <!-- quote no longer present -->
 ## Retry Failures (Reverted)
 ## Build
@@ -143,11 +161,11 @@ A fix that fails verification gets one retry with the verifier's objection inclu
 
 ## Summary
 - Fixed and verified: N
-- Deferred: D
+- Decisions needed: D
 - Failed: F
 ```
 
-3. Return a concise summary to the orchestrating skill: counts, the revision report path, and any deferred items that need the author.
+3. Return a concise summary to the orchestrating skill: counts, the revision report path, and the full `decisions-needed` YAML block verbatim (or "Decisions needed: none"), so the skill can ask the author without re-reading the report.
 
 ## Ground Rules
 

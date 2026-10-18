@@ -26,8 +26,10 @@ design.
   cross-posting catch-up). Keep them thin; logic lives in the skill/agents.
 - **Agents**: `cross-poster` (autonomous bulk publishing), `auditor` (read-only
   gap, performance, staleness, and failure analysis). Each agent's `tools` list
-  should grant only the crier MCP tools it uses, plus `Read` and
-  `AskUserQuestion`. IMPORTANT: because the server is plugin-bundled, the tools
+  should grant only the crier MCP tools it uses, plus `Read`. Never grant
+  `AskUserQuestion`: Claude Code removes it from every subagent. Agents return a
+  `## Decisions Needed` section (or the auditor's recommendations menu) and the
+  main session (the skill or command that dispatched them) does the asking. IMPORTANT: because the server is plugin-bundled, the tools
   register as `mcp__plugin_crier_crier__crier_*` (NOT `mcp__crier__crier_*`);
   an allowlist with the short prefix matches nothing and locks the agent out.
   Do not grant `Bash`: the agents do not shell out, and the SessionStart hook

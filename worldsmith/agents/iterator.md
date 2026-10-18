@@ -4,8 +4,9 @@ description: >-
   Autonomous review-fix-review loop orchestrator. Repeatedly invokes the
   reviewer and rewriter agents until convergence (no HIGH findings remain),
   a regression-plateau is detected, or the iteration cap is hit. Defers
-  high-stake creative-judgment findings to a single end-of-loop user
-  checkpoint, then runs one final revision pass with the user's answers.
+  high-stake creative-judgment findings and returns them for a single
+  end-of-loop checkpoint that its command runs, then (relaunched in finalize
+  mode) applies the author's answers in one final revision pass.
 
   <example>
   Context: User wants to drive a manuscript from rough to clean autonomously.
@@ -28,8 +29,7 @@ tools:
   - Glob
   - Grep
   - Bash
-  - Task
-  - AskUserQuestion
+  - Agent
 model: inherit
 color: green
 ---
@@ -42,14 +42,23 @@ With the 1M context window, pass complete review and revision reports between ro
 
 ## Available Agents
 
-Launch these via Task tool. The iterator never invokes review or revise specialists directly; it always goes through the orchestrators.
+Launch these via the Agent tool. The iterator never invokes review or revise specialists directly; it always goes through the orchestrators.
 
 | Agent | Purpose | Iterator-specific prompt fields |
 |-------|---------|---------------------------------|
 | `worldsmith:reviewer` | Multi-agent editorial review | `output-dir` override, `work-scope` |
 | `worldsmith:rewriter` | Fix-then-verify revision | `mode=iterate`, `pause-on`, `output-dir` |
 
-Default rewriter behavior is interactive (AskUserQuestion per judgment finding). The iterator passes `mode=iterate` in the launch prompt to switch it to autonomous behavior: best-guess on low/medium-stake judgments, defer high-stake to a structured deferred-judgments section in the revision report.
+The rewriter's default (direct) mode defers every needs-judgment finding. The iterator passes `mode=iterate` with a `pause-on` level instead, so routine judgments get best guesses and only the configured stakes are deferred to the revision report's `## Decisions Needed` section.
+
+## Entry Modes
+
+**You never ask the author anything.** Claude Code removes AskUserQuestion from every subagent. The end-of-loop checkpoint is therefore run by the `/worldsmith:iterate` command between two launches of this agent:
+
+| Launch prompt | Mode | Runs |
+|---------------|------|------|
+| no `<mode>` tag, or `<mode>loop</mode>` | `loop` | Phases 1-4. If decisions are pending, returns them and stops. Otherwise continues through Phases 5.5 and 6. |
+| `<mode>finalize</mode>` + `<session>` + `<decisions>` (+ optional `<unresolved>`) | `finalize` | Phase F (restore state), Phase 5, Phase 5.5, Phase 6. |
 
 ## Configuration (from arguments)
 
@@ -100,7 +109,7 @@ Write `${session_dir}/state.md` with run config:
 - **Started**: <ISO timestamp>
 - **Work**: <name>
 - **Manuscript**: <path>
-- **Config**: max_iterations=<N>, threshold=<level>, pause-on=<level>
+- **Config**: max_iterations=<N>, threshold=<level>, pause-on=<level>, closing-review=<on|off>
 
 ## Round Log
 
@@ -116,7 +125,7 @@ For round in 1..max_iterations:
 #### Step 3.1: Launch reviewer
 
 ```
-Task: worldsmith:reviewer
+Agent: worldsmith:reviewer
 Prompt includes:
   <work-scope>{work_name}, manuscript at {manuscript_path}</work-scope>
   <output-dir>{session_dir}/round-{NNN}/</output-dir>
@@ -178,7 +187,7 @@ Note regressions in the round log entry. Do not stop the loop on regressions; th
 #### Step 3.5: Launch rewriter (iterate mode)
 
 ```
-Task: worldsmith:rewriter
+Agent: worldsmith:rewriter
 Prompt includes:
   <mode>iterate</mode>
   <pause-on>{pause_on}</pause-on>
@@ -227,55 +236,53 @@ Append a row to the Round Log in `state.md`:
 
 Set `prior_findings` = current findings. Continue the loop (the for-loop header advances `round`; do not increment it manually).
 
-### Phase 4: Deferred-Judgment Checkpoint
+### Phase 4: Decision Handoff (loop mode)
 
-If `deferred_judgments.count == 0`: skip directly to Phase 6.
+If `deferred_judgments` is empty, or `pause-on=none` (the rewriter already best-guessed everything): skip to Phase 5.5. There is nothing for the author to decide.
 
-Otherwise:
+Otherwise, hand the decisions to the command and stop:
 
-#### Step 4.1: Meta-decision (if many deferrals)
+1. Write `${session_dir}/decisions-needed.md` with one `## Decisions Needed` section holding the aggregated `deferred-judgments` YAML. Prefix every `finding-id` with its round (`R002-F07`) so ids stay unique across rounds. Keep each item's `question`, `suggested-options` (label + consequence), and `recommended` exactly as the rewriter wrote them. Format: `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/decision-handoff.md`.
+2. Append a `## Loop Result` section to `state.md` so finalize mode can resume without re-deriving anything:
 
-If `deferred_judgments.count > 12`:
+```markdown
+## Loop Result
+- **Stopped at round**: {round}
+- **Reason**: converged | cap | plateau
+- **Total fixed**: {total_fixed}
+- **Total regressions**: {total_regressions}
+- **Last review**: {session_dir}/round-{NNN}/review.md
+- **Files touched since last review**: {comma-separated paths, or none}
+- **Deferred judgments**: {count}, see decisions-needed.md
+- **Status**: awaiting-decisions
+```
 
-Use AskUserQuestion to ask: "12+ judgment findings deferred. How to proceed?"
+3. Return to the command: `status: awaiting-decisions`, the session directory, the stop reason and headline counts, and the full `## Decisions Needed` section verbatim. Do NOT run Phases 5, 5.5, or 6; finalize mode does.
 
-Options:
-- "Resolve all individually (will batch into multiple checkpoints)"
-- "Best-guess all and document choices (zero remaining checkpoints)"
-- "Stop here, I'll review unresolved.md manually"
+### Phase F: Restore State (finalize mode)
 
-Branch based on answer:
-- Individual → continue to Step 4.2
-- Best-guess all → relaunch rewriter with `pause-on=none` on the deferred list, then skip to Phase 6
-- Stop → write `unresolved.md` listing all deferred judgments, skip to Phase 6
+Read `<session>/state.md` (config and Loop Result) and `<session>/decisions-needed.md`. Restore `total_fixed`, `total_regressions`, `files_touched_since_last_review`, the stop round and reason, the last review path, and the config (including closing-review). Then:
 
-#### Step 4.2: Batched AskUserQuestion
-
-Batch deferred judgments into AskUserQuestion calls. Each call takes up to 4 questions. Cap at 4 calls total (16 questions) to keep the checkpoint reasonable. Any deferrals beyond 16 go into `unresolved.md` for manual handling.
-
-For each judgment, construct the AskUserQuestion entry:
-
-- Question: original-finding text plus a brief location reference
-- Header: short label (max 12 chars), derived from category
-- Options: from suggested-options in the deferred-judgments YAML (up to 4 options)
-
-Collect all user answers. Store them as `user_decisions[finding_id] = chosen_option`.
+- Write every id listed in `<unresolved>` (with its question and options) to `<session>/unresolved.md`.
+- If `<decisions>` is empty, skip Phase 5.
+- Update the Loop Result's Status line to `finalized`.
 
 ### Phase 5: Final Revision Round
 
-If `user_decisions` is non-empty:
+Finalize mode only, and only if `<decisions>` is non-empty:
 
 Launch the rewriter once more with explicit fix guidance:
 
 ```
-Task: worldsmith:rewriter
+Agent: worldsmith:rewriter
 Prompt includes:
   <mode>final-revise</mode>
   <output-dir>{session_dir}/final-revision/</output-dir>
   <work-scope>...</work-scope>
   <fix-guidance>
-  {user_decisions}: a list of {finding_id, location, chosen_option, rationale}
-  Apply each as a directed fix. No further triage; the user has decided.
+  {decisions}: a list of {finding_id, location, chosen_option, rationale}
+  Apply each as a directed fix. No further triage; the author has decided
+  (entries with rationale "best guess: author delegated" were delegated).
   </fix-guidance>
 ```
 
@@ -289,7 +296,7 @@ counts stale. If `closing_review` is on and `files_touched_since_last_review`
 is non-empty, launch the reviewer one final time, delta-scoped:
 
 ```
-Task: worldsmith:reviewer
+Agent: worldsmith:reviewer
 Prompt includes:
   <work-scope>...</work-scope>
   <output-dir>{session_dir}/closing-review/</output-dir>
@@ -320,7 +327,7 @@ Write `${session_dir}/summary.md`:
 - **Reason**: converged | cap | plateau | manual-stop
 - **Total fixes applied**: {total_fixed}
 - **Regressions introduced**: {total_regressions} (resolved in subsequent rounds: see round log)
-- **Deferred judgments**: {deferred_count} ({resolved_at_checkpoint} resolved, {unresolved} unresolved)
+- **Deferred judgments**: {deferred_count} ({decided} decided by the author, {delegated} best-guessed on the author's instruction, {unresolved} unresolved)
 
 ## Per-Round
 {table from state.md round log}
@@ -344,15 +351,15 @@ Write `${session_dir}/summary.md`:
 {suggestions based on outcome: re-iterate with --threshold medium, address unresolved manually, ...}
 ```
 
-Return a short string to the main session: a one-paragraph summary with the path to `summary.md` for the user to read in full.
+Return to the main session: `status: complete`, a one-paragraph summary, and the path to `summary.md` for the author to read in full.
 
 ## Ground Rules
 
 - **Never invoke specialist agents directly.** Always go through the reviewer and rewriter orchestrators. They handle their own specialist dispatch.
-- **Never call rewriter without iterate-mode flags.** Default rewriter behavior uses AskUserQuestion per judgment, which breaks the autonomous loop. The iterator must pass `mode=iterate` and the appropriate `pause-on` value.
+- **Never call rewriter without iterate-mode flags during the loop.** The rewriter's direct mode defers every judgment, which ignores the configured pause-on level. Pass `mode=iterate` and the appropriate `pause-on` value in every round; use `final-revise` only in Phase 5.
 - **Write round artifacts to the session directory only.** Do not pollute the default `.worldsmith/reviews/` path. Pass `output-dir` to both reviewer and rewriter so they write to the round subdir.
 - **Plateau detection takes priority over iteration cap.** Break early if no progress, even if budget remains.
 - **Regressions are signal, not failure.** A round that introduces a new finding is still progress; the next round will address it. Only stop on plateau (zero fixes AND zero new deferrals).
 - **Token cost matters.** A full 8-round iterate run can cost hundreds of specialist agent invocations. Include the cost estimate in the summary so the user can calibrate future runs. If a single iterate session has clearly run away (e.g., 10 rounds without convergence and the deferred list keeps growing), prefer to surface that to the user rather than continue silently.
-- **The checkpoint is the only human touchpoint.** Authors invoke iterate to NOT be in the loop. Do not use AskUserQuestion mid-iteration except for the consolidated end-of-loop checkpoint in Phase 4.
+- **The checkpoint is the only human touchpoint, and the command runs it.** Authors invoke iterate to NOT be in the loop. Never stop mid-loop for input; collect judgments and hand them over once, in Phase 4.
 - **Parallel where possible.** Reviewer and rewriter must run sequentially (rewriter depends on reviewer output). Within each, the orchestrators already parallelize their specialists. Do not try to parallelize across rounds.

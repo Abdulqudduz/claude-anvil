@@ -1,6 +1,6 @@
 ---
 name: structure-auditor
-description: "Audits pacing, tension, scene turns, thematic coherence, and arc trajectory. Internal specialist dispatched by the worldsmith reviewer orchestrator via Task; not intended for direct invocation."
+description: "Audits pacing, tension, scene turns, thematic coherence, and arc trajectory. Internal specialist dispatched by the worldsmith reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

@@ -109,7 +109,7 @@ Retry with: crier audit --retry   (replays recovery receipts; never double-posts
 
 - **Never auto-publish without explicit approval.** If the user doesn't respond clearly, abort.
 - **Group by post in the proposal**, not by platform. One item per post even if it's missing 4 platforms.
-- **If the count is large** (more than ~5 posts to publish, or more than ~15 platform actions), suggest dispatching the `cross-poster` agent instead: "That's 23 platform actions. Want me to dispatch the cross-poster agent to run autonomously, or step through each one with you?"
+- **If the count is large** (more than ~5 posts to publish, or more than ~15 platform actions), suggest dispatching the `cross-poster` agent instead: "That's 23 platform actions. Want me to dispatch the cross-poster agent to run autonomously, or step through each one with you?" When dispatching, pass the approved items × platforms (and any approved rewrites) as the explicit scope: the agent cannot ask questions, so it publishes exactly that and returns anything else under `## Decisions Needed` for you to put to the user.
 - **Skip already-posted platforms.** Don't propose re-posts. The MCP tools handle deduplication, but the proposal should never list "→ devto (already)" as an action.
 - **Quality bar for rewrites**: if the rewrite is bland or just summarizes the title, regenerate it. The user will catch this anyway, but you should catch it first.
 

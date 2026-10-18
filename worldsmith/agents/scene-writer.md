@@ -1,6 +1,6 @@
 ---
 name: scene-writer
-description: "Drafts prose scenes with craft discipline, documented character voices, and concrete sensory detail. Internal specialist dispatched by the worldsmith writer orchestrator via Task; not intended for direct invocation."
+description: "Drafts prose scenes with craft discipline, documented character voices, and concrete sensory detail. Internal specialist dispatched by the worldsmith writer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

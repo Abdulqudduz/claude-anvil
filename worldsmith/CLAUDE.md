@@ -11,7 +11,7 @@ Worldsmith is a Claude Code **plugin** for documentation-first fiction worldbuil
 ```
 .claude-plugin/plugin.json                       # Manifest (name, version, description)
 skills/worldsmith-methodology/SKILL.md            # Editorial methodology skill
-skills/worldsmith-methodology/references/          # Deep reference docs (propagation, doc structure)
+skills/worldsmith-methodology/references/          # Deep reference docs (propagation, doc structure, decision handoff)
 skills/prose-craft/SKILL.md                      # Prose craft rules (show-don't-tell, dialogue, scene structure)
 commands/{init-world,change,check,review,draft,revise,iterate,help}.md  # 8 slash commands
 agents/reviewer.md                                # Review orchestrator (spawns specialist auditors)
@@ -47,11 +47,11 @@ YAML frontmatter with `name`, `description` (trigger phrases for auto-detection)
 ### Agents (`agents/*.md`)
 Four orchestrators and seven specialists. YAML frontmatter with `name`, `description`, `tools` (list), `model: inherit`, and `color`. The four orchestrators carry rich descriptions with `<example>` blocks for auto-delegation; the seven specialists use a one-sentence description with no examples, because the orchestrators dispatch them by hardcoded name and every agent description loads into every session's context (see the root CLAUDE.md agent description policy).
 
-**Orchestrators** (spawn specialists via Task tool):
+**Orchestrators** (spawn specialists via the Agent tool):
 - **reviewer**: Multi-agent editorial review. Reads project context, launches 4 auditors in parallel, cross-verifies critical findings, synthesizes unified report to `.worldsmith/reviews/`.
-- **writer**: Multi-agent content generation. Plans assignments, launches specialists, integrates output, handles doc propagation.
-- **rewriter**: Multi-agent revision. Reads review findings, dispatches writer specialists to fix, then reviewer specialists to verify. Fix-then-verify feedback loop.
-- **iterator**: Autonomous review-fix-review loop. Composes reviewer and rewriter, drives toward convergence with regression and plateau detection, defers high-stake creative judgments to a single end-of-loop user checkpoint. Writes per-round artifacts to `.worldsmith/iterate/<timestamp>/`.
+- **writer**: Multi-agent content generation. Plans assignments, launches specialists, integrates output, handles doc propagation. Returns open creative choices (drafted provisionally) as Decisions Needed; a `<decisions>` relaunch runs a targeted Decision Pass.
+- **rewriter**: Multi-agent revision. Reads review findings, dispatches writer specialists to fix, then reviewer specialists to verify. Fix-then-verify feedback loop. Direct mode defers every needs-judgment finding to Decisions Needed; `final-revise` mode applies decided ones.
+- **iterator**: Autonomous review-fix-review loop. Composes reviewer and rewriter, drives toward convergence with regression and plateau detection. `loop` mode returns high-stake deferred judgments (persisting state to the session's `state.md`); `finalize` mode applies the author's answers and writes the summary. Writes per-round artifacts to `.worldsmith/iterate/<timestamp>/`.
 
 **Review specialists** (read-only, launched by reviewer):
 - **consistency-auditor** — Timeline, facts, character state, spatial contradictions
@@ -75,6 +75,10 @@ Two event types:
 - `scripts/count_patterns.py` — Python, reads pattern definitions from `scripts/patterns.md`. Projects can override by placing `patterns.md` in `.worldsmith/` at project root.
 - `scripts/patterns.md` — Default pattern list (crutch words, filter words, weak verbs, dialogue tags). Plain markdown, self-documenting, editable by Claude or by hand.
 - `hooks/scripts/detect-worldsmith-project.sh` — Bash, runs on SessionStart.
+
+### Decision handoff invariant
+
+No worldsmith agent asks the author anything: Claude Code removes `AskUserQuestion` from every subagent, even when it is listed in `tools`, so never add it to an agent. Judgment calls travel as data. Agents return a `## Decisions Needed` section (a `deferred-judgments` YAML block of question, 2-4 options with consequences, and a recommendation); the slash command, running in the main session, asks via `AskUserQuestion` and re-dispatches with the answers (`/worldsmith:revise` and `/worldsmith:draft` relaunch their orchestrator; `/worldsmith:iterate` runs the checkpoint between the iterator's `loop` and `finalize` launches). Specialists never block: they draft the recommended option marked PROVISIONAL. The format and the asking procedure are defined once in `skills/worldsmith-methodology/references/decision-handoff.md`, which agents and commands reference by `${CLAUDE_PLUGIN_ROOT}` path. Do not paste the schema into an agent: one definition, no copies to drift.
 
 ## Core Concepts
 
@@ -134,6 +138,6 @@ ls -la hooks/scripts/*.sh
 - Commands provide rules and awareness, not rigid step-by-step scripts — Claude Code is the intelligence layer
 - Skills are lean (~2000 words max) with detailed content in `references/`
 - Review specialists are strictly read-only — only Read/Grep/Glob tools (craft-auditor also gets Bash)
-- Orchestrators coordinate specialists via Task tool — don't add Task to specialist tool lists
+- Orchestrators coordinate specialists via the Agent tool; don't add Agent to specialist tool lists
 - Hook prompts are carefully worded to avoid false positives on non-worldbuilding edits
 - When editing propagation-related content, check both `references/propagation-awareness.md` and `hooks/hooks.json`

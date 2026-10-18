@@ -30,7 +30,7 @@ Or, if you have the monorepo cloned locally and want to install from the working
 
 (The marketplace name is `queelius` regardless of how you added it.)
 
-**Required co-installation:** the `soul` plugin from the same marketplace, for the soul-voice hook (banned-phrase enforcement). The marketplace does not auto-install dependencies, so install `soul` explicitly. The macro-leak hook ships with bookwright itself.
+**Required co-installation:** the `soul` plugin, for the soul-voice hook (banned-phrase enforcement). It ships from its own marketplace, not this one, so install it explicitly: `/plugin marketplace add queelius/soul` then `/plugin install soul@soul`. The macro-leak hook ships with bookwright itself.
 
 ## What's Included
 

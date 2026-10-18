@@ -131,6 +131,8 @@ The review skill (`/papermill:review`) launches a multi-agent review orchestrate
 
 The revise skill (`/papermill:revise`) launches the `reviser` orchestrator on an existing review report. It parses the unified report's findings, fixes mechanical items directly, dispatches the four section writers for technical rewrites (routed by the finding's source specialist), verifies every Critical/Major fix with the review specialist that owns that domain, and writes `revision.md` next to the source `review.md`. The skill then stamps the matching review_history entry with `revised` + `findings_fixed`, which the status dashboard uses to compute remaining unresolved findings. Reviews diagnose; revisions repair; a follow-up review confirms.
 
+**Decision handoff invariant.** No papermill agent asks the author anything: Claude Code removes `AskUserQuestion` from every subagent, even when listed in `tools`, so never add it to an agent. Judgment calls travel as data. The reviser returns a machine-readable `decisions-needed` YAML block; the revise skill (main session) asks via AskUserQuestion and relaunches the reviser with `<decisions>`, which fixes, verifies, and appends only those findings to the same `revision.md`. Follow the same pattern for any future agent that needs the author's judgment.
+
 ## Typical Workflow
 
 ```

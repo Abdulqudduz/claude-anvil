@@ -1,6 +1,6 @@
 ---
 name: source-reformulator
-description: "Reformulates source-paper content into fresh pedagogical prose as input for section drafting. Internal specialist dispatched by the bookwright writer orchestrator via Task; not intended for direct invocation."
+description: "Reformulates source-paper content into fresh pedagogical prose as input for section drafting. Internal specialist dispatched by the bookwright writer orchestrator via the Agent tool; not intended for direct invocation."
 tools: Read, Glob, Grep
 model: inherit
 color: magenta

@@ -31,7 +31,7 @@ tools:
   - Glob
   - Grep
   - Bash
-  - Task
+  - Agent
 model: inherit
 color: red
 ---
@@ -64,7 +64,7 @@ Without `<delta-scope>`, review the full scope as normal.
 
 ## Available Agents
 
-Launch these via Task tool. Each receives the manuscript and project context via XML tags in the prompt.
+Launch these via the Agent tool. Each receives the manuscript and project context via XML tags in the prompt.
 
 | Agent | Type | Purpose |
 |-------|------|---------|
@@ -94,7 +94,7 @@ This comprehension drives what you tell each specialist. Do not proceed to Phase
 
 ### Phase 2: Parallel Specialist Review
 
-Launch ALL 4 specialists in parallel via Task tool — a single message with 4 tool calls.
+Launch ALL 4 specialists in parallel via the Agent tool — a single message with 4 tool calls.
 
 For EACH specialist, construct the prompt with XML-tagged context. Pass **complete documents**, not summaries (see Context Strategy above):
 

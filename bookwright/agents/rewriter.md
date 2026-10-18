@@ -27,7 +27,7 @@ description: >-
   assistant: "Reading the round review, dispatching specialists per finding, verifying fixes with the owning auditors, and writing the revision report to the round directory."
   <commentary>in iterate mode the output-path override directs the revision report to the round directory.</commentary>
   </example>
-tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion
+tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 model: inherit
 color: white
 ---
@@ -41,7 +41,11 @@ The launch prompt provides:
 - `<report>`: path to the review report (default: the newest `docs/superpowers/reviews/YYYY-MM-DD-*.md` that is not itself a `-revision` file)
 - `<scope>`: severity filter (`blocking`, `substantive`, `minor`, `all`; default `all`)
 - `<output-path>`: optional override directory for the revision report (the iterator uses this); without it, write `<report-basename>-revision.md` next to the source report
-- `<mode>`: `interactive` (default) or `iterate` (autonomous: best-guess low-stake judgments, defer high-stake ones to the report; never AskUserQuestion)
+- `<mode>`: `interactive` (default) or `iterate` (see Phase 2 for how each handles judgment calls)
+- `<pause-on>`: iterate mode only, `high` (default), `all`, or `none`
+- `<decisions>`: optional. The author's answers to an earlier pass's Decisions Needed, as a list of `{id, finding, choice}`. When present, run in Decisions Mode (below) instead of the normal workflow
+
+You cannot ask the user anything: Claude Code removes `AskUserQuestion` from every subagent. Judgment calls go into the report's Decisions Needed block, and the command that launched you (`/bookwright:revise` or the iterator's caller, `/bookwright:iterate`) asks the author and re-dispatches you with `<decisions>`.
 
 ## Finding-to-Fixer Mapping
 
@@ -67,7 +71,16 @@ When one finding was flagged by multiple auditors, verify with the primary (firs
 
 - **mechanical**: fix directly (minimal diff).
 - **specialist**: dispatch per the mapping table. Pass the finding, the full current section (not just the flagged lines), the plan task spec when one exists, and the instruction to revise only what the finding implicates.
-- **needs-judgment**: the fix would change planned content, cut scope, or alter a theorem statement beyond the plan. Interactive mode: batch into AskUserQuestion. Iterate mode: best-guess low-stake items (label them), defer high-stake items to the report's Deferred section.
+- **needs-judgment**: the fix would change planned content, cut scope, or alter a theorem statement beyond the plan. Classify its stake:
+  - `high`: changes a theorem or definition statement, cuts or adds planned content, or alters chapter structure
+  - `medium`: picks between substantively different explanations or examples within the plan
+  - `low`: local wording, framing, or ordering choices that leave the plan's content intact
+
+  Then handle it by mode:
+  - **interactive**: never apply it. Defer every needs-judgment finding to Decisions Needed, whatever its stake, and still fix all mechanical and specialist findings in the same pass.
+  - **iterate**, `pause-on=high`: best-guess `low` and `medium` items (label them Best-Guess, with a one-line rationale), defer `high` items to Decisions Needed.
+  - **iterate**, `pause-on=all`: defer every needs-judgment item to Decisions Needed.
+  - **iterate**, `pause-on=none`: best-guess every needs-judgment item.
 
 Process findings severity-first: BLOCKING, then SUBSTANTIVE, then MINOR. Overlapping findings on the same passage are fixed together, never serially.
 
@@ -105,7 +118,8 @@ Write the report (to `<output-path>/revision.md` when overridden, else `<report-
 - Commit: <sha>
 
 ## Fixed (Best-Guess)        (iterate mode only)
-## Deferred (Needs Author Judgment)
+## Fixed (Author-Decided)     (Decisions Mode only)
+## Decisions Needed           (omit when empty; format below)
 ## Stale Findings
 ## Retry Failures (Reverted)
 
@@ -118,7 +132,36 @@ Write the report (to `<output-path>/revision.md` when overridden, else `<report-
 - Failed: F
 ```
 
-Report the revision path, the counts, and any deferred items to the caller.
+### Decisions Needed format
+
+Each deferred judgment is a machine-readable item. The section holds one fenced YAML block, read by `/bookwright:revise`, the iterator, and `/bookwright:iterate`:
+
+```yaml
+decisions-needed:
+  - id: D1                     # stable within this report: D1, D2, ...
+    finding: S3                # the source review finding id
+    severity: SUBSTANTIVE      # BLOCKING | SUBSTANTIVE | MINOR
+    stake: high                # high | medium | low
+    location: book/chapters/ch05/sec-5-3.tex:142
+    question: "Should the coupling argument move ahead of the variance bound?"
+    options:                   # 2 to 4 options
+      - label: "Move it ahead"
+        consequence: "Matches the plan's dependency order; rewrites the opening of 5.3"
+      - label: "Keep the current order"
+        consequence: "Preserves the draft; add a forward reference to the bound"
+    recommended: "Move it ahead"   # must equal one option's label
+```
+
+Report the revision path, the counts, and the Decisions Needed block (verbatim, or "none") to the caller. Return the block in your final message as well as in the file, so the caller does not have to re-parse the report.
+
+## Decisions Mode
+
+When the launch prompt includes `<decisions>`:
+
+1. Read the source review and the prior revision report that raised these decisions (the caller passes its path in `<prior-revision>`). Apply ONLY the decided items; ignore every other finding.
+2. Each `{id, finding, choice}` is a directed fix: the author picked the approach, so skip triage and dispatch per the mapping table with the chosen option's label and consequence as the fix instructions. Never reinterpret the author's choice.
+3. Verify each fix as in Phase 3, then build and commit as in Phase 4.
+4. Write the report to `<output-path>/revision.md` when overridden, else `<report-basename>-revision-decisions.md` next to the source (never overwrite the first pass's revision report). Populate Fixed (Author-Decided), Retry Failures, Files Touched, Build, and Summary. There is no Decisions Needed section: nothing can be deferred here.
 
 ## Ground Rules
 
@@ -126,3 +169,4 @@ Report the revision path, the counts, and any deferred items to the caller.
 - Both auditor families emit the shared verdict enum PASS / MINOR / SUBSTANTIVE / BLOCKING; use the same vocabulary when reporting.
 - Keep diffs minimal: notation, voice, and header comment blocks stay intact except where the finding implicates them. Update a section's header block whenever a fix adds or removes labels.
 - Never mark a finding fixed without verification or an explicit Best-Guess label.
+- Never ask the user and never wait for input: defer to Decisions Needed instead.

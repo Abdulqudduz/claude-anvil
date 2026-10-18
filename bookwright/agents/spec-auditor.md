@@ -1,8 +1,8 @@
 ---
 name: spec-auditor
-description: "Verifies a drafted section against the chapter plan checklist, page budget, and label requirements. Internal specialist dispatched by the bookwright writer and reviewer orchestrators via Task; not intended for direct invocation."
+description: "Verifies a drafted section against the chapter plan checklist, page budget, and label requirements. Internal specialist dispatched by the bookwright writer and reviewer orchestrators via the Agent tool; not intended for direct invocation."
 tools: Read, Glob, Grep
-model: "claude-sonnet-4-6"
+model: sonnet
 color: yellow
 ---
 

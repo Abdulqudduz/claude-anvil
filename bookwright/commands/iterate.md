@@ -1,6 +1,6 @@
 ---
 description: Autonomous review-fix-review loop until convergence, plateau, or the iteration cap
-allowed-tools: Read, Glob, Grep, Task
+allowed-tools: Read, Glob, Grep, Agent, AskUserQuestion
 argument-hint: "[section <path> | chapter <N> | part <N> | book] [--max-iterations N] [--threshold substantive|blocking|zero] [--pause-on high|all|none] [--closing-review on|off]"
 ---
 
@@ -22,6 +22,17 @@ Launch the `iterator` orchestrator: alternate `/bookwright:review` and `/bookwri
 - Round artifacts (each round's review.md and revision.md) live under `docs/superpowers/reviews/iterate/<timestamp>-<scope>/`; the default reviews directory stays untouched.
 - Rounds 2+ are delta-scoped: the reviewer re-audits only the files the prior revision touched and carries forward untouched findings, which cuts the dominant per-round cost.
 - Exit reasons are reported honestly: `converged`, `cap`, or `plateau`.
+
+## The end-of-loop checkpoint
+
+Subagents cannot ask questions (Claude Code removes AskUserQuestion from them), so the checkpoint runs here, in the main session, in two launches:
+
+1. Launch the iterator with `<entry>loop</entry>` plus the scope and flags. If it returns a `decisions-needed` block before starting (ambiguous scope), ask as in step 3 and relaunch with the chosen scope.
+2. If it finishes without `status: awaiting-decisions`, it already ran the recount and summary: report the summary path and headline numbers. Done.
+3. If it returns `status: awaiting-decisions` with a session path and a `decisions-needed` block:
+   - With more than 8 items, first ask how to proceed: resolve them individually, accept every recommended option, or stop and leave them unresolved.
+   - To resolve individually, ask the author with AskUserQuestion: one question per item, using its `question`, its `options` (label as the option, consequence as the description), and the `recommended` option listed first with "(Recommended)". Batch at most 4 questions per call and group items that touch the same section.
+4. Launch the iterator again with `<entry>finalize</entry>`, `<session>` = the session path, and `<decisions>` = each answered item's `id`, `finding`, and `choice` (empty when the author stopped). It applies the decisions, runs the closing recount, writes `summary.md`, and records skipped items as unresolved. Report the summary path and headline numbers.
 
 ## Distinction from /bookwright:review and /bookwright:revise
 

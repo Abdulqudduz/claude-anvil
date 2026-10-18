@@ -28,7 +28,7 @@ description: >-
   assistant: "I'll launch the writer orchestrator with the chapter 7 review report as input, re-dispatch section-writer per finding to apply the fix, then re-run the relevant auditors to verify each fix."
   <commentary>writer handles the fix loop when given a review report rather than a plan section.</commentary>
   </example>
-tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion
+tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 model: inherit
 color: blue
 ---
@@ -50,11 +50,13 @@ Also read:
 - `docs/superpowers/bookwright.config.yaml` for project-level settings (stack, macro package, etc.)
 - The two or three sections immediately preceding the target chapter for voice continuity
 
-If the scope is ambiguous (chapter number, which plan file, single section vs. full chapter), use AskUserQuestion before proceeding.
+If the launch prompt includes `<decisions>`, they resolve an earlier scope question: apply them and continue.
+
+Otherwise, if the scope is ambiguous (chapter number, which plan file, single section vs. full chapter), stop before dispatching anything and return a `## Decisions Needed` section: one fenced `decisions-needed` YAML block (format in `${CLAUDE_PLUGIN_ROOT}/agents/rewriter.md`; omit `finding`, `severity`, `stake`, and `location` for scope questions) whose options are the concrete candidates you found with Glob, with your best match as `recommended`. You cannot ask the user yourself (Claude Code removes `AskUserQuestion` from every subagent); `/bookwright:draft` asks and relaunches you with `<decisions>`. Never guess a scope and draft against it.
 
 ### Phase 2: Dispatch Drafting Specialists
 
-For each section task in the plan, dispatch the appropriate specialist via Task:
+For each section task in the plan, dispatch the appropriate specialist via the Agent tool:
 
 | Task type | Specialist |
 |-----------|-----------|
@@ -66,7 +68,7 @@ Pass the full task spec from the plan, the relevant surrounding context, and any
 
 ### Phase 3: Audit in Parallel
 
-After each section is drafted and committed, dispatch `bookwright:spec-auditor` and `bookwright:quality-auditor` simultaneously via two Task calls in the same turn. Pass the drafted file path and the plan task spec to spec-auditor; pass only the drafted file path to quality-auditor (it reads cold).
+After each section is drafted and committed, dispatch `bookwright:spec-auditor` and `bookwright:quality-auditor` simultaneously via two Agent calls in the same turn. Pass the drafted file path and the plan task spec to spec-auditor; pass only the drafted file path to quality-auditor (it reads cold).
 
 ### Phase 4: Fix Loop
 

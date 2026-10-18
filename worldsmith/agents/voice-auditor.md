@@ -1,6 +1,6 @@
 ---
 name: voice-auditor
-description: "Verifies character voice consistency, dialogue distinctiveness, and POV discipline against character docs. Internal specialist dispatched by the worldsmith reviewer orchestrator via Task; not intended for direct invocation."
+description: "Verifies character voice consistency, dialogue distinctiveness, and POV discipline against character docs. Internal specialist dispatched by the worldsmith reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

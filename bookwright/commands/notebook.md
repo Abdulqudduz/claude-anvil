@@ -1,6 +1,6 @@
 ---
 description: Draft and execute the paired notebook for a chapter (separable from prose drafting)
-allowed-tools: Read, Write, Bash, Glob, Task
+allowed-tools: Read, Write, Bash, Glob, Agent
 argument-hint: "<chapter-name-or-number>"
 ---
 
