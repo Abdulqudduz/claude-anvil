@@ -17,9 +17,9 @@ kdp:
     name: null                         # series name, if part of a series
     volume: null                       # volume/book number
   trim_size: "5.5x8.5"                # fiction default; "6x9" for nonfiction
-  paper_type: "cream"                  # "cream" for fiction, "white" for technical/nonfiction
+  paper_type: "cream"                  # cream | white | groundwood (black ink); standard_color | premium_color (color on white)
   target: "both"                       # "ebook", "paperback", or "both"
-  categories: []                       # BISAC codes (populated by /kdp-listing)
+  categories: []                       # Amazon browse category paths, 3 per format (populated by /kdp-listing)
   keywords: []                         # up to 7 phrases (populated by /kdp-listing)
   blurb: ""                            # Amazon description (populated by /kdp-listing)
   author_bio: ""                       # genre-appropriate bio (populated by /kdp-listing)

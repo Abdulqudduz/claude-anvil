@@ -56,7 +56,7 @@ If the file is missing, inform the user and offer to create one from the templat
 Verify the manuscript meets KDP interior requirements. Full specs are in `${CLAUDE_PLUGIN_ROOT}/docs/kdp-reference.md` (Interior Formatting section); read it and check the manuscript against:
 
 - **Trim size**: look for margin or geometry declarations (Grep tool); verify it matches a KDP-supported size (common for nonfiction 6x9, fiction 5.5x8.5 or 5x8, textbooks 7x10 or 8.5x11)
-- **Margins**: inside margin grows with page count (formula `0.375" + page_count / 1000 * 0.125"`), outside at least 0.25", gutter at least 0.5" for 150+ pages
+- **Margins**: inside (gutter) margin steps up with page count per KDP's table: 0.375" (24-150 pages), 0.5" (151-300), 0.625" (301-500), 0.75" (501-700), 0.875" (701-828); outside margins at least 0.25", or 0.375" with bleed
 - **Fonts**: must be embedded; standard fonts preferred (Times New Roman, Garamond, Arial, Courier); minimum 7pt
 - **Page numbers**: start after front matter, consistent placement
 - **Table of Contents**: present and functional, hyperlinked in eBook, typically 2 to 3 levels deep
@@ -73,7 +73,7 @@ Verify covers meet KDP requirements. Full specs are in `${CLAUDE_PLUGIN_ROOT}/do
 - If `identify` (ImageMagick) is available: `identify -format "%wx%h" cover.jpg`
 - Otherwise: `file cover.jpg` often reports dimensions
 - eBook cover: recommended 1600x2560 pixels (W x H, ratio 1:1.6; hard minimum 1000 px on the longest side), RGB, JPEG or TIFF, under 50MB
-- Paperback cover PDF: minimum 300 DPI, spine width `page_count * 0.002252"` (white paper) or `0.0025"` (cream)
+- Paperback cover: a single PDF (back, spine, front), CMYK images, minimum 300 DPI; spine width = `page_count` × per-page rate for the paper type: white 0.002252", cream 0.0025", groundwood 0.00235", standard color 0.002252", premium color 0.002347"
 
 **Cover content requirements**: title readable at thumbnail size, author name present, high contrast, no prohibited content. Report actual vs. required dimensions. If cover files are absent, flag as a critical gap.
 
@@ -85,7 +85,7 @@ Grep manuscript front matter and the user config for:
 
 - Title, subtitle (each up to 200 chars), series info
 - Description or blurb (up to 4000 chars, HTML allowed)
-- Up to 3 BISAC categories
+- 3 Amazon categories per format
 - Up to 7 keywords
 - Author bio (100 to 200 words recommended)
 - Language, pricing, territories, DRM setting, ISBN decision
@@ -199,7 +199,7 @@ Use the template at `${CLAUDE_PLUGIN_ROOT}/docs/audit-report-template.md` as the
 After presenting the report, offer to fix issues that can be automated:
 - Add missing front matter sections (copyright page, title page templates)
 - Fix LaTeX margin settings via `geometry` package
-- Generate BISAC category suggestions based on content
+- Generate Amazon category suggestions based on content
 - Create author bio template
 - Add missing TOC entries
 - Fix scene break markers

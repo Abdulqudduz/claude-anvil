@@ -230,40 +230,35 @@ Avoid keyword research tools that encourage stuffing or gaming. The goal is disc
 
 ### The Niche-vs-Broad Trade-off
 
-Amazon allows 2 categories at submission (3 for print). You can request up to 10 total by contacting KDP support after publication. The strategic question is depth: a narrower category has fewer competitors but also fewer browsers.
+KDP lets you choose 3 Amazon categories per format, and KDP Support no longer adds more ([Categories](https://kdp.amazon.com/en_US/help/topic/G200652170)). The strategic question is depth: a narrower category has fewer competitors but also fewer browsers.
 
-**Rule of thumb:** Go as specific as BISAC allows. You automatically appear in every parent category above your selection. Choosing "Fiction > Fantasy > Epic" places you in three browse paths (Epic, Fantasy, and Fiction) — choosing just "Fiction > Fantasy" only gives you two.
+**Rule of thumb:** Go as specific as the category tree allows. You automatically appear in every parent category above your selection. Choosing "Fiction > Fantasy > Epic" places you in three browse paths (Epic, Fantasy, and Fiction); choosing just "Fiction > Fantasy" only gives you two.
 
-### Example BISAC Paths
+### Example Category Paths
 
 **Fantasy novel with political intrigue:**
 - Primary: Fiction > Fantasy > Epic
 - Secondary: Fiction > Fantasy > Action & Adventure
-- Post-publish request: Fiction > Political
+- Third: Fiction > Political
 
 **Psychological thriller:**
 - Primary: Fiction > Thrillers > Psychological
 - Secondary: Fiction > Thrillers > Suspense
-- Post-publish request: Fiction > Mystery & Detective > Women Sleuths (if applicable)
+- Third: Fiction > Mystery & Detective > Women Sleuths (if applicable)
 
 **Literary fiction about family:**
 - Primary: Fiction > Literary
 - Secondary: Fiction > Family Life > General
-- Post-publish request: Fiction > Small Town & Rural
+- Third: Fiction > Small Town & Rural
 
 **Hard science fiction:**
 - Primary: Fiction > Science Fiction > Hard Science Fiction
 - Secondary: Fiction > Science Fiction > First Contact
-- Post-publish request: Fiction > Science Fiction > Space Exploration
+- Third: Fiction > Science Fiction > Space Exploration
 
-### Post-Publish Category Requests
+### Changing Categories After Publication
 
-After your book is live, contact KDP support to add categories beyond the initial 2-3. This is a standard, supported workflow — not a hack. Provide:
-- Your book's ASIN
-- The specific BISAC category paths you want added
-- Brief justification for fit
-
-Most requests are approved within 48 hours. Aim for 5-8 total categories that genuinely describe your book. Adding irrelevant categories to game rankings risks a metadata review.
+The old route of emailing KDP support for up to 10 categories is gone: each format has 3 self-selected slots. If a category underperforms, swap it in the KDP dashboard for a better-fitting one. Choosing categories the book doesn't genuinely fit, to game rankings, risks a metadata review.
 
 ### Series and Category Alignment
 

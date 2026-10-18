@@ -34,7 +34,7 @@ Canonical structure for the gap report produced by the `kdp-audit` skill. Use th
 ## Metadata
 - [ ] or [x] Title and subtitle
 - [ ] or [x] Description/blurb (<4000 chars)
-- [ ] or [x] Categories (up to 3 BISAC codes)
+- [ ] or [x] Categories (3 Amazon categories per format)
 - [ ] or [x] Keywords (up to 7)
 - [ ] or [x] Author bio present
 

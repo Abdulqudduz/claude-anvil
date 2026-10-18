@@ -2,7 +2,7 @@
 name: kdp-listing
 description: >-
   Craft the four marketing artifacts for an Amazon KDP listing: blurb
-  (with HTML formatting), keywords, BISAC categories, and author bio.
+  (with HTML formatting), keywords, Amazon categories, and author bio.
   Reads manuscript context to generate variants, then saves outputs to
   the user config. These four artifacts determine discoverability and
   conversion on Amazon.
@@ -10,7 +10,7 @@ description: >-
 
 # KDP Listing Craft
 
-Generate the four marketing artifacts for an Amazon KDP listing: blurb (book description), keywords, BISAC categories, and author bio. This skill gathers just enough context about the book to write effective marketing copy, then saves all artifacts to the user's project config.
+Generate the four marketing artifacts for an Amazon KDP listing: blurb (book description), keywords, Amazon categories, and author bio. This skill gathers just enough context about the book to write effective marketing copy, then saves all artifacts to the user's project config.
 
 ## Workflow
 
@@ -20,7 +20,7 @@ Read `.claude/kdp.local.md` if it exists (Read tool). Extract the `kdp` section 
 
 - `kdp.blurb` — existing blurb draft (if any)
 - `kdp.keywords` — existing keyword list
-- `kdp.categories` — existing BISAC categories
+- `kdp.categories`: existing Amazon categories
 - `kdp.author_bio` — existing bio
 - `kdp.pen_name` — pen name (if different from `author.name`)
 - `kdp.series` — series name and volume number
@@ -108,18 +108,18 @@ Consult the exemplars reference doc for effective keyword patterns and TOS bound
 
 **Present recommendations** with reasoning for each keyword. Explain what search behavior each phrase targets. Let the user adjust, swap, or reorder.
 
-### 5. BISAC Categories (Up to 3)
+### 5. Amazon Categories (3 per format)
 
-Amazon uses BISAC (Book Industry Standards and Advisory Committee) codes for browse classification. Select 2 categories at setup (3 for print books). After publication, request up to 10 total via KDP support.
+KDP uses Amazon's own browse categories (not BISAC codes). Choose 3 categories yourself when setting up each format; some categories aren't offered for every format, and KDP Support does not add extra ones ([Categories](https://kdp.amazon.com/en_US/help/topic/G200652170)).
 
 **Consult exemplars** (Read tool):
-Consult the exemplars reference doc for example BISAC paths and the niche-vs-broad trade-off.
+Consult the exemplars reference doc for example category paths and the niche-vs-broad trade-off.
 
 **Recommend specific subcategories** over broad top-level categories. Choosing "Fiction > Fantasy > Epic" places the book in three browse paths (Epic, Fantasy, Fiction), while choosing just "Fiction > Fantasy" gives only two.
 
 **Explain the niche-vs-broad trade-off**: Narrow categories have fewer competitors but also fewer browsers. The goal is to rank in a category where the book can reach the top 20, which earns visibility on the category page.
 
-**Present 2-3 primary recommendations** plus 2-3 post-publish expansion candidates. For each, explain why the book fits and what the competitive landscape looks like.
+**Present 3 recommendations per format** plus 1-2 alternates to swap in later if a category underperforms. For each, explain why the book fits and what the competitive landscape looks like.
 
 ### 6. Author Bio
 
@@ -151,7 +151,7 @@ Consult the exemplars reference doc for genre conventions and annotated bio exam
 - Volume number (e.g., "Book 1")
 - Whether earlier volumes are already published
 
-**If part of a series**, note that all books in the series should share at least one BISAC category to keep them grouped in browse results and strengthen the series page.
+**If part of a series**, note that all books in the series should share at least one Amazon category to keep them grouped in browse results and strengthen the series page.
 
 ### 8. Save Artifacts
 

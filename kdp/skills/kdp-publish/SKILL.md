@@ -80,7 +80,7 @@ If critical gaps are found:
 Run `/kdp-listing` to generate the four marketing artifacts:
 - Blurb (book description, max 4000 characters with HTML formatting)
 - Keywords (7 keyword phrases for Amazon search)
-- BISAC categories (2-3 browse categories)
+- Amazon categories (3 per format)
 - Author bio (for the product page and Author Central)
 
 The listing skill reads manuscript context, generates drafts, iterates with the user, and saves all artifacts to `.claude/kdp.local.md`.
@@ -196,7 +196,8 @@ Automate the KDP dashboard submission using browser automation. This phase reads
    - Description: paste `kdp.blurb` from config
    - Publishing rights: select "I own the copyright" (confirm with user if uncertain)
    - Keywords: fill the 7 keyword slots from `kdp.keywords`
-   - Categories: select the BISAC categories from `kdp.categories`
+   - Categories: select the 3 Amazon categories from `kdp.categories`
+   - AI-generated content: KDP asks whether the book contains AI-generated text, images, or translations. Answer truthfully and confirm with the user. Covers produced in Phase 5 with `kdp_generate_cover` / `kdp_generate_full_wrap` are AI-generated images and must be disclosed; AI-assisted editing of the author's own text does not need disclosure ([Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390))
    - Age/grade range: skip for adult books, fill for children's/YA
 
 5. **Upload manuscript** (Playwright MCP: browser_snapshot, browser_file_upload): Upload the manuscript file from `kdp.manuscript.path`. Take a snapshot to locate the upload control, then use file upload. Wait for the upload and conversion to complete (this may take 30 seconds to 5 minutes).
@@ -227,8 +228,8 @@ Semi-automated pricing setup. Present options conversationally, then fill the pr
 1. **Present pricing options** (Read tool): Load genre-specific price recommendations from `${CLAUDE_PLUGIN_ROOT}/docs/kdp-reference.md`. Present the user with a conversational summary:
 
    - **Royalty tier choice** (eBook only):
-     - 70% royalty: price must be $2.99-$9.99, delivery cost deducted (~$0.10-$0.30 based on file size). Best for most books.
-     - 35% royalty: any price $0.99+, no delivery cost. Use for short works, loss leaders, or prices outside the 70% range.
+     - 70% royalty: price must be $2.99-$12.99 on Amazon.com (the ceiling rose from $9.99 on July 7, 2026), delivery cost deducted by file size. Best for most books.
+     - 35% royalty: up to $200, minimum $0.99 / $1.99 / $2.99 depending on file size (under 3 MB / 3-10 MB / 10 MB+), no delivery cost. Use for short works, loss leaders, or prices outside the 70% range.
 
    - **KDP Select enrollment**:
      - Exclusive to Amazon for 90 days (auto-renews). Cannot sell eBook on other platforms during enrollment.
@@ -291,7 +292,7 @@ For complete KDP requirements, formatting guidelines, and exemplar listings:
 - Run `/kdp-audit` or `/kdp-listing` independently for a specific step without the full pipeline.
 - KDP Select is a 90-day exclusive commitment -- the eBook cannot be sold on other platforms during enrollment.
 - KDP is free to use. Amazon takes a percentage via the royalty split (30% or 65% depending on tier).
-- Royalties are paid monthly, ~60 days after month-end. Minimum threshold: $100 (direct deposit).
+- Royalties are paid monthly, ~60 days after month-end. No minimum for direct deposit (EFT); $100 for wire or check on Amazon.com.
 - Paperbacks are print-on-demand. No inventory, no upfront printing costs.
 - ISBN is not required. KDP provides a free ASIN for eBooks and a free ISBN for paperbacks. A custom ISBN is useful for distribution beyond Amazon.
 - Manuscript updates post-publication take 24-72 hours to propagate.

@@ -4,6 +4,7 @@ import {
   calculateCoverDimensions,
   contrastRatio,
   ensureContrast,
+  PAPER_TYPES,
 } from "../lib/cover-layout.js";
 
 describe("calculateSpineWidth", () => {
@@ -20,6 +21,26 @@ describe("calculateSpineWidth", () => {
   it("calculates minimum page count spine width", () => {
     const result = calculateSpineWidth(24, "white");
     expect(result).toBeCloseTo(0.054, 3);
+  });
+
+  // Rates from KDP's "Create a Paperback Cover" (G201953020) and
+  // "Paperback Submission Guidelines" (G201857950) help pages.
+  it("calculates groundwood paper spine width", () => {
+    expect(calculateSpineWidth(300, "groundwood")).toBeCloseTo(0.705, 4);
+  });
+
+  it("calculates standard color paper spine width", () => {
+    expect(calculateSpineWidth(300, "standard_color")).toBeCloseTo(0.6756, 4);
+  });
+
+  it("calculates premium color paper spine width", () => {
+    expect(calculateSpineWidth(300, "premium_color")).toBeCloseTo(0.7041, 4);
+  });
+
+  it("exposes every paper type that has a spine rate, and no others", () => {
+    expect([...PAPER_TYPES].sort()).toEqual(
+      ["cream", "groundwood", "premium_color", "standard_color", "white"],
+    );
   });
 });
 

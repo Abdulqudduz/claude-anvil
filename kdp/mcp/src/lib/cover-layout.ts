@@ -1,6 +1,14 @@
+// Spine width per page, in inches, by paperback paper type. Single source of
+// truth: PaperType and the MCP tools' paper_type enums derive from these keys.
+// Source: KDP "Create a Paperback Cover" (G201953020) and "Paperback
+// Submission Guidelines" (G201857950). Groundwood is black-ink only; the two
+// color types print on white paper.
 const PAPER_MULTIPLIER = {
   white: 0.002252,
   cream: 0.0025,
+  groundwood: 0.00235,
+  standard_color: 0.002252,
+  premium_color: 0.002347,
 } as const;
 
 const BLEED_INCHES = 0.125;
@@ -10,7 +18,13 @@ const DPI = 300;
 // cream: 120+); the KDP hard floor for spine text is 79 pages.
 export const SPINE_TEXT_MIN_WIDTH_INCHES = 0.3;
 
-export type PaperType = "white" | "cream";
+export type PaperType = keyof typeof PAPER_MULTIPLIER;
+
+// Non-empty tuple so zod's z.enum() accepts it directly.
+export const PAPER_TYPES = Object.keys(PAPER_MULTIPLIER) as [
+  PaperType,
+  ...PaperType[],
+];
 
 export interface Zone {
   x: number;

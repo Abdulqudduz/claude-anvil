@@ -36,24 +36,17 @@
 - [ ] 8.5" × 8.5" — square format for art/photo books
 
 #### Margin Requirements (Paperback)
-Margins vary by **page count** and **binding type**:
+Minimum margins depend on **page count** and on whether the book uses **bleed**. KDP publishes one table for all ink types ([Set Trim Size, Bleed, and Margins](https://kdp.amazon.com/en_US/help/topic/GVBQ3CMEQW3W2VL6)):
 
-**Black & White Interior**:
-- 24-150 pages: Inside 0.375", Outside 0.25", Top/Bottom 0.25"
-- 151-300 pages: Inside 0.5", Outside 0.25", Top/Bottom 0.25"
-- 301-500 pages: Inside 0.625", Outside 0.25", Top/Bottom 0.25"
-- 501-700 pages: Inside 0.75", Outside 0.25", Top/Bottom 0.25"
-- 701-828 pages: Inside 0.875", Outside 0.25", Top/Bottom 0.25"
+| Page count | Inside (gutter) | Outside, no bleed | Outside, with bleed |
+|---|---|---|---|
+| 24-150 | 0.375" | at least 0.25" | at least 0.375" |
+| 151-300 | 0.5" | at least 0.25" | at least 0.375" |
+| 301-500 | 0.625" | at least 0.25" | at least 0.375" |
+| 501-700 | 0.75" | at least 0.25" | at least 0.375" |
+| 701-828 | 0.875" | at least 0.25" | at least 0.375" |
 
-**Color Interior** (same pattern, higher inside margins):
-- 24-150 pages: Inside 0.5", Outside 0.25", Top/Bottom 0.25"
-- 151-300 pages: Inside 0.625", Outside 0.25", Top/Bottom 0.25"
-- 301-500 pages: Inside 0.75", Outside 0.25", Top/Bottom 0.25"
-- 501-700 pages: Inside 0.875", Outside 0.25", Top/Bottom 0.25"
-- 701-828 pages: Inside 1.0", Outside 0.25", Top/Bottom 0.25"
-
-**Formula**: Inside margin = 0.375" + (0.125" per 150 pages) for B&W
-Inside margin = 0.5" + (0.125" per 150 pages) for Color
+"Outside" covers the top, bottom, and outer edge. These are minimums; many designers add more.
 
 - [ ] **Bleed**: Add 0.125" bleed if using images/backgrounds extending to edge
 - [ ] **Safe zone**: Keep all text 0.125" inside trim edge
@@ -96,17 +89,23 @@ Inside margin = 0.5" + (0.125" per 150 pages) for Color
 - [ ] **Borders**: Avoid white borders (looks like part of page background)
 
 #### Paperback Cover
+Source: [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020), [Paperback Submission Guidelines](https://kdp.amazon.com/en_US/help/topic/G201857950).
+
+- [ ] **File format**: A single PDF containing back cover, spine, and front cover as one image (Cover Creator is the alternative, and accepts JPG/PNG/GIF art). Maximum 650 MB
+- [ ] **Color mode**: CMYK images; avoid mixing color spaces in one file and don't embed color profiles (KDP strips them)
 - [ ] **Resolution**: 300 DPI minimum
-- [ ] **Color mode**: RGB (KDP converts to CMYK for printing)
-- [ ] **File format**: PDF (preferred) or TIFF/JPEG for simple covers
-- [ ] **Bleed**: Add 0.125" bleed on all sides (extends beyond trim)
-- [ ] **Safe zone**: Keep critical text/elements 0.125" inside trim line
-- [ ] **Spine width**: Calculate using KDP Cover Calculator
-  - Formula: Page count × paper type multiplier
-  - White paper: 0.002252" per page
-  - Cream paper: 0.0025" per page
+- [ ] **Bleed**: Add 0.125" bleed on top, bottom, and outside edges (extends beyond trim)
+- [ ] **Safe zone**: Keep critical text/elements at least 0.25" from the outside edge
+- [ ] **Prepress**: Flatten layers, embed fonts; no crop marks, annotations, or placeholder text
+- [ ] **Spine width**: Page count × paper type multiplier (or use the KDP Cover Calculator)
+  - White paper (black ink): 0.002252" per page
+  - Cream paper (black ink): 0.0025" per page
+  - Groundwood paper (black ink): 0.00235" per page
+  - Standard color (white paper): 0.002252" per page
+  - Premium color (white paper): 0.002347" per page
   - Example: 300-page white = 300 × 0.002252 = 0.6756"
-- [ ] **Spine text**: Only include if spine width is at least 0.3" (white paper: ~134+ pages, cream: 120+). 0.3" is a conservative readability threshold; the KDP hard floor for spine text is 79 pages
+- [ ] **Spine text**: KDP requires at least 79 pages for spine text (80 with Cover Creator). This plugin uses a more conservative 0.3" spine-width readability threshold (white paper: ~134+ pages, cream: 120+)
+- [ ] **Hardcover**: Uses a separate case-wrap template; see [Create a Hardcover Cover](https://kdp.amazon.com/en_US/help/topic/GDTKFJPNQCBTMRV6). The kdp-cover MCP tools compute paperback wraps only
 - [ ] **ISBN/Barcode**: Do NOT add barcode if using free Amazon ASIN (KDP adds it)
 - [ ] **ISBN placement**: If using own ISBN, place barcode on back cover lower right
 
@@ -133,18 +132,19 @@ Inside margin = 0.5" + (0.125" per 150 pages) for Color
   - `<br>` for line breaks
   - `<ul><li>item</li></ul>` for bullet lists
   - `<ol><li>item</li></ol>` for numbered lists
-  - `<h1>`, `<h2>` for headings
+  - `<h4>` (largest) through `<h6>` (smallest) for headings; `<h1>`-`<h3>` are not supported
+  - Supported tags: `<br>`, `<p>`, `<b>`, `<em>`, `<i>`, `<u>`, `<h4>`-`<h6>`, `<ol>`, `<ul>`, `<li>`; HTML tags count toward the 4,000 characters ([Write a Book Description](https://kdp.amazon.com/en_US/help/topic/G201189630))
 - [ ] **Hook**: First 1-2 sentences are critical (appear in search results)
 - [ ] **Structure**: Opening hook → key benefits/plot → call to action
 - [ ] **Keywords**: Include target keywords naturally (but don't stuff)
 - [ ] **No**: External links, email addresses, promotional language about reviews/rankings
 
-#### BISAC Category Codes
-- [ ] **Purpose**: Industry-standard subject classification (Book Industry Study Group)
-- [ ] **Selection**: Choose up to 3 categories yourself in the KDP dashboard (the old request-more-via-support path is retired)
+#### Amazon Browse Categories
+- [ ] **Purpose**: Amazon's own store categories (KDP no longer asks for BISAC codes; see [Categories](https://kdp.amazon.com/en_US/help/topic/G200652170))
+- [ ] **Selection**: Choose 3 categories yourself when you set up each format; some categories aren't available for every format. KDP Support does not add categories
 - [ ] **Strategy**: Pick specific subcategories (better than broad categories)
 - [ ] **Competition**: Check bestseller rank in chosen categories
-- [ ] **Top-level BISAC categories** (examples):
+- [ ] **Top-level categories** (examples):
   - Fiction > [Genre] (Thriller, Romance, Science Fiction, Fantasy, Mystery, etc.)
   - Biography & Autobiography > [Subject]
   - Business & Economics > [Topic]
@@ -177,16 +177,18 @@ Inside margin = 0.5" + (0.125" per 150 pages) for Color
 ### Pricing and Royalties
 
 #### eBook Royalty Tiers
+Source: [eBook Royalty Options](https://kdp.amazon.com/en_US/help/topic/G200634560) (Amazon.com, USD).
+
 **35% Royalty**:
-- [ ] Available for all prices: $0.99 - $200.00
+- [ ] Maximum $200.00. Minimum list price depends on file size: $0.99 (under 3 MB), $1.99 (3 MB to under 10 MB), $2.99 (10 MB or more)
 - [ ] No territorial restrictions
 - [ ] No file size delivery fees
-- [ ] Best for: Books priced under $2.99 or over $9.99
+- [ ] Best for: Books priced under $2.99 or over $12.99
 
 **70% Royalty**:
-- [ ] Price range: $2.99 - $9.99 (USD)
+- [ ] Price range: $2.99 - $12.99 (USD; the ceiling rose from $9.99 on July 7, 2026)
 - [ ] Territory restrictions (available in select countries)
-- [ ] Delivery costs deducted (file size × $0.15/MB)
+- [ ] Delivery costs deducted (file size × per-MB rate; $0.15/MB on Amazon.com historically, verify on KDP's digital pricing page)
 - [ ] Book must be priced at least 20% below lowest physical price
 - [ ] Best for: Most eBooks in competitive price range
 
@@ -208,18 +210,22 @@ Inside margin = 0.5" + (0.125" per 150 pages) for Color
 - [ ] **Strategy**: Test KU for 90 days, then decide on wide distribution
 
 #### Paperback Royalties
-- [ ] **Royalty**: 60% of list price minus printing costs
-- [ ] **Printing cost factors**: Page count, trim size, color vs. B&W, paper type
-- [ ] **Minimum list price**: Must cover printing cost + Amazon's 60% cut (or $2.99, whichever higher)
+Source: [Paperback Royalty](https://kdp.amazon.com/help/topic/G201834330).
+
+- [ ] **Royalty rate** (Amazon.com): 50% for list prices at or below $9.98; 60% at or above $9.99
+- [ ] **Formula**: (royalty rate × list price) − printing cost
+- [ ] **Printing cost factors**: Page count, trim size, ink (black, standard color, premium color), paper type
+- [ ] **Minimum list price**: Must at least cover printing cost at the applicable rate; KDP shows the exact minimum during setup
 - [ ] **Example** (6×9, 250 pages, B&W, cream paper):
   - Printing cost: ~$4.00
   - List price: $12.99
   - Royalty: ($12.99 × 0.60) - $4.00 = $7.79 - $4.00 = **$3.79**
-- [ ] **Expanded Distribution**: Optional, lowers royalty to 40% but reaches bookstores/libraries
+- [ ] **Expanded Distribution**: Optional, 40% of list price minus printing cost, but reaches bookstores/libraries
 
 #### Hardcover Royalties
 - [ ] **Availability**: Limited trim sizes (case laminate cover only)
-- [ ] **Royalty**: 60% of list price minus printing costs
+- [ ] **Royalty**: 50% or 60% of list price (same price thresholds as paperback) minus printing costs ([Hardcover](https://kdp.amazon.com/en_US/help/topic/GAVW3FZZAKA2KY3B))
+- [ ] **Page count**: 75-550 pages; five trim sizes (5.5×8.5, 6×9, 6.14×9.21, 7×10, 8.25×11)
 - [ ] **Printing costs**: Higher than paperback (~1.5-2× more)
 - [ ] **Best for**: Premium editions, gift books, library market
 - [ ] **Example** (6×9, 250 pages, B&W, white paper):
@@ -228,6 +234,12 @@ Inside margin = 0.5" + (0.125" per 150 pages) for Color
   - Royalty: ($24.99 × 0.60) - $8.00 = $14.99 - $8.00 = **$6.99**
 
 ### Content Guidelines
+
+#### AI-Generated Content Disclosure
+Source: [Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390).
+- [ ] **Required**: Tell KDP about AI-generated text, images, or translations when you publish a new book, and when you edit and republish an existing one
+- [ ] **AI-generated** means created by an AI tool, including cover and interior images and artwork. Covers made with this plugin's `kdp_generate_cover` / `kdp_generate_full_wrap` tools (OpenAI image generation) are AI-generated images and must be disclosed
+- [ ] **AI-assisted** (content you created, then edited, refined, or error-checked with a tool) does not need disclosure
 
 #### Prohibited Content
 - [ ] **Public domain only books**: Must add substantial new content/commentary
@@ -309,7 +321,7 @@ Inside margin = 0.5" + (0.125" per 150 pages) for Color
 10. **Review time**: 24-72 hours for Amazon, 6-8 weeks for Expanded Distribution
 
 ### Hardcover
-1. **Add to existing paperback**: Hardcover option appears after paperback published
+1. **Create new title**: Click "+ Hardcover" on the Bookshelf; no existing paperback is required (converting an existing paperback or eBook needs a new ISBN)
 2. **Upload manuscript**: PDF only (must meet hardcover specs)
 3. **Upload cover**: PDF with hardcover template dimensions
 4. **Pricing**: Set higher list price (printing costs are higher)
@@ -325,9 +337,9 @@ Inside margin = 0.5" + (0.125" per 150 pages) for Color
   - [ ] Add biography
   - [ ] Link all your books
   - [ ] Connect blog/Twitter feed (optional)
-- [ ] **Categories**: Request additional categories via KDP support (can have up to 10 total)
+- [ ] **Categories**: Confirm the 3 categories you chose show on each format's page; change them in KDP if a better fit appears (Support does not add extra categories)
 - [ ] **Editorial reviews**: Add blurbs, testimonials in Author Central
-- [ ] **A+ Content**: Available to all KDP publishers; enhanced product descriptions with rich media
+- [ ] **A+ Content**: Available for any published (live or pre-order) KDP book, no KDP Select requirement; create it per marketplace from the KDP Marketing page ([A+ Content](https://kdp.amazon.com/en_US/help/topic/GHL7P99B7AA543CN))
 
 ### Marketing Launch (Week 1-4)
 - [ ] **Price promotion**: Consider launch pricing ($0.99 or $2.99 for eBook)
@@ -375,7 +387,7 @@ Inside margin = 0.5" + (0.125" per 150 pages) for Color
 ### Metadata Issues
 13. **Keyword stuffing**: Excessive keywords in title or description
 14. **Trademark violations**: Using brand names, celebrity names without rights
-15. **Category mismatch**: Book doesn't fit selected BISAC categories
+15. **Category mismatch**: Book doesn't fit its selected Amazon categories
 16. **Misleading description**: Claims book doesn't support (e.g., "bestseller" before launch)
 17. **Contact information**: Including email/phone in description
 
@@ -413,13 +425,6 @@ Inside margin = 0.5" + (0.125" per 150 pages) for Color
 - [ ] **Professional design**: Invest in professional cover for long-term sales
 
 ## Advanced Features
-
-### Kindle Vella (Serialized Stories)
-
-> Discontinued: Amazon shut down Kindle Vella in February 2025. Kept for historical reference only.
-- [ ] **Format**: Episodic fiction (chapters released serially)
-- [ ] **Payment**: Readers buy tokens, you earn per token spent
-- [ ] **Best for**: Building audience with ongoing series
 
 ### Kindle in Motion
 - [ ] **Enhanced eBooks**: Add audio, video, animation (children's books, cookbooks)
@@ -465,13 +470,13 @@ Inside margin = 0.5" + (0.125" per 150 pages) for Color
 |--------|-----------|---------|-----------|------------|
 | **eBook** | N/A | N/A | DOCX/EPUB | 1600×2560 px (1:1.6) |
 | **Paperback** | 5.5×8.5 to 8.5×11 | 0.25-0.875" (varies) | PDF/DOCX | Calculator-based |
-| **Hardcover** | 5.5×8.5 to 8.5×11 | 0.25-0.875" (varies) | PDF only | Calculator-based |
+| **Hardcover** | 5 sizes, 5.5×8.5 to 8.25×11 | 0.25-0.875" (varies) | PDF only | Calculator-based |
 
 | Pricing Tier | Price Range | Royalty | Restrictions |
 |--------------|-------------|---------|--------------|
 | **35% eBook** | $0.99-$200 | 35% | None |
-| **70% eBook** | $2.99-$9.99 | 70% - delivery fee | Territory limits, no physical version <20% cheaper |
-| **Paperback** | Varies | 60% - print cost | Must cover print cost |
+| **70% eBook** | $2.99-$12.99 | 70% - delivery fee | Territory limits, no physical version <20% cheaper |
+| **Paperback/Hardcover** | Varies | 50% (≤ $9.98) or 60% (≥ $9.99) of list - print cost | Must cover print cost |
 | **Expanded Distribution** | Varies | 40% - print cost | Libraries/bookstores |
 
 ---
@@ -482,7 +487,7 @@ First-time publishers must complete the following before submitting a book:
 
 1. **Create account**: Go to https://kdp.amazon.com and sign in with an Amazon account (or create one)
 2. **Tax interview**: Complete the tax interview — W-9 for US residents, W-8BEN for international authors. Required before royalties can be paid.
-3. **Bank account**: Add bank account details for royalty payments (ACH direct deposit for US, wire transfer for international). Minimum payout threshold: $100.
+3. **Bank account**: Add bank account details for royalty payments (ACH direct deposit for US, wire transfer for international). Payment thresholds on Amazon.com: $0 for direct deposit (EFT), $100 for wire or check ([Payment Thresholds](https://kdp.amazon.com/en_US/help/topic/G201207800)).
 4. **Email verification**: Verify the email address associated with the KDP account. All review notifications and sales reports go to this address.
 
 ---
@@ -495,7 +500,7 @@ First-time publishers must complete the following before submitting a book:
 |-------|------------------|--------------------|-------|
 | **Fiction** | $2.99-$6.99 | $4.99-$9.99 | $0.99 as loss leader for series starters |
 | **Nonfiction** | $4.99-$9.99 | $4.99-$9.99 | Higher price justified by expertise |
-| **Technical** | $9.99-$29.99 | $9.99-$29.99 | 70% royalty caps at $9.99; above $9.99 earns 35% |
+| **Technical** | $9.99-$29.99 | $9.99-$29.99 | 70% royalty caps at $12.99; above $12.99 earns 35% |
 
 ### Paperback Pricing
 
@@ -507,10 +512,10 @@ KDP calculates printing cost based on page count, paper type, ink type, and trim
 - 300 pages, white paper: ~$4.50 printing cost
 - 300 pages, cream paper: ~$4.70 printing cost
 
-**Royalty formula**: (list price - printing cost) x 0.60
+**Royalty formula**: (royalty rate x list price) - printing cost, where the rate is 50% at or below $9.98 and 60% at or above $9.99 on Amazon.com ([Paperback Royalty](https://kdp.amazon.com/help/topic/G201834330))
 
 **Example**: 300-page book, $14.99 list price, $4.50 printing cost
-- Royalty: ($14.99 - $4.50) x 0.60 = $10.49 x 0.60 = **$6.29**
+- Royalty: (0.60 x $14.99) - $4.50 = $8.99 - $4.50 = **$4.49**
 
 **Minimum list price**: Must cover printing cost + Amazon's share. Use KDP's pricing calculator during submission for exact minimum.
 

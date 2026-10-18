@@ -5,6 +5,7 @@ import { handleCoverSpecs } from "./tools/cover-specs.js";
 import { handleGenerateCover } from "./tools/generate-cover.js";
 import { handleGenerateFullWrap } from "./tools/generate-full-wrap.js";
 import { handleValidateCover, type CoverKind } from "./tools/validate-cover.js";
+import { PAPER_TYPES } from "./lib/cover-layout.js";
 
 const server = new McpServer({
   name: "kdp-cover",
@@ -21,7 +22,7 @@ server.tool(
       .default("5.5x8.5")
       .describe('Trim size as "WxH" in inches, e.g. "5.5x8.5", "6x9"'),
     paper_type: z
-      .enum(["white", "cream"])
+      .enum(PAPER_TYPES)
       .default("cream")
       .describe("Paper type (affects spine width calculation)"),
   },
@@ -77,7 +78,7 @@ server.tool(
     page_count: z.number().int().min(24).describe("Number of pages (for spine width)"),
     trim_size: z.string().default("5.5x8.5").describe('Trim size "WxH" in inches'),
     paper_type: z
-      .enum(["white", "cream"])
+      .enum(PAPER_TYPES)
       .default("cream")
       .describe("Paper type"),
     isbn: z.string().optional().describe("ISBN (marks barcode zone on back cover)"),
@@ -121,7 +122,7 @@ server.tool(
       .default("5.5x8.5")
       .describe('Trim size "WxH" in inches (print kinds)'),
     paper_type: z
-      .enum(["white", "cream"])
+      .enum(PAPER_TYPES)
       .default("cream")
       .describe("Paper type (print kinds; affects spine width)"),
   },
