@@ -15,7 +15,7 @@ A Claude Code **plugin marketplace** (`queelius`). All plugins are distributed a
 | **worldsmith** | `worldsmith/` | Documentation-first fiction worldbuilding (the "Silmarillion approach") | 0.15.0 |
 | **pub-pipeline** | `pub-pipeline/` | Publication workflows: R/CRAN/JOSS, Python/PyPI | 0.9.0 |
 | **mf** | `mf/` | Metafunctor site management: blog architecture, content workflows, crier | 1.3.1 |
-| **repoindex** | `repoindex/` | Agent-driven repository intelligence (repo-doctor, repo-polish, repo-explorer) plus five workflow slash commands. MCP-first over a local git catalog | 2.3.2 |
+| **repoindex** | `repoindex/` | Agent-driven repository intelligence (repo-doctor, repo-polish, repo-explorer) plus five workflow slash commands. MCP-first over a local git catalog | 2.3.3 |
 | **alex-confidential** | `locksmith/` | Confidentiality toolkit: cryptoid, pagevault, gpg encryption | 0.3.1 |
 | **kdp** | `kdp/` | Amazon KDP book publishing: manuscript audit, listing craft, submission workflow | 0.7.0 |
 | **crier** | `crier/` | Cross-post blog content to multiple platforms via the crier CLI | 1.3.2 |

@@ -56,7 +56,7 @@ Four tables in `~/.repoindex/index.db`:
 
 All joins go through `repo_id` foreign key.
 
-**Stale means one thing.** Upstream's `v_stale_repos` view (no commit in 180 days) is the definition, and the manifest's `stale` count is `COUNT(*)` over it. Agents use that view rather than inventing their own window. Avoid `v_repo_stats`: it still references the removed `github_stars` column and errors.
+**Stale means one thing.** Upstream's `v_stale_repos` view (no commit in 180 days) is the definition, and the manifest's `stale` count is `COUNT(*)` over it. Agents use that view rather than inventing their own window. `v_repo_stats` errored on databases upgraded from schema v8 (it kept selecting the removed `github_stars`); upstream now re-syncs view definitions on every writable open, so it works once the CLI is current.
 
 ## Migration Note
 
