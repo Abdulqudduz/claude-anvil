@@ -23,7 +23,10 @@ template:
   title: "Protected Content"
   button_text: "Unlock"
   error_text: "Incorrect password"
-  hint: "Contact admin for password"
+  placeholder: "Enter password"
+  # username_placeholder: "Enter username"  # multi-user mode
+  color_primary: "#4CAF50"
+  color_secondary: "#76B852"
 
 # Multi-user (optional)
 users:
@@ -37,7 +40,14 @@ managed:
 
 Create with `pagevault config init`. Add to `.gitignore`.
 
-Environment variable override: `PAGEVAULT_PASSWORD`.
+Environment variable overrides: `PAGEVAULT_PASSWORD`, `PAGEVAULT_SALT`.
+
+A global config at `~/.config/pagevault/config.yaml` (or
+`$XDG_CONFIG_HOME/pagevault/config.yaml`) has the same structure and is merged
+under every project's `.pagevault.yaml`; local users override global users of
+the same name. Edit it with `pagevault config set --global ...`.
+
+The password hint is per-lock (`--hint TEXT`), not a `template:` field.
 
 ## CLI Commands
 
@@ -94,9 +104,17 @@ pagevault dev serve _locked/                # Local HTTP preview (WebCrypto need
                                             # http(s); file:// breaks decryption)
 ```
 
-### Sync (Re-encrypt)
+### Sync (Re-wrap keys for the current users)
 ```bash
-pagevault sync _locked/ -r                  # Re-encrypt after password change
+pagevault sync _locked/ -r                  # Re-wrap keys after adding/removing users
+```
+
+`sync` requires a `users:` block (it errors without one) and recovers each
+file's content key with the CURRENT passwords, so it cannot re-key after a
+password you no longer have. To change a single shared password, unlock and
+re-lock instead.
+
+```bash
 ```
 
 ## Viewer Plugins
@@ -128,9 +146,10 @@ Every encrypted HTML file includes the full decryption runtime:
 
 Priority order (highest first):
 1. Command-line arguments (`-p`, `--hint`, etc.)
-2. Environment variables (`PAGEVAULT_PASSWORD`)
-3. `.pagevault.yaml` in project root
-4. Built-in defaults
+2. Environment variables (`PAGEVAULT_PASSWORD`, `PAGEVAULT_SALT`)
+3. `.pagevault.yaml` (searched upward from the working directory)
+4. Global config (`~/.config/pagevault/config.yaml`)
+5. Built-in defaults
 
 ## Hugo Integration Example
 

@@ -1,7 +1,7 @@
 {
   "name": "alex-confidential",
   "description": "Confidentiality toolkit: smart routing across cryptoid (Hugo encryption), pagevault (HTML/file encryption), and gpg (file encryption/signing)",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "repository": "https://github.com/queelius/claude-anvil",
   "license": "MIT",
   "author": {

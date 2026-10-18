@@ -51,4 +51,4 @@ values, never anything resembling a real secret.
 ## Version bumps
 
 Keep `.claude-plugin/plugin.json` and the `alex-confidential` entry in the root
-`.claude-plugin/marketplace.json` in sync (both currently 0.2.0).
+`.claude-plugin/marketplace.json` in sync (both currently 0.3.1).

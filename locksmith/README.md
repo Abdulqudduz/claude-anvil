@@ -24,7 +24,7 @@ language (e.g. "encrypt this page", "sign this file"); there is no slash command
 
 The skill assumes these tools are installed and on PATH:
 
-- `cryptoid` and `pagevault` (the user's own packages; `pip install cryptoid pagevault`)
+- `cryptoid` and `pagevault` (the user's own packages): `pip install pagevault` (on PyPI) and `pip install git+https://github.com/queelius/cryptoid` (cryptoid is not on PyPI)
 - `gpg` (system package)
 
 ## Tool Selection

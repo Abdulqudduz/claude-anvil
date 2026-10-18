@@ -103,7 +103,12 @@ cryptoid config validate --content-dir DIR [--config PATH]
 ### Global Config
 
 A global config at `~/.config/cryptoid/config.yaml` is auto-merged into every
-project config, so shared users/groups live in one place:
+project config, so shared users/groups live in one place. Merge rule: a local
+group with the same name as a global group fully replaces it (members are not
+unioned), mirroring how a file's `groups` replaces inherited groups.
+
+The content directory resolves as `--content-dir` > `CRYPTOID_CONTENT_DIR` >
+the config's `content_dir` (no default; commands error if none is set).
 
 ```bash
 cryptoid init --global                     # Create the global config

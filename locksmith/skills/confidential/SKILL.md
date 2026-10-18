@@ -106,7 +106,7 @@ pagevault unlock _locked/page.html        # Decrypt back
 pagevault mark page.html -s ".private"    # Add encryption tags
 pagevault inspect encrypted.html          # Show metadata without password
 pagevault config init                     # Create .pagevault.yaml
-pagevault sync _locked/ -r               # Re-encrypt after password change
+pagevault sync _locked/ -r               # Re-wrap keys after adding/removing users (multi-user configs only)
 ```
 
 For detailed reference: **`${CLAUDE_PLUGIN_ROOT}/skills/confidential/references/pagevault.md`**
