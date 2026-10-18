@@ -7,8 +7,10 @@
 # detail or action rather than naming it. See the worldsmith prose-craft skill.
 set -euo pipefail
 
-# Gate: only run in worldsmith projects
-if [ "${WORLDSMITH_PROJECT:-0}" != "1" ]; then
+# Gate: only run in worldsmith projects (derived from disk; see worldsmith-env.sh)
+source "$(dirname "$0")/worldsmith-env.sh"
+worldsmith_load_env
+if [ "$WORLDSMITH_PROJECT" != "1" ]; then
   exit 0
 fi
 

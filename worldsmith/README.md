@@ -69,13 +69,12 @@ Four orchestrators that compose seven specialists for the heavy editorial work:
 |-------|----------|
 | `SessionStart` | Detects worldsmith projects via `.worldsmith/` directory; reads `project.yaml` for multi-work projects; surfaces doc and work inventory |
 | `PostToolUse` (Write/Edit) | Propagation reminders for doc and manuscript edits; cliche detection (manuscript-scoped only, skips README and plans) |
-| `Stop` | Completion verification before ending a session |
 
 ### Scripts
 
 - `count_patterns.py` counts prose patterns across manuscript files. Reads pattern definitions from `patterns.md`, customizable per project by placing `.worldsmith/patterns.md` in your project root.
 - `patterns.md` provides default pattern definitions (crutch words, filter words, weak verbs, adverb dialogue tags). Human-readable, Claude-editable.
-- `parse-project-yaml.py` parses `.worldsmith/project.yaml` and emits shell env vars consumed by other hooks. Enables structured multi-work configuration without bash YAML parsing.
+- `parse-project-yaml.py` parses `.worldsmith/project.yaml` and emits shell-quoted variable assignments that every hook loads via `worldsmith-env.sh`. Enables structured multi-work configuration without bash YAML parsing.
 
 ## Getting Started
 

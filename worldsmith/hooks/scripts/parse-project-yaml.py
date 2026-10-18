@@ -28,6 +28,7 @@ Examples:
 import sys
 import os
 import argparse
+import shlex
 from pathlib import Path
 
 try:
@@ -125,9 +126,13 @@ def count_files(project_dir: Path, manuscript: str, file_types: list[str]) -> in
 
 
 def shell_quote(value: str) -> str:
-    """Wrap value in double quotes, escaping embedded double quotes."""
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
-    return f'"{escaped}"'
+    """Quote value so `eval` assigns it literally.
+
+    Single-quoting via shlex: double quotes would still expand `$(...)` and
+    backticks, and this output is eval'd by the hooks and appended to
+    $CLAUDE_ENV_FILE.
+    """
+    return shlex.quote(value)
 
 
 def output_env(universe: str, lore_dir: str, works: list[dict]) -> None:

@@ -1,5 +1,5 @@
 {
-  "description": "Worldsmith project detection, propagation reminders, cliche detection, and completion verification",
+  "description": "Worldsmith project detection, propagation reminders, and cliche detection",
   "hooks": {
     "SessionStart": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/detect-worldsmith-project.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/detect-worldsmith-project.sh\"",
             "timeout": 10
           }
         ]
@@ -19,25 +19,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/propagation-reminder.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/propagation-reminder.sh\"",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check-fiction-cliches.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check-fiction-cliches.sh\"",
             "timeout": 10
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/completion-check.sh",
-            "timeout": 5
           }
         ]
       }

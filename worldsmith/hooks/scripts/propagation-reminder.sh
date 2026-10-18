@@ -1,12 +1,15 @@
 #!/bin/bash
 # PostToolUse hook: remind about propagation after Write/Edit in worldsmith projects.
-# Gates on WORLDSMITH_PROJECT env var set by detect-worldsmith-project.sh at SessionStart.
-# Exits silently if not in a worldsmith project.
+# Exits silently if not in a worldsmith project. The reminder is returned as
+# hookSpecificOutput.additionalContext JSON: plain stdout from a PostToolUse
+# hook goes only to the debug log and never reaches Claude.
 
 set -euo pipefail
 
-# Gate: only run in worldsmith projects
-if [ "${WORLDSMITH_PROJECT:-0}" != "1" ]; then
+# Gate: only run in worldsmith projects (derived from disk; see worldsmith-env.sh)
+source "$(dirname "$0")/worldsmith-env.sh"
+worldsmith_load_env
+if [ "$WORLDSMITH_PROJECT" != "1" ]; then
   exit 0
 fi
 
@@ -46,7 +49,7 @@ if [ "$is_manuscript" = "0" ] && [ "$is_doc" = "0" ]; then
 fi
 
 # Multi-work projects: match the manuscript and lore dirs configured in
-# project.yaml (env vars exported by detect-worldsmith-project.sh), mirroring
+# project.yaml (variables set by worldsmith_load_env), mirroring
 # check-fiction-cliches.sh
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 if [ -n "${WORLDSMITH_WORK_COUNT:-}" ] && [ "${WORLDSMITH_WORK_COUNT:-0}" -gt 0 ]; then
@@ -81,9 +84,11 @@ if [ "$is_doc" = "0" ] && [ "$is_manuscript" = "0" ]; then
   exit 0
 fi
 
-# Output propagation reminder (shown in transcript)
 if [ "$is_doc" = "1" ]; then
-  echo "Propagation check: $basename was edited. Check the project's CLAUDE.md for which other docs and manuscript sections may need updating."
-elif [ "$is_manuscript" = "1" ]; then
-  echo "Manuscript edited: $basename. Verify this change is consistent with canonical docs. If this introduces a new fact, update the canonical doc first."
+  reminder="Propagation check: $basename was edited. Check the project's CLAUDE.md for which other docs and manuscript sections may need updating."
+else
+  reminder="Manuscript edited: $basename. Verify this change is consistent with canonical docs. If this introduces a new fact, update the canonical doc first."
 fi
+
+jq -n --arg ctx "$reminder" \
+  '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $ctx}}'

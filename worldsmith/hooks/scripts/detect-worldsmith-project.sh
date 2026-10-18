@@ -1,36 +1,30 @@
 #!/bin/bash
 # Detect if the current project is a worldsmith-managed worldbuilding project.
 # A project is worldsmith-managed if it has a .worldsmith/ directory (created by
-# /worldsmith:init-world). Sets WORLDSMITH_PROJECT=1 via $CLAUDE_ENV_FILE so
-# other hooks can gate on it.
+# /worldsmith:init-world). Prints a doc/work inventory as session context, and
+# exports WORLDSMITH_PROJECT plus the project.yaml work variables to
+# $CLAUDE_ENV_FILE for Claude's Bash tool calls. Other hooks do NOT see that
+# file; they re-derive the same state via worldsmith-env.sh.
 
 set -euo pipefail
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+PARSER="$(dirname "$0")/parse-project-yaml.py"
 
-# Gate: .worldsmith/ directory is the canonical detection signal
-if [ ! -d "$PROJECT_DIR/.worldsmith" ]; then
-  if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
-    echo "export WORLDSMITH_PROJECT=0" >> "$CLAUDE_ENV_FILE"
-  fi
+source "$(dirname "$0")/worldsmith-env.sh"
+worldsmith_load_env
+
+if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
+  echo "export WORLDSMITH_PROJECT=$WORLDSMITH_PROJECT" >> "$CLAUDE_ENV_FILE"
+fi
+
+if [ "$WORLDSMITH_PROJECT" != "1" ]; then
   exit 0
 fi
 
-# It's a worldsmith project — persist for other hooks
-if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
-  echo "export WORLDSMITH_PROJECT=1" >> "$CLAUDE_ENV_FILE"
-fi
-
-# Resolve path to the parser script (sibling of this script)
-PARSER="${CLAUDE_PLUGIN_ROOT:+${CLAUDE_PLUGIN_ROOT}/hooks/scripts/parse-project-yaml.py}"
-PARSER="${PARSER:-$(dirname "$0")/parse-project-yaml.py}"
-
 # Multi-work path: project.yaml exists
 if [ -f "$PROJECT_DIR/.worldsmith/project.yaml" ]; then
-  # Eval env vars from parser so we can use them in this script
-  eval "$(python3 "$PARSER" "$PROJECT_DIR/.worldsmith/project.yaml" --env 2>/dev/null)" || true
-
-  # Export multi-work variables for other hooks
+  # Export multi-work variables for Claude's Bash tool calls
   if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
     python3 "$PARSER" "$PROJECT_DIR/.worldsmith/project.yaml" --env 2>/dev/null \
       | sed 's/^/export /' >> "$CLAUDE_ENV_FILE" || true

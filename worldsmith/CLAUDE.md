@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Worldsmith is a Claude Code **plugin** for documentation-first fiction worldbuilding (the "Silmarillion approach"). There is no build system, test suite, or compiled code. The entire codebase is Markdown files with YAML frontmatter, bash scripts, and JSON hooks. "Development" means editing skills, commands, agents, hooks, and scripts.
+Worldsmith is a Claude Code **plugin** for documentation-first fiction worldbuilding (the "Silmarillion approach"). There is no build system or compiled code. The codebase is Markdown files with YAML frontmatter, bash scripts, and JSON hooks. "Development" means editing skills, commands, agents, hooks, and scripts. The hook scripts have bash regression tests in `tests/` (run each `tests/test-*.sh`; they need `jq`).
 
 ## Plugin Structure
 
@@ -20,12 +20,14 @@ agents/rewriter.md                                # Rewriter orchestrator (fix-t
 agents/iterator.md                                # Iterator orchestrator (autonomous review-fix loop)
 agents/{consistency,craft,voice,structure}-auditor.md  # 4 review specialists (read-only)
 agents/{lore-writer,scene-writer,character-developer}.md  # 3 writing specialists
-hooks/hooks.json                                  # SessionStart + PostToolUse + Stop hooks
-hooks/scripts/detect-worldsmith-project.sh        # Project detection (checks for .worldsmith/ directory)
-hooks/scripts/propagation-reminder.sh            # PostToolUse propagation reminders
+hooks/hooks.json                                  # SessionStart + PostToolUse hooks
+hooks/scripts/worldsmith-env.sh                  # Sourced by every hook: derives WORLDSMITH_* state from .worldsmith/ on disk
+hooks/scripts/detect-worldsmith-project.sh        # SessionStart: project detection + doc/work inventory
+hooks/scripts/propagation-reminder.sh            # PostToolUse propagation reminders (additionalContext JSON)
 hooks/scripts/check-fiction-cliches.sh           # Cliche detection (stock reactions, dead metaphors, emotional labeling, redundant adverbs, fancy dialogue tags)
-hooks/scripts/completion-check.sh                # Stop hook: propagation verification
-hooks/scripts/parse-project-yaml.py              # Parse .worldsmith/project.yaml; emits shell env vars consumed by other hooks
+hooks/scripts/parse-project-yaml.py              # Parse .worldsmith/project.yaml; emits shell-quoted WORLDSMITH_* assignments
+tests/test-hook-gating.sh                        # Hook gating, output contract, multi-work, eval-safety tests
+tests/test-cliche-scoping.sh                     # Cliche hook manuscript-scoping tests
 scripts/count_patterns.py                         # Prose pattern counting (reads patterns.md)
 scripts/patterns.md                               # Default pattern definitions (overridable per project)
 ```
@@ -63,10 +65,11 @@ Four orchestrators and seven specialists. YAML frontmatter with `name`, `descrip
 - **character-developer** — Voice patterns, arc development, relationship mapping
 
 ### Hooks (`hooks/hooks.json`)
-Three event types:
-- **SessionStart** (command): Runs `detect-worldsmith-project.sh` — checks for `.worldsmith/` directory, reads `project.yaml` for multi-work projects, sets `WORLDSMITH_PROJECT` env var and work metadata, outputs doc/work inventory
-- **PostToolUse** (command, matcher: `Write|Edit`): Two hooks. Propagation reminders fire for any doc or manuscript edit. Cliche detection (stock body reactions, dead metaphors, emotional labeling, redundant adverbs, fancy dialogue tags) fires only for edits inside the manuscript directory (multi-work: paths from `project.yaml`; single-work: `chapters/`, `manuscript/`, `scenes/`, `stories/` heuristics). Skips README, CLAUDE.md, `docs/plans/`, and other non-prose files.
-- **Stop** (command): Completion verification before session exit
+Two event types:
+- **SessionStart** (command): Runs `detect-worldsmith-project.sh`: checks for `.worldsmith/` directory, reads `project.yaml` for multi-work projects, outputs doc/work inventory as session context, and exports `WORLDSMITH_*` variables to `$CLAUDE_ENV_FILE` for Claude's Bash tool calls
+- **PostToolUse** (command, matcher: `Write|Edit`): Two hooks. Propagation reminders fire for any doc or manuscript edit and are returned as `hookSpecificOutput.additionalContext` JSON (plain stdout from a PostToolUse hook only reaches the debug log). Cliche detection (stock body reactions, dead metaphors, emotional labeling, redundant adverbs, fancy dialogue tags) fires only for edits inside the manuscript directory (multi-work: paths from `project.yaml`; single-work: `chapters/`, `manuscript/`, `scenes/`, `stories/` heuristics), reporting via stderr + exit 2. Skips README, CLAUDE.md, `docs/plans/`, and other non-prose files.
+
+**Hook gating invariant.** Hooks are separate processes and never see variables written to `$CLAUDE_ENV_FILE`; that file only feeds Claude's Bash tool. Every hook therefore sources `worldsmith-env.sh` and calls `worldsmith_load_env`, which derives project state from the `.worldsmith/` directory on each run. Never gate a hook on an inherited `WORLDSMITH_*` variable, and never write a test that pre-sets one: that is exactly how an earlier version shipped with its PostToolUse and Stop hooks silently disabled. (The Stop hook was removed in 0.14.0.)
 
 ### Scripts
 - `scripts/count_patterns.py` — Python, reads pattern definitions from `scripts/patterns.md`. Projects can override by placing `patterns.md` in `.worldsmith/` at project root.
@@ -89,7 +92,7 @@ Three event types:
 
 **Multi-work projects.** A universe can contain multiple works (novel plus short stories, etc.) sharing canonical lore. Configured via `.worldsmith/project.yaml`. If absent, worldsmith infers a single work (backward compatible).
 
-The cross-language mechanism: `detect-worldsmith-project.sh` invokes `parse-project-yaml.py --env`, which emits shell variable assignments (`WORLDSMITH_UNIVERSE`, `WORLDSMITH_LORE_DIR`, `WORLDSMITH_WORK_COUNT`, `WORLDSMITH_WORK_N_{NAME,TYPE,MANUSCRIPT,LORE,FILETYPES}`) into `$CLAUDE_ENV_FILE`. Downstream hooks read these env vars to scope behavior to the active work without re-parsing YAML in bash. This is the parent CLAUDE.md's "no regex parsing of structured data" rule made concrete.
+The cross-language mechanism: `worldsmith-env.sh` invokes `parse-project-yaml.py --env`, which emits `shlex`-quoted shell variable assignments (`WORLDSMITH_UNIVERSE`, `WORLDSMITH_LORE_DIR`, `WORLDSMITH_WORK_COUNT`, `WORLDSMITH_WORK_N_{NAME,TYPE,MANUSCRIPT,MASTER,FILETYPES,LORE}`) that each hook `eval`s, so hooks scope behavior to the active work without parsing YAML in bash. The SessionStart hook also appends them to `$CLAUDE_ENV_FILE` for Claude's Bash calls. The quoting must stay single-quote/`shlex`: the output is `eval`'d, and double quotes would execute `$(...)` from `project.yaml`. This is the parent CLAUDE.md's "no regex parsing of structured data" rule made concrete.
 
 Each work can optionally have its own local lore directory for work-specific docs. Conflict hierarchy: shared lore > local lore > manuscript. Commands, orchestrator agents, and hooks all respect work scoping when `project.yaml` is present.
 
