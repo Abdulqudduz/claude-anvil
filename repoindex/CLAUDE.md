@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Claude Code plugin that provides MCP-driven agents for the [repoindex](https://github.com/queelius/repoindex) local git catalog. The plugin orchestrates multi-step workflows via three specialized agents; all metadata access goes through the repoindex MCP server.
 
-**Prerequisite**: `repoindex` CLI installed and **on PATH** (e.g. `uv tool install -e <repoindex checkout>`), database populated (`repoindex refresh --external`), and the repoindex MCP server configured in `~/.claude.json` (this plugin ships no `.mcp.json`, so the tools appear as `mcp__repoindex__*`). PATH matters even for MCP-only use: the server's `refresh`, `tag`, and `export` tools shell out to the `repoindex` binary.
+**Prerequisite**: `repoindex` CLI installed and **on PATH** (e.g. `uv tool install -e <repoindex checkout>`), database populated (`repoindex refresh --external`), and the repoindex MCP server configured in `~/.claude.json` (this plugin ships no `.mcp.json`, so the tools appear as `mcp__repoindex__*`). PATH is for `repo-polish`, which runs `repoindex ops generate` through Bash. The MCP server's `refresh`, `tag`, and `export` tools run the CLI through the server's own interpreter (`python -m repoindex`, from a trusted cwd), so they no longer depend on PATH; repoindex versions before that fix shelled out to a bare `repoindex`.
 
 ## Architecture
 

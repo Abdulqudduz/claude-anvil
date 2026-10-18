@@ -72,8 +72,9 @@ Four main tables, all joined through `repo_id`:
 - `repo_id`, `tag`, `source` (user, implicit, github, gitea, pyproject, pypi, cran, zenodo, go, npm)
 - Auto-populated tags include `topic:python`, `lang:python`, `has:ci`, `published:pypi`
 
-View caveat: avoid `v_repo_stats` (it references pre-migration column names
-and errors); `v_active_repos` and `v_stale_repos` work.
+Views: `v_repo_stats`, `v_active_repos`, and `v_stale_repos`. If `v_repo_stats`
+errors with `no such column: r.github_stars`, the CLI predates the view-sync fix;
+say so and query `repos` directly.
 
 ## Analysis patterns
 
