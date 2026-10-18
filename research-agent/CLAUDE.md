@@ -13,10 +13,12 @@ research-agent/
   skills/status/SKILL.md        # Read-only status of an in-flight run
   skills/resume/SKILL.md        # Continue an interrupted run
   skills/synthesize/SKILL.md    # Force the run to conclude with synthesis.md
+  skills/branch/SKILL.md        # Fork a run into a named branch with a competing strategy
   commands/research.md          # /research-agent:research (launch)
   commands/status.md            # /research-agent:status
   commands/resume.md            # /research-agent:resume
   commands/synthesize.md        # /research-agent:synthesize
+  commands/branch.md            # /research-agent:branch
   agents/researcher.md          # The autonomous research agent (mode-aware)
   docs/superpowers/             # Design history (specs, plans). Not loaded at runtime.
   CLAUDE.md                     # This file
@@ -78,10 +80,10 @@ When adding a new mode (e.g., a "branch" mode that forks a research run from a c
 
 The researcher has three categories of tools:
 
-1. **File and shell**: `Bash`, `BashOutput`, `KillShell`, `Read`, `Write`, `Edit`, `Glob`, `Grep`. The Bash + BashOutput + KillShell combination lets the researcher launch long-running experiments with `run_in_background: true`, monitor accumulated output, and terminate runs that have stalled.
+1. **File and shell**: `Bash`, `Monitor`, `TaskStop`, `Read`, `Write`, `Edit`, `Glob`, `Grep`. The researcher launches long-running experiments with `Bash` `run_in_background: true` (output redirected under `attempts/`), watches them with `Monitor` or by reading the output file (it is notified when the command exits), and terminates stalled runs with `TaskStop`. These all survive the reduced tool set Claude Code gives background subagents. (`BashOutput` no longer exists; `KillShell` is a legacy alias of `TaskStop`.)
 2. **Research**: `WebSearch`, `WebFetch` for prior-art lookups, paper retrieval, and reference verification.
-3. **Delegation**: `Task` for spawning child sub-agents that pursue parallel approaches (different proof strategies, different parameter regimes, different literature angles). Sub-agent results return as structured summaries that the researcher integrates into `log.md`. Working artifacts from a child sub-agent should land in a sibling subdirectory under `attempts/` so they are visible to status, resume, and synthesize.
+3. **Delegation**: `Agent` (formerly `Task`, still accepted as an alias) for spawning child sub-agents that pursue parallel approaches (different proof strategies, different parameter regimes, different literature angles). Sub-agent results return as structured summaries that the researcher integrates into `log.md`. Working artifacts from a child sub-agent should land in a sibling subdirectory under `attempts/` so they are visible to status, resume, and synthesize.
 
-Note the two-level use of `Task`. The launching skills use `Task` with `subagent_type: research-agent:researcher` to spawn the *top-level* researcher. The researcher itself then uses `Task` for parallel exploration of *child* sub-agents. They are the same tool but different roles. Do not conflate them when editing.
+Note the two-level use of `Agent`. The launching skills use it with `subagent_type: research-agent:researcher` to spawn the *top-level* researcher. The researcher itself then uses it for parallel exploration of *child* sub-agents. They are the same tool but different roles. Do not conflate them when editing. Nesting depth: the researcher is layer 1 below the main conversation and its children layer 2, within Claude Code's default limit of 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`); a child at the limit loses `Agent` and must do its work itself.
 
 When extending the agent, prefer giving it more capability in these existing categories over adding new ones. Adding more tool categories without a clear use case dilutes the prompt.
