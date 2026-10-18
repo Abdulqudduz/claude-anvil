@@ -12,7 +12,7 @@
 | survxai | Survival model explanations | 10.21105/joss.00961 | ~600 | Summary, Refs | ML focus | 2018 |
 | performance | Statistical model testing | 10.21105/joss.03139 | ~1000 | Summary, SoN, Refs | easystats suite | 2021 |
 
-**Note**: Pre-2024 papers did not require State of the Field, Software Design, Research Impact Statement, or AI Usage Disclosure (these are newer JOSS requirements). Current submissions MUST include all required sections.
+**Note**: Older JOSS papers did not require State of the Field, Software Design, Research Impact Statement, or AI Usage Disclosure (these are newer JOSS requirements). Current submissions MUST include all required sections.
 
 ---
 
@@ -55,7 +55,7 @@ bibliography: paper.bib
 - Code examples inline in the paper
 - Direct comparison to competing packages
 - Single author, single affiliation
-- **Would need additional sections under 2025+ requirements**
+- **Would need additional sections under current requirements**
 
 ---
 
@@ -138,7 +138,7 @@ bibliography: paper.bib
 - **Comparison section**: Every paper names specific competing packages
 - **Code examples**: Most include inline R code in the paper
 - **References**: 15-30 citations typical (mix of methodology and software)
-- **Length**: 600-1200 words for pre-2024 papers; target 750-1750 now
+- **Length**: 600-1200 words for older papers; target 750-1750 now
 
 ### What Works Well
 1. **Concrete use cases**: survPen lists 3 real projects; aorsf cites benchmarks
@@ -149,7 +149,7 @@ bibliography: paper.bib
 
 ### Anti-Patterns to Avoid
 1. **Too short**: univariateML's ~450 words would not pass current requirements
-2. **Missing sections**: Pre-2024 papers lack State of Field, Software Design, Research Impact
+2. **Missing sections**: Older papers lack State of Field, Software Design, Research Impact
 3. **Vague competitors**: "Some packages exist" without naming them
 4. **No examples**: Papers without code snippets feel abstract
 5. **Installation-only availability**: Should be on CRAN, not just GitHub

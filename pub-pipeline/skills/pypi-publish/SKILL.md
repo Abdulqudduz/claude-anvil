@@ -38,11 +38,12 @@ Read the package configuration file(s) and verify all required metadata fields a
 | `version` | Present, follows PEP 440 (e.g., "1.0.0", "0.1.0a1") |
 | `description` | Present, concise one-line summary |
 | `readme` | Points to existing README file (README.md, README.rst) |
-| `license` | Specified via SPDX identifier or license file |
+| `license` | SPDX license expression string (e.g. `"MIT"`), per PEP 639; the `{text = ...}` / `{file = ...}` table form is deprecated |
+| `license-files` | Globs for license files (e.g. `["LICENSE"]`); each must match a file |
 | `authors` or `maintainers` | At least one with name and email |
 | `urls` | Homepage, documentation, repository, bug tracker |
-| `classifiers` | Development status, intended audience, license, Python versions |
-| `python_requires` | Minimum Python version (e.g., ">=3.8") |
+| `classifiers` | Development status, intended audience, Python versions. No `License ::` classifiers (deprecated by PEP 639; build tools may reject them alongside `license`) |
+| `requires-python` | Minimum Python version; floor it at a non-EOL release (`">=3.11"` as of 2026-10, when 3.10 reached end of life) |
 
 **Recommended fields**:
 - `keywords` — searchability on PyPI
@@ -57,6 +58,8 @@ Verify the README file renders as valid Markdown or reStructuredText and will di
 ```bash
 cd /path/to/package && python -m build && twine check dist/*
 ```
+
+With uv, build with `uv build --no-sources` and validate with `uvx twine check dist/*` (uv has no README check of its own). twine must be >= 6.1 to accept Core Metadata 2.4, which PEP 639 license fields produce.
 
 This creates source distribution and wheel, then validates that PyPI will accept the long description. Any rendering errors must be fixed before proceeding.
 
@@ -96,6 +99,8 @@ Build source distribution (sdist) and wheel (bdist_wheel).
 cd /path/to/package && rm -rf dist/* && python -m build
 ```
 
+Equivalent with uv (Bash tool): `cd /path/to/package && rm -rf dist/* && uv build --no-sources`. Use whichever toolchain the project already uses.
+
 Important: Always clean `dist/` before building to avoid uploading stale artifacts from previous builds.
 
 Verify that `dist/` now contains:
@@ -126,7 +131,7 @@ Format the pre-publication audit as a structured markdown report:
 - [x] or [ ] authors/maintainers
 - [x] or [ ] urls
 - [x] or [ ] classifiers
-- [x] or [ ] python_requires
+- [x] or [ ] requires-python (non-EOL floor)
 
 ### Recommended Fields
 - [x] or [ ] keywords
@@ -161,6 +166,8 @@ Upload to TestPyPI (test.pypi.org) to verify the upload process and package meta
 ```bash
 cd /path/to/package && twine upload --repository testpypi dist/*
 ```
+
+With uv: `uv publish --index testpypi`, which needs a `[[tool.uv.index]]` entry named `testpypi` with `publish-url = "https://test.pypi.org/legacy/"` (see `${CLAUDE_PLUGIN_ROOT}/docs/pypi-reference.md`).
 
 User will be prompted for TestPyPI credentials:
 - Username: `__token__`
@@ -197,6 +204,8 @@ Upload to production PyPI.
 ```bash
 cd /path/to/package && twine upload dist/*
 ```
+
+With uv: `uv publish` (token via `--token` or `UV_PUBLISH_TOKEN`).
 
 User will be prompted for PyPI credentials:
 - Username: `__token__`
@@ -244,15 +253,15 @@ For complete PyPI requirements, metadata specifications, and publishing best pra
 
 - **Authentication with `__token__`**: When prompted for username, always use `__token__` (literal string). The password is the API token. Never commit tokens to version control.
 
-- **Trusted Publishers (GitHub Actions OIDC)**: For automated publishing from GitHub Actions, set up a Trusted Publisher at https://pypi.org/manage/account/publishing/. This eliminates the need for long-lived API tokens. The workflow uses OIDC authentication.
+- **Trusted Publishers (GitHub Actions OIDC)**: For automated publishing from GitHub Actions, set up a Trusted Publisher at https://pypi.org/manage/account/publishing/. This eliminates the need for long-lived API tokens. The workflow uses OIDC authentication. For a project that does not exist on PyPI yet, register a **pending publisher**; the first trusted upload creates the project. Keep the build in a separate job from the publish job that holds `id-token: write`. `pypa/gh-action-pypi-publish` generates and uploads PEP 740 attestations by default. Full workflow in `${CLAUDE_PLUGIN_ROOT}/docs/pypi-reference.md`.
 
 - **TestPyPI is not a staging environment**: TestPyPI is for testing the upload and installation process. It is not a full mirror of PyPI and may not have all dependencies. Always test with `--extra-index-url https://pypi.org/simple/` to allow dependencies from production PyPI.
 
-- **Classifiers matter**: PyPI classifiers affect discoverability. Include classifiers for development status (Alpha/Beta/Stable), license, intended audience, and all supported Python versions (e.g., "Programming Language :: Python :: 3.8").
+- **Classifiers matter**: PyPI classifiers affect discoverability. Include classifiers for development status (Alpha/Beta/Stable), intended audience, and all supported Python versions (e.g., "Programming Language :: Python :: 3.12"). Express the license with the `license` field, not a `License ::` classifier.
 
 - **README is the PyPI homepage**: The README file becomes the project description page on PyPI. Ensure it includes installation instructions, quick start examples, and links to documentation.
 
-- **Build tool requirements**: Ensure `build` and `twine` are installed before running this workflow:
+- **Build tool requirements**: Ensure `build` and `twine` (>= 6.1) are installed before running this workflow, or use uv instead:
   ```bash
-  pip install build twine
+  pip install build "twine>=6.1"
   ```

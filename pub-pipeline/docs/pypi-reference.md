@@ -26,9 +26,9 @@
 - [ ] `description` is single-line summary
 - [ ] `readme` field points to README file
 - [ ] `requires-python` specifies minimum Python version
-- [ ] `license` with SPDX identifier or license file
+- [ ] `license` is an SPDX license expression (e.g. `"MIT"`), plus `license-files` globs (PEP 639)
 - [ ] `authors` with name and email
-- [ ] `classifiers` include Development Status, Intended Audience, License, Python versions
+- [ ] `classifiers` include Development Status, Intended Audience, Python versions (no `License ::` classifiers: PEP 639 deprecates them in favor of `license`)
 - [ ] `urls` include Homepage, Documentation, Repository, Bug Tracker
 
 ### Code Quality
@@ -65,16 +65,18 @@
 
 ```toml
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=77.0.3"]  # PEP 639 license metadata needs >= 77.0.3; no "wheel" entry
 build-backend = "setuptools.build_meta"
+# hatchling alternative: requires = ["hatchling>=1.27"], build-backend = "hatchling.build"
 
 [project]
 name = "example-package"
 version = "0.1.0"
 description = "A short description of your package"
 readme = "README.md"
-requires-python = ">=3.8"
-license = {text = "MIT"}
+requires-python = ">=3.11"   # oldest CPython not end-of-life as of 2026-10 (3.10 EOL 2026-10-01)
+license = "MIT"              # SPDX expression; the {text = ...} table form is deprecated
+license-files = ["LICENSE"]  # each glob must match at least one file
 authors = [
     {name = "Your Name", email = "you@example.com"}
 ]
@@ -85,13 +87,11 @@ keywords = ["example", "tutorial", "packaging"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -160,20 +160,18 @@ build-backend = "poetry.core.masonry.api"
 - `Intended Audience :: End Users/Desktop`
 - `Intended Audience :: System Administrators`
 
-### License (must match actual license)
-- `License :: OSI Approved :: MIT License`
-- `License :: OSI Approved :: Apache Software License`
-- `License :: OSI Approved :: BSD License`
-- `License :: OSI Approved :: GNU General Public License v3 (GPLv3)`
-- `License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)`
+### License: use `license`, not classifiers
+PEP 639 deprecates `License ::` classifiers in favor of the `license` field
+(an SPDX expression such as `MIT`, `Apache-2.0`, `BSD-3-Clause`, `GPL-3.0-or-later`,
+`MPL-2.0`). Build tools may reject a `License ::` classifier when `license` is a
+string, so omit them in new metadata.
 
 ### Programming Language
 - `Programming Language :: Python :: 3`
-- `Programming Language :: Python :: 3.8`
-- `Programming Language :: Python :: 3.9`
-- `Programming Language :: Python :: 3.10`
 - `Programming Language :: Python :: 3.11`
 - `Programming Language :: Python :: 3.12`
+- `Programming Language :: Python :: 3.13`
+- `Programming Language :: Python :: 3.14`
 - `Programming Language :: Python :: 3 :: Only`
 
 ### Topic
@@ -190,9 +188,29 @@ Full list: https://pypi.org/classifiers/
 
 TestPyPI is a separate instance for testing package uploads.
 
+Two equivalent toolchains. Pick one per project.
+
+**uv:**
+
+```bash
+uv build --no-sources            # sdist + wheel into dist/
+uv publish --index testpypi      # needs a [[tool.uv.index]] entry, below
+```
+
+```toml
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
+```
+
+**build + twine** (twine >= 6.1 is required to upload Core Metadata 2.4, which
+PEP 639 `license`/`license-files` produce):
+
 ```bash
 # Install build tools
-python -m pip install --upgrade build twine
+python -m pip install --upgrade build "twine>=6.1"
 
 # Build distributions
 python -m build
@@ -216,6 +234,8 @@ python -m pip install --index-url https://test.pypi.org/simple/ \
 
 ```bash
 # Upload to PyPI (production)
+uv publish                       # token via UV_PUBLISH_TOKEN, or none under trusted publishing
+# or
 python -m twine upload dist/*
 
 # Or specify repository explicitly
@@ -255,15 +275,15 @@ password = pypi-AgENdGVzdC5weXBpLm9yZw...
 ### Setup Steps
 
 1. **On PyPI:**
-   - Go to your project settings
-   - Navigate to "Publishing" section
-   - Click "Add a new publisher"
+   - Existing project: go to the project's settings, "Publishing" section, "Add a new publisher".
+   - New project (never uploaded): add a **pending publisher** from your account's
+     Publishing page instead; the first successful trusted upload creates the project.
    - Fill in:
      - PyPI Project Name: `your-package-name`
      - Owner: `your-github-username` or org
      - Repository name: `your-repo-name`
      - Workflow name: `publish.yml` (or your workflow file name)
-     - Environment name: `release` (optional but recommended)
+     - Environment name: `pypi` (optional but recommended; must match the workflow)
 
 2. **GitHub Actions Workflow:**
 
@@ -278,32 +298,45 @@ permissions:
   contents: read
 
 jobs:
-  pypi-publish:
-    name: Upload release to PyPI
+  build:
+    name: Build distributions
     runs-on: ubuntu-latest
-    environment:
-      name: release
-      url: https://pypi.org/p/your-package-name
-    permissions:
-      id-token: write  # REQUIRED for trusted publishing
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
-
-      - name: Build package
+      - name: Build sdist and wheel
         run: |
           python -m pip install --upgrade build
           python -m build
+      - uses: actions/upload-artifact@v5
+        with:
+          name: python-package-distributions
+          path: dist/
 
+  publish-to-pypi:
+    name: Upload release to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/your-package-name
+    permissions:
+      id-token: write  # REQUIRED for trusted publishing; only this job gets it
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: python-package-distributions
+          path: dist/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          # No password or token needed!
-          # OIDC authentication happens automatically
+        # No token: OIDC trusted publishing. The action also generates and
+        # uploads PEP 740 attestations for each distribution by default.
 ```
+
+Keep the build job separate from the publish job (PyPA's recommendation), so
+the code that runs the build never holds the `id-token: write` permission.
 
 3. **Create GitHub Release to Trigger:**
 
@@ -316,7 +349,7 @@ gh release create v0.1.0 --title "v0.1.0" --notes "Release notes"
 
 ### Environment Protection Rules (Recommended)
 
-In GitHub repository settings → Environments → release:
+In GitHub repository settings → Environments → pypi:
 - [ ] Required reviewers (prevents accidental releases)
 - [ ] Wait timer (optional cooldown period)
 - [ ] Deployment branches (limit to `main` or release branches)
@@ -463,7 +496,7 @@ python -m twine check dist/*
 **Fix:** Ensure `[build-system]` is complete:
 ```toml
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 ```
 

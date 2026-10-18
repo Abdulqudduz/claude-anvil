@@ -87,9 +87,9 @@ Key categories to evaluate:
 | **Dependencies** | Imports from CRAN/Bioconductor only, conditional Suggests usage |
 | **Code behavior** | No q(), no .Internal, no writing outside tempdir, no global env modification |
 | **Documentation** | All exports have @returns and @examples, vignettes build |
-| **Examples** | `\dontrun{}` only for truly non-runnable code; prefer `\donttest{}` for slow examples |
+| **Examples** | `\dontrun{}` only for truly non-runnable code; prefer `\donttest{}` for slow examples (still run by `--as-cran` since R 4.0.0, so they must pass) |
 | **Side effects** | `options()`/`par()` restored via `on.exit()` or `withr`; no persistent state changes |
-| **Size** | Tarball <10MB, data+docs <5MB, examples run in seconds |
+| **Size** | Tarball ideally <10MB ("if possible"), data and docs each <5MB as a general rule, examples run in seconds |
 | **Cross-platform** | Portable code, no OS-specific assumptions |
 | **Testing** | R CMD check clean (0E/0W), notes explained |
 | **URLs** | All URLs valid and using HTTPS |

@@ -9,7 +9,7 @@ description: >-
 
 # JOSS Paper Drafting
 
-Analyze an R/Python package and draft a complete `paper.md` and `paper.bib` for JOSS submission. The paper follows current JOSS format requirements (2025+) with all required sections.
+Analyze an R/Python package and draft a complete `paper.md` and `paper.bib` for JOSS submission. The paper follows current JOSS format requirements with all required sections.
 
 ## Philosophy
 

@@ -4,7 +4,7 @@ description: >-
   JOSS paper drafting orchestrator. Reads the package source, README, vignettes,
   and existing manuscripts, spawns a field-scout to map competing packages, then
   drafts a complete paper.md and paper.bib following current JOSS format
-  requirements (2025+). Produces publication-ready output with all required
+  requirements. Produces publication-ready output with all required
   sections: Summary, Statement of Need, State of the Field, Software Design,
   Research Impact, AI Usage Disclosure, Acknowledgements, and References.
 
@@ -106,7 +106,7 @@ bibliography: paper.bib
 ---
 ```
 
-**Required sections** (all mandatory for 2025+ submissions):
+**Required sections** (all mandatory for current submissions):
 
 1. **Summary** (1-3 short paragraphs): What the package does for a non-specialist. Include the core abstraction, key capabilities, and language. One code example if it clarifies the design.
 
@@ -116,7 +116,7 @@ bibliography: paper.bib
 
 4. **Software Design** (1-2 paragraphs) — Key architectural decisions, core abstraction (class hierarchy, closure-returning pattern, etc.), trade-offs made, integration with other packages.
 
-5. **Research Impact Statement** (1 paragraph) — Evidence of use: published analyses, ongoing projects, downstream packages. For new software: concrete anticipated impact.
+5. **Research Impact Statement** (1 paragraph) — Evidence of use: published analyses, ongoing projects, downstream packages. For new software without realized use yet: credible near-term significance backed by specifics (benchmarks, reproducible materials, community-readiness signals); JOSS requires the evidence to be "compelling and specific, not aspirational". Never write speculative or aspirational impact claims.
 
 6. **AI Usage Disclosure** (1 paragraph) — What tools were used, where, and confirmation of human oversight. Required even if no AI was used.
 

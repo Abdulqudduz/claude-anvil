@@ -16,7 +16,7 @@ The recommended publication order for R packages:
 
 1. **CRAN** — Distribution, discoverability, installation via `install.packages()`
 2. **JOSS** — Quick DOI, peer-reviewed citation, Crossref/Google Scholar indexing
-3. **JSS** (optional) — High-prestige methods paper, Web of Science indexed (IF ~5)
+3. **JSS** (optional) — High-prestige methods paper, Web of Science indexed
 
 Each stage builds on the previous. CRAN gives the package legitimacy. JOSS gives it a citable DOI. JSS gives the methodology academic weight.
 
@@ -164,7 +164,7 @@ Evaluate whether a JSS (Journal of Statistical Software) paper is warranted:
 If JSS is appropriate, note that:
 - JSS uses `rticles::jss_article` RMarkdown format
 - JSS papers are 20-50 pages and include mathematical exposition
-- JSS is indexed in Web of Science (Impact Factor ~5)
+- JSS is indexed in Web of Science
 - Review takes 6-18 months
 - The `papermill:writer` agent can help draft a full JSS paper (long-form academic writing)
 

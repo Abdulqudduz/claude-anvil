@@ -87,7 +87,7 @@
 #### Function Documentation (Rd / roxygen2)
 - [ ] Every exported function has an `@returns` tag describing the return value (type + meaning)
 - [ ] Every exported function has `@examples` with runnable code
-- [ ] Use `\donttest{}` for examples that are slow (>5s) or require internet — these run on CRAN but not during `R CMD check`
+- [ ] Use `\donttest{}` for slow examples (>5s). Since R 4.0.0, `R CMD check --as-cran` DOES run `\donttest{}` examples, so they must still succeed; guard internet-dependent ones (e.g. `if (curl::has_internet())`) or use `\dontrun{}` only when the code genuinely cannot run
 - [ ] Do NOT use `\dontrun{}` unless the example truly cannot run (requires credentials, hardware, etc.) — CRAN reviewers flag this
 - [ ] `@param` tags for every argument, with type and description
 - [ ] Internal functions documented with `@keywords internal` or `@noRd`
@@ -122,12 +122,13 @@
 
 ### Size Constraints
 
-- [ ] Source tarball under 10MB (hard limit; files can be excluded via `.Rbuildignore`)
+- [ ] Source tarball under 10MB (policy: "should if possible not exceed 10MB"; exclude files via `.Rbuildignore`)
+- [ ] Data and documentation each under 5MB as a general rule (CRAN may ask you to trim documentation to 5MB)
 - [ ] Installed package size reasonable (data packages may be larger, but justify in `cran-comments.md`)
 - [ ] Data files in efficient formats: `.rda` with `xz` compression, or `.csv` in `inst/extdata/`
 - [ ] Large datasets: consider a companion data package or download-on-demand via `piggyback` or `pins`
 - [ ] Each example runs in a few seconds; `\donttest{}` for anything over ~5 seconds
-- [ ] Total `R CMD check` time under 10 minutes
+- [ ] Total check CPU time as low as possible (the policy sets no fixed minute limit: "the CRAN check farm is a very limited resource")
 
 ### Testing
 
@@ -243,7 +244,7 @@
 8. **Non-portable code**: Package must work on at least Linux, Windows, and macOS. Avoid platform-specific system calls without proper guards
 9. **Dependencies on non-CRAN packages**: All packages in `Imports`, `Depends`, and `LinkingTo` must be on CRAN or Bioconductor. GitHub-only packages are not allowed
 10. **Missing conditional checks for Suggested packages**: Code using Suggested packages must guard with `if (requireNamespace("pkg", quietly = TRUE))`
-11. **Excessive example/test runtime**: Individual examples should take a few seconds at most. Total check time should be under 10 minutes
+11. **Excessive example/test runtime**: Individual examples should run for no more than a few seconds each, and total check CPU time should be as small as possible
 12. **Using `:::` to access unexported functions**: Access only exported APIs from other packages
 
 ### Policy and Process

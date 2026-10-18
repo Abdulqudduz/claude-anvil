@@ -86,8 +86,8 @@ bibliography: paper.bib
 1. **Summary**: High-level functionality for a non-specialist audience. 1-3 short paragraphs (JOSS sets no fixed count).
 2. **Statement of Need** — Research problem, target audience, why existing tools are insufficient.
 3. **State of the Field** — Name competing packages explicitly and explain how this software differs. Vague claims without citations are flagged by reviewers.
-4. **Software Design** — Architecture, design decisions, and trade-offs (required since 2024).
-5. **Research Impact Statement** — Citations to published work using the software, or concrete anticipated impact for new software.
+4. **Software Design** — Architecture, design decisions, and trade-offs.
+5. **Research Impact Statement** — Evidence of realized impact (publications, external use, integrations), or for new software credible near-term significance backed by specifics (benchmarks, reproducible materials, community-readiness signals); JOSS requires the evidence to be "compelling and specific, not aspirational".
 6. **AI Usage Disclosure** — Required even if AI was not used (state "No AI tools were used").
 7. **Acknowledgements** — Financial support, computing resources, non-author contributors.
 8. **References** — Auto-generated from `paper.bib`.
@@ -159,7 +159,7 @@ bibliography: paper.bib
 - [ ] **Statement of Need** clearly states the problem and target audience
 - [ ] **State of the Field** names and compares to existing packages (not vague)
 - [ ] **Software Design** explains architecture and trade-offs
-- [ ] **Research Impact Statement** provides evidence of impact or concrete anticipated use
+- [ ] **Research Impact Statement** provides realized impact or credible near-term significance, specific rather than aspirational
 - [ ] **AI Usage Disclosure** is present and transparent
 - [ ] Writing quality is high: no structural or language issues
 - [ ] References are complete, properly formatted, and use full venue names

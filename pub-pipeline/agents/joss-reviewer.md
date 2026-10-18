@@ -106,7 +106,7 @@ If paper.md exists, review it yourself:
 - [ ] Statement of Need — specific problem, specific audience
 - [ ] State of the Field — names competing packages with citations
 - [ ] Software Design — architecture, trade-offs
-- [ ] Research Impact Statement — evidence or concrete anticipated use
+- [ ] Research Impact Statement: realized impact (publications, external use, integrations) or credible near-term significance, specific rather than aspirational
 - [ ] AI Usage Disclosure — present even if "no AI used"
 - [ ] References
 
