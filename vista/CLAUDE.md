@@ -26,12 +26,12 @@ this directory at runtime so `uv run --project ... vista-mcp` finds the package.
 # Install (editable, with the API extra for the unattended analyzer path)
 uv venv && uv pip install -e '.[api]'
 
-# Run the test suite (pytest is NOT a declared dep; use --with)
-uv run --with pytest python -m pytest tests/ -q
+# Run the test suite (pytest comes from the `dev` dependency group)
+uv run pytest -q
 
 # Run a single test file or test
-uv run --with pytest python -m pytest tests/test_extract.py -q
-uv run --with pytest python -m pytest tests/test_extract.py::test_dedup_keeps_longer
+uv run pytest tests/test_extract.py -q
+uv run pytest tests/test_extract.py::test_dedup_keeps_longer
 
 # CLI: end-to-end build of the catalog (idempotent; resumes per-stage)
 vista pipeline --fields ml,ai,stats,ransomware --per-field 25
@@ -42,7 +42,7 @@ vista status                      # counts table by field/track
 vista discover --fields ml --per-field 10
 vista fetch --max-papers 5
 vista extract
-vista analyze --premium           # uses PREMIUM_MODEL (claude-fable-5)
+vista analyze --premium           # uses PREMIUM_MODEL (claude-fable-5-1)
 vista render
 vista seed-bib path/to/refs.bib --field stats
 
@@ -57,6 +57,11 @@ uv run --with datasette datasette data/papers.db
 `ANTHROPIC_API_KEY` is **only** required for `vista analyze` and `vista pipeline`
 without `--skip-analyze`. The MCP path never calls the Anthropic SDK; the
 in-conversation Claude does the synthesis.
+
+`OPENALEX_API_KEY` is optional for everything but strongly recommended: keyless
+OpenAlex requests share one small daily budget per IP address (about 1000
+calls), while a free key has its own budget, 10x larger. See "OpenAlex client"
+below.
 
 ## Architecture
 
@@ -177,6 +182,36 @@ A `track` column on `papers` distinguishes how a paper got into the store:
 When adding new MCP tools that fetch papers, give them their own track string
 so the catalog stays auditable.
 
+### OpenAlex client
+
+`vista/sources/openalex.py:OpenAlexClient` is the only OpenAlex HTTP path.
+Contracts worth preserving:
+
+- **Auth**: the key comes from `config.openalex_api_key()` (env
+  `OPENALEX_API_KEY`), read at client construction, and is sent as an
+  `Authorization: Bearer` header. OpenAlex accepts an `api_key` query param
+  equivalently, but httpx error messages include the URL, so a query param
+  would leak the key into tracebacks and logs. No key: requests still work and
+  one warning goes to stderr (never stdout, which is the MCP transport).
+- **Retry policy** (`_is_retryable`): retry connection errors, 5xx, and
+  per-second 429s, honoring `Retry-After` (capped at 60s), else exponential
+  backoff; 4 attempts, then the ORIGINAL error is re-raised (`reraise=True`,
+  so callers' `except httpx.HTTPStatusError` for 404 actually fires). Never
+  retry other 4xx. A 429 with `x-ratelimit-remaining: 0` is a spent daily
+  budget, not throttling: it raises `OpenAlexBudgetExhausted` immediately.
+- **Tests** inject `transport=httpx.MockTransport(...)` and stub the module's
+  `_sleep`, so they stay offline and instant.
+
+**Concepts are frozen (open TODO).** `FIELDS[*].concept_ids` filter on
+`concepts.id`. OpenAlex replaced concepts with Topics in 2024; concepts still
+filter, but they are no longer recomputed, so new works are not tagged with
+them and the `recent` track increasingly misses new papers. There is no
+one-to-one mapping (concepts are a 6-level tree, topics a 4-level
+domain/field/subfield/topic hierarchy), so migrating is a per-field judgment
+call: pick `primary_topic.subfield.id` or `topics.id` values that match each
+field's intent and verify coverage before switching. Until then, keyword and
+paper lookups are unaffected.
+
 ### Section extraction
 
 `vista/pipeline/extract.py:SECTION_PATTERNS` is a dict of compiled regexes for
@@ -198,19 +233,21 @@ multiple matches per paper (e.g., chapter conclusions) are handled.
 
 ### Models
 
-`DEFAULT_MODEL = claude-sonnet-4-6`, `PREMIUM_MODEL = claude-fable-5`. The
-default model is overridable via `FOLLOWUPS_MODEL` env var. These only matter
-for the Anthropic-SDK analyzer path; the MCP path is model-agnostic.
+`DEFAULT_MODEL = claude-sonnet-5-5`, `PREMIUM_MODEL = claude-fable-5-1`.
+Override them with `VISTA_MODEL` (legacy name `FOLLOWUPS_MODEL`, still honored)
+and `VISTA_PREMIUM_MODEL`. These only matter for the Anthropic-SDK analyzer
+path; the MCP path is model-agnostic.
 
 ## Tests
 
-Tests in `tests/` cover the regex-driven section extractor and the LLM JSON
-output parser. They're standalone (no API key, no network, no DB) and run in
-under a second. They are **the right place to add coverage** for new heading
-patterns or new analyzer-output edge cases.
+Tests in `tests/` cover the regex-driven section extractor, the LLM JSON
+output parser, OpenAlex parsing, the OpenAlex client's auth and retry policy,
+and config (models, version). They're standalone (no API key, no network) and
+run in under a second. They are **the right place to add coverage** for new
+heading patterns or new analyzer-output edge cases.
 
-`pytest` is intentionally not in `dependencies` or any extra. Run via
-`uv run --with pytest ...` or install it ad-hoc into the venv.
+`pytest` lives in the `dev` dependency group (not in `dependencies` or any
+extra), which `uv run` installs by default, so `uv run pytest` works.
 
 ## Plugin layout (for plugin work)
 
@@ -234,8 +271,11 @@ guidance honest.
   only (stdout is the JSON-RPC transport). Don't `print()` from MCP code.
 - **OpenAlex IDs**: stripped of the `https://openalex.org/` prefix at parse
   time (`OpenAlexWork.from_api`). The `id` column is the bare `Wxxxxxxx` form.
-- **Author identity**: package author and `mailto` default is
-  `lex@metafunctor.com` (used as the OpenAlex polite-pool contact).
+- **Author identity**: package author and the User-Agent `mailto` contact are
+  `lex@metafunctor.com` (`config.CONTACT_EMAIL`). OpenAlex's current docs no longer
+  describe a polite pool, so the contact is courtesy only; the API key is what
+  sets the budget.
+  The User-Agent version comes from package metadata (`config.VERSION`).
 - **Read-only SQL**: any new MCP tool that takes a SQL string must reuse the
   `_FORBIDDEN_SQL` regex pattern from `mcp_server.py` rather than writing its
   own filter.

@@ -39,7 +39,7 @@ renders a browseable markdown catalog plus a queryable SQLite database.
 cd vista          # or wherever you cloned it
 uv venv
 uv pip install -e .
-python -m pytest tests/ -q
+uv run pytest -q        # pytest comes from the `dev` dependency group
 ```
 
 > **`uv` is required on PATH.** Both the CLI and the MCP server run through
@@ -57,8 +57,25 @@ uv pip install -e '.[api]'
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-In-conversation use through the plugin does **not** need an API key. Claude
-in the conversation does the synthesis.
+In-conversation use through the plugin does **not** need an Anthropic API key.
+Claude in the conversation does the synthesis.
+
+### OpenAlex API key (recommended)
+
+Every OpenAlex query (CLI and MCP) works without a key, but keyless requests
+share one small free daily budget with everyone on your IP address, and a
+spent budget fails until it resets. A free key from
+<https://openalex.org/settings/api> has its own budget, 10x larger:
+
+```bash
+export OPENALEX_API_KEY=...
+```
+
+Vista sends it as an `Authorization: Bearer` header (never in the URL, so it
+cannot leak into logs or error messages) and warns once on stderr when it is
+missing. The MCP server reads the environment Claude Code was started with, so
+export the key before launching `claude`. A spent budget surfaces as an
+`OpenAlexBudgetExhausted` error naming the variable.
 
 ## Wire up the plugin
 
@@ -236,6 +253,10 @@ vista/                         Python package (CLI + pipeline + MCP server)
 - **Stats and ransomware coverage is uneven.** Many top stats papers are
   paywalled with no arXiv version; many security papers live in fragmented
   yearly proceedings. Expect a higher skip rate at fetch time.
+- **OpenAlex concepts are frozen.** Field discovery filters on `concepts.id`,
+  and OpenAlex stopped tagging new works with concepts when Topics replaced
+  them in 2024. Recent papers can therefore be missing from field-based
+  discovery; keyword and paper lookups are unaffected. See vista's CLAUDE.md.
 - **Heading regex is conservative.** Some papers use creative headings
   ("Outlook", "Where We Go From Here") that the regex misses. Add patterns
   to `vista/pipeline/extract.py` as needed.

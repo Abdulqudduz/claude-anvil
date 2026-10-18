@@ -1,6 +1,6 @@
 [project]
 name = "vista"
-version = "0.2.2"
+version = "0.3.0"
 description = "Mine 'future work' sections from highly-cited papers to surface research directions"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -29,6 +29,10 @@ vista-mcp = "vista.mcp_server:main"
 # The MCP server does NOT need it; the conversation does the synthesis.
 api = ["anthropic>=0.39"]
 viz = ["datasette>=0.64"]
+
+[dependency-groups]
+# Installed by default with `uv run` / `uv sync`, so `uv run pytest` just works.
+dev = ["pytest>=8"]
 
 [build-system]
 requires = ["hatchling"]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from platformdirs import user_data_dir
@@ -28,7 +29,24 @@ SEEDS_DIR = DATA_DIR / "seeds"
 DB_PATH = DATA_DIR / "papers.db"
 OUT_DIR = _path_from_env_or(DATA_DIR / "out", "VISTA_OUT_DIR")
 
-USER_AGENT = "vista/0.1 (mailto:lex@metafunctor.com)"
+def _package_version() -> str:
+    try:
+        return version("vista")
+    except PackageNotFoundError:  # running from a bare checkout without install
+        return "0+unknown"
+
+
+VERSION = _package_version()
+CONTACT_EMAIL = "lex@metafunctor.com"
+USER_AGENT = f"vista/{VERSION} (mailto:{CONTACT_EMAIL})"
+
+
+# OpenAlex API key. Optional: keyless requests work, but share one small daily
+# budget per IP address; a free key (https://openalex.org/settings/api) gives
+# its own budget, 10x larger. Read at client construction, not import, so a key
+# exported after import (or patched in tests) is honored.
+def openalex_api_key() -> str | None:
+    return os.environ.get("OPENALEX_API_KEY") or None
 
 # OpenAlex concept and source IDs (verified against api.openalex.org May 2026).
 #
@@ -88,10 +106,19 @@ FIELDS: dict[str, dict] = {
     },
 }
 
-# Anthropic model defaults. Per CLAUDE.md user notes, default to current Sonnet for cost,
-# escalate to Fable for premium runs (--premium flag in CLI).
-DEFAULT_MODEL = os.environ.get("FOLLOWUPS_MODEL", "claude-sonnet-4-6")
-PREMIUM_MODEL = "claude-fable-5"
+# Anthropic model defaults for the unattended analyzer path. Default to current
+# Sonnet for cost, escalate to Fable for premium runs (--premium flag in CLI).
+# Each is overridable by environment variable; the first variable set wins.
+# FOLLOWUPS_MODEL is the legacy name for VISTA_MODEL and is still honored.
+def _model_from_env(env_vars: tuple[str, ...], default: str) -> str:
+    for var in env_vars:
+        if val := os.environ.get(var):
+            return val
+    return default
+
+
+DEFAULT_MODEL = _model_from_env(("VISTA_MODEL", "FOLLOWUPS_MODEL"), "claude-sonnet-5-5")
+PREMIUM_MODEL = _model_from_env(("VISTA_PREMIUM_MODEL",), "claude-fable-5-1")
 
 
 @dataclass

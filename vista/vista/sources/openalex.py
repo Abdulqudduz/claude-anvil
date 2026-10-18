@@ -1,21 +1,70 @@
-"""OpenAlex client. Free, no API key. Polite header recommended.
+"""OpenAlex client.
 
-Docs: https://docs.openalex.org/
+An API key is optional. Without one, requests share a small free daily budget
+per IP address; set OPENALEX_API_KEY for a key with its own, larger budget.
+
+Docs: https://help.openalex.org/how-to-use-the-api/rate-limits-and-authentication
 """
 
 from __future__ import annotations
 
-import json
+import logging
 import re
+import time
 from dataclasses import dataclass
 from typing import Any, Iterator
 
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential_jitter
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
-from vista.config import USER_AGENT
+from vista.config import USER_AGENT, VERSION, openalex_api_key
 
 API = "https://api.openalex.org"
+MAX_RETRY_AFTER_SECONDS = 60.0
+
+log = logging.getLogger(__name__)
+_warned_no_key = False
+_sleep = time.sleep  # indirection so tests can stub out backoff waits
+
+
+class OpenAlexBudgetExhausted(httpx.HTTPStatusError):
+    """A 429 caused by a spent daily budget. Retrying cannot succeed until reset."""
+
+
+def _budget_exhausted(response: httpx.Response) -> bool:
+    # OpenAlex returns 429 both for per-second throttling (transient) and for a
+    # spent daily budget (not transient). Only the latter drives the remaining
+    # budget to zero.
+    return response.headers.get("x-ratelimit-remaining") == "0"
+
+
+def _is_retryable(exc: BaseException) -> bool:
+    if isinstance(exc, OpenAlexBudgetExhausted):
+        return False
+    if isinstance(exc, httpx.TransportError):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        status = exc.response.status_code
+        return status == 429 or status >= 500
+    return False
+
+
+def _retry_after_seconds(exc: BaseException | None) -> float | None:
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return None
+    raw = exc.response.headers.get("Retry-After")
+    try:
+        return min(float(raw), MAX_RETRY_AFTER_SECONDS) if raw is not None else None
+    except ValueError:  # HTTP-date form; fall back to exponential backoff
+        return None
+
+
+_backoff = wait_exponential_jitter(initial=1, max=15)
+
+
+def _wait(retry_state) -> float:
+    retry_after = _retry_after_seconds(retry_state.outcome.exception())
+    return retry_after if retry_after is not None else _backoff(retry_state)
 
 
 @dataclass
@@ -102,12 +151,25 @@ def _invert_abstract(inv: dict | None) -> str | None:
 
 
 class OpenAlexClient:
-    def __init__(self, *, mailto: str | None = None, timeout: float = 30.0):
-        ua = USER_AGENT if not mailto else f"vista/0.1 (mailto:{mailto})"
+    def __init__(
+        self,
+        *,
+        mailto: str | None = None,
+        api_key: str | None = None,
+        timeout: float = 30.0,
+        transport: httpx.BaseTransport | None = None,
+    ):
+        ua = USER_AGENT if not mailto else f"vista/{VERSION} (mailto:{mailto})"
+        headers = {"User-Agent": ua, "Accept": "application/json"}
+        key = api_key or openalex_api_key()
+        if key:
+            # Bearer header rather than the equivalent `api_key` query param, so
+            # the key never appears in URLs, logs, or HTTPStatusError messages.
+            headers["Authorization"] = f"Bearer {key}"
+        else:
+            _warn_no_key_once()
         self.client = httpx.Client(
-            base_url=API,
-            headers={"User-Agent": ua, "Accept": "application/json"},
-            timeout=timeout,
+            base_url=API, headers=headers, timeout=timeout, transport=transport,
         )
 
     def close(self) -> None:
@@ -119,11 +181,23 @@ class OpenAlexClient:
     def __exit__(self, *exc) -> None:
         self.close()
 
-    @retry(stop=stop_after_attempt(4), wait=wait_exponential_jitter(initial=1, max=15))
+    @retry(
+        retry=retry_if_exception(_is_retryable),
+        stop=stop_after_attempt(4),
+        wait=_wait,
+        sleep=lambda seconds: _sleep(seconds),
+        reraise=True,
+    )
     def _get(self, path: str, params: dict[str, Any]) -> dict:
         r = self.client.get(path, params=params)
-        if r.status_code == 429:
-            r.raise_for_status()
+        if r.status_code == 429 and _budget_exhausted(r):
+            raise OpenAlexBudgetExhausted(
+                "OpenAlex daily budget exhausted (429). Keyless requests share one small "
+                "budget per IP; set OPENALEX_API_KEY to a free key from "
+                "https://openalex.org/settings/api for your own, larger budget.",
+                request=r.request,
+                response=r,
+            )
         r.raise_for_status()
         return r.json()
 
@@ -166,6 +240,16 @@ class OpenAlexClient:
                 return None
             raise
         return OpenAlexWork.from_api(data)
+
+
+def _warn_no_key_once() -> None:
+    global _warned_no_key
+    if not _warned_no_key:
+        _warned_no_key = True
+        log.warning(
+            "OPENALEX_API_KEY is not set: OpenAlex requests share a small free daily "
+            "budget per IP address. Get a free key at https://openalex.org/settings/api."
+        )
 
 
 def build_filter(

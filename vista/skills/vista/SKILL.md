@@ -106,6 +106,15 @@ catalog alone, since the conversation answer is enough.
 - For ransomware / security, set `require_arxiv=False` and lean on
   `min_citations=15`. USENIX/NDSS papers are often OA but not arXiv.
 
+## When OpenAlex refuses
+
+If a tool fails with `OpenAlexBudgetExhausted` (a 429 on a spent daily budget),
+do not retry: it cannot succeed until the budget resets. Tell the user that
+keyless OpenAlex access shares one small budget per IP, that a free key from
+https://openalex.org/settings/api raises it 10x, and that they need to
+`export OPENALEX_API_KEY=...` and restart Claude Code so the MCP server picks
+it up. Transient throttling (per-second 429s, 5xx) is retried automatically.
+
 ## Output style
 
 Default to a concise structured response: synthesis first, then a "directions
