@@ -77,7 +77,7 @@ Show a summary from `review_history`:
 
 - **Count**: number of reviews conducted
 - **Last review date**: when the most recent review occurred
-- **Unresolved findings**: derived value, not a stored field. If the most recent review_history entry's `recommendation` is not `ready`, report that review's `findings_major` + `findings_minor` as unresolved; otherwise report none.
+- **Unresolved findings**: derived value, not a stored field. If the most recent review_history entry's `recommendation` is not `ready`, report that review's `findings_critical` + `findings_major` + `findings_minor` as unresolved (treat a missing `findings_critical`, from reviews recorded before it existed, as 0); otherwise report none.
 - **Revision**: if the entry has `revised`/`findings_fixed` (written by `/papermill:revise`), show "Revised YYYY-MM-DD: N findings fixed" and subtract `findings_fixed` from the unresolved count (floor at zero).
 
 If no reviews exist, show: "No reviews yet."
@@ -107,11 +107,12 @@ Based on the current project state, suggest exactly one next skill to run. Evalu
 1. If the thesis is not defined or empty --> "Consider running `/papermill:thesis` to define your research claim."
 2. If the thesis is defined but no prior art data exists --> "Consider running `/papermill:prior-art` to survey related work."
 3. If the markdown body does not contain a `## Outline` section and the stage is before `outlining` --> "Consider running `/papermill:outline` to structure the paper."
-4. If the stage is `drafting` and there is written content --> "Consider running `/papermill:review` to get feedback on the current draft."
-5. If the latest review's `recommendation` is not `ready` and the entry has no `revised` date --> "Consider running `/papermill:revise` to apply the findings, then re-run `/papermill:review`."
-6. If the latest review's `recommendation` is not `ready` and the entry HAS a `revised` date --> "A revision pass was applied; re-run `/papermill:review` to verify the findings are resolved."
-7. If the latest review's `recommendation` is `ready` --> "Consider running `/papermill:polish` for final editing, or `/papermill:venue` to evaluate target venues."
-8. Otherwise --> "The project is in good shape. Continue working on the current stage."
+4. If an outline exists (a `## Outline` section or an outline file) but there is no manuscript content yet --> "Consider running `/papermill:draft` to draft the paper with the multi-agent writer."
+5. If the stage is `drafting` and there is written content --> "Consider running `/papermill:review` to get feedback on the current draft."
+6. If the latest review's `recommendation` is not `ready` and the entry has no `revised` date --> "Consider running `/papermill:revise` to apply the findings, then re-run `/papermill:review`."
+7. If the latest review's `recommendation` is not `ready` and the entry HAS a `revised` date --> "A revision pass was applied; re-run `/papermill:review` to verify the findings are resolved."
+8. If the latest review's `recommendation` is `ready` --> "Consider running `/papermill:polish` for final editing, or `/papermill:venue` to evaluate target venues."
+9. Otherwise --> "The project is in good shape. Continue working on the current stage."
 
 Display this under a **Suggested next step** heading.
 

@@ -1,6 +1,6 @@
 ---
 name: format-validator
-description: "Checks that the paper builds cleanly and meets venue formatting requirements. Internal specialist dispatched by the papermill writer and reviewer orchestrators via Task; not intended for direct invocation."
+description: "Checks that the paper builds cleanly and meets venue formatting requirements. Internal specialist dispatched by the papermill writer and reviewer orchestrators via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

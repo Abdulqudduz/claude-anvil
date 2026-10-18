@@ -21,7 +21,7 @@
       "name": "papermill",
       "source": "./papermill",
       "description": "Research paper lifecycle management: thesis refinement, literature surveys, experimental design, multi-agent drafting, editorial review, and publication venue matching",
-      "version": "0.9.0",
+      "version": "0.9.1",
       "author": {
         "name": "Alexander Towell"
       }

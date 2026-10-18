@@ -93,6 +93,8 @@ thesis:
   refined: true
 ```
 
+If `stage` is `idea`, advance it to `thesis` (never move it backward).
+
 If `.papermill/state.md` does not exist, suggest running `/papermill:init` first, or create a minimal state file.
 
 Append a timestamped note to the markdown body:

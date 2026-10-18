@@ -125,12 +125,13 @@ Update `.papermill/state.md` (Edit tool) with:
 - **`prior_art.key_references`**: Add each confirmed reference with citation key, classification, and a one-sentence relation description.
 - **`prior_art.last_survey`**: Set to today's date.
 - **`prior_art.gaps`**: A concise summary of identified gaps.
+- **`stage`**: if it is `idea` or `thesis`, advance it to `literature` (never move it backward).
 
 Append a timestamped note to the markdown body documenting the survey.
 
 ## Step 10: Offer Deep Search
 
-If the user wants broader coverage, offer to launch the **surveyor agent** (Task tool with `subagent_type: "papermill:surveyor"`):
+If the user wants broader coverage, offer to launch the **surveyor agent** (Agent tool with `subagent_type: "papermill:surveyor"`):
 
 > I can launch the surveyor agent for a deeper autonomous search. It will systematically explore citation networks and compile an extended reference list. Would you like me to launch it?
 

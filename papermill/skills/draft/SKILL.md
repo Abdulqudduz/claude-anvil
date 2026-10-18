@@ -66,7 +66,7 @@ If the user chooses specific sections, note which ones. If they choose extension
 
 ## Step 4: Launch the Writer Orchestrator
 
-Launch the **writer** agent (Task tool with `subagent_type: "papermill:writer"`).
+Launch the **writer** agent (Agent tool with `subagent_type: "papermill:writer"`).
 
 Pass the agent:
 - Path to `.papermill/state.md` (if it exists)
@@ -99,7 +99,7 @@ Present a summary to the user:
 > **Word/page count**: [approximate]
 > **Build status**: [compiles cleanly / has N warnings / needs fixes]
 >
-> **Section drafts and writing plan**: `.papermill/drafts/YYYY-MM-DD/`
+> **Section drafts and writing plan**: `.papermill/drafts/YYYY-MM-DD-HHMM/`
 >
 > The draft is a starting point, not a final product. Key areas to review:
 > 1. [Most important thing to check — e.g., "Proof in Section 4 may need verification"]
@@ -112,7 +112,7 @@ Then ask: "Would you like to review specific sections, or run `/papermill:review
 
 Update `.papermill/state.md` (Edit tool). If `.papermill/state.md` does not exist, skip this step and suggest `/papermill:init`. Updates:
 
-- Set `stage` to `drafting` (the schema's stage enum has no draft-complete value; the review skill advances the stage to `review`)
+- Set `stage` to `drafting` (the schema's stage enum has no draft-complete value; `/papermill:review` advances it to `review`)
 - Append a timestamped note documenting the draft:
 
 ```

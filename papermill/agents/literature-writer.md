@@ -1,6 +1,6 @@
 ---
 name: literature-writer
-description: "Drafts related work and background sections from literature scout findings. Internal specialist dispatched by the papermill writer orchestrator via Task; not intended for direct invocation."
+description: "Drafts related work and background sections from literature scout findings. Internal specialist dispatched by the papermill writer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

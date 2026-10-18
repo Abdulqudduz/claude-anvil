@@ -1,6 +1,6 @@
 ---
 name: prose-auditor
-description: "Evaluates writing quality, narrative structure, and notation consistency. Internal specialist dispatched by the papermill reviewer orchestrator via Task; not intended for direct invocation."
+description: "Evaluates writing quality, narrative structure, and notation consistency. Internal specialist dispatched by the papermill reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

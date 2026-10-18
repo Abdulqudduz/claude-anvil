@@ -1,11 +1,12 @@
 ---
 name: literature-scout-broad
-description: "Maps the surrounding field of a paper: competing approaches, benchmarks, state of the art. Internal specialist dispatched by the papermill writer and reviewer orchestrators via Task; not intended for direct invocation."
+description: "Maps the surrounding field of a paper: competing approaches, benchmarks, state of the art. Internal specialist dispatched by the papermill writer and reviewer orchestrators via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob
   - Grep
   - WebSearch
+  - WebFetch
 model: inherit
 color: green
 ---

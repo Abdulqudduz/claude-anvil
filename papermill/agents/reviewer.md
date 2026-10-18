@@ -22,7 +22,7 @@ tools:
   - Glob
   - Grep
   - Bash
-  - Task
+  - Agent
 model: inherit
 color: red
 ---
@@ -31,7 +31,7 @@ You orchestrate a multi-agent academic paper review. You are the area chair — 
 
 ## Available Agents
 
-Launch these via Task tool. Each receives the paper content and context via XML tags in the prompt.
+Launch these via the Agent tool. Each receives the paper content and context via XML tags in the prompt.
 
 ### Literature Scouts (run first, in parallel)
 | Agent | Type | Purpose |
@@ -66,7 +66,7 @@ This comprehension drives what you tell each specialist.
 
 ### Phase 2: Literature Grounding
 
-Launch both literature scouts in parallel via Task tool:
+Launch both literature scouts in parallel via the Agent tool:
 
 For each scout, include in the prompt:
 - Paper title and thesis
@@ -78,7 +78,7 @@ When both return, merge their findings into a single **literature context packet
 
 ### Phase 3: Specialist Review
 
-Launch all 6 specialists in parallel via Task tool. Each receives:
+Launch all 6 specialists in parallel via the Agent tool. Each receives:
 
 ```xml
 <paper>
@@ -144,15 +144,15 @@ mkdir -p .papermill/reviews/YYYY-MM-DD
 ```
 
 Write each specialist's raw output:
-- `.papermill/reviews/YYYY-MM-DD/logic-checker.md`
-- `.papermill/reviews/YYYY-MM-DD/novelty-assessor.md`
-- `.papermill/reviews/YYYY-MM-DD/methodology-auditor.md`
-- `.papermill/reviews/YYYY-MM-DD/prose-auditor.md`
-- `.papermill/reviews/YYYY-MM-DD/citation-verifier.md`
-- `.papermill/reviews/YYYY-MM-DD/format-validator.md`
-- `.papermill/reviews/YYYY-MM-DD/literature-context.md` (merged scout output)
+- `.papermill/reviews/YYYY-MM-DD-HHMM/logic-checker.md`
+- `.papermill/reviews/YYYY-MM-DD-HHMM/novelty-assessor.md`
+- `.papermill/reviews/YYYY-MM-DD-HHMM/methodology-auditor.md`
+- `.papermill/reviews/YYYY-MM-DD-HHMM/prose-auditor.md`
+- `.papermill/reviews/YYYY-MM-DD-HHMM/citation-verifier.md`
+- `.papermill/reviews/YYYY-MM-DD-HHMM/format-validator.md`
+- `.papermill/reviews/YYYY-MM-DD-HHMM/literature-context.md` (merged scout output)
 
-Write the unified report to `.papermill/reviews/YYYY-MM-DD/review.md`:
+Write the unified report to `.papermill/reviews/YYYY-MM-DD-HHMM/review.md`:
 
 ```markdown
 # Multi-Agent Review Report

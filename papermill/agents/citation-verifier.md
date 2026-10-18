@@ -1,6 +1,6 @@
 ---
 name: citation-verifier
-description: "Verifies citation accuracy, relevance, and related-work fairness using web search. Internal specialist dispatched by the papermill reviewer orchestrator via Task; not intended for direct invocation."
+description: "Verifies citation accuracy, relevance, and related-work fairness using web search. Internal specialist dispatched by the papermill reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

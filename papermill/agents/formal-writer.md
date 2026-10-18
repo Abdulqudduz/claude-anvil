@@ -1,6 +1,6 @@
 ---
 name: formal-writer
-description: "Drafts definitions, theorems, proofs, and formal analysis in rigorous LaTeX. Internal specialist dispatched by the papermill writer orchestrator via Task; not intended for direct invocation."
+description: "Drafts definitions, theorems, proofs, and formal analysis in rigorous LaTeX. Internal specialist dispatched by the papermill writer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

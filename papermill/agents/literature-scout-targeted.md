@@ -1,11 +1,12 @@
 ---
 name: literature-scout-targeted
-description: "Finds the closest prior work to a paper: same problem, same techniques, overlapping claims. Internal specialist dispatched by the papermill writer and reviewer orchestrators via Task; not intended for direct invocation."
+description: "Finds the closest prior work to a paper: same problem, same techniques, overlapping claims. Internal specialist dispatched by the papermill writer and reviewer orchestrators via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob
   - Grep
   - WebSearch
+  - WebFetch
 model: inherit
 color: cyan
 ---

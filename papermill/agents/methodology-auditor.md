@@ -1,6 +1,6 @@
 ---
 name: methodology-auditor
-description: "Audits experimental design, statistical rigor, and reproducibility. Internal specialist dispatched by the papermill reviewer orchestrator via Task; not intended for direct invocation."
+description: "Audits experimental design, statistical rigor, and reproducibility. Internal specialist dispatched by the papermill reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

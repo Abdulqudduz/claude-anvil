@@ -326,7 +326,7 @@ Then suggest the next skill based on the inferred stage:
 | `thesis` | "Run `/papermill:thesis` to refine your thesis, or `/papermill:prior-art` to survey related work." |
 | `literature` | "Run `/papermill:prior-art` to survey related work and identify gaps." |
 | `outlining` | "Run `/papermill:outline` to structure your paper sections." |
-| `drafting` | "Run `/papermill:thesis` to articulate your core claim, or `/papermill:status` to review your progress." |
+| `drafting` | "Run `/papermill:draft` to continue drafting with the multi-agent writer, or `/papermill:review` once a full draft exists." |
 | `review` | "Run `/papermill:review` to get feedback on your draft." |
 | `submission` | "Run `/papermill:status` to review submission readiness." |
 

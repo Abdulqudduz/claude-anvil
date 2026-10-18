@@ -84,7 +84,8 @@ Populated by the review skill. One entry per review pass.
 review_history:
   - date: "YYYY-MM-DD"
     type: "self-review | multi-agent-review"
-    report_path: ".papermill/reviews/YYYY-MM-DD/ (multi-agent reviews only; optional)"
+    report_path: ".papermill/reviews/YYYY-MM-DD-HHMM/review.md (multi-agent reviews only; optional)"
+    findings_critical: 0
     findings_major: 0
     findings_minor: 0
     recommendation: "ready | minor-revision | major-revision | not-ready"

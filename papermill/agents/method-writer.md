@@ -1,6 +1,6 @@
 ---
 name: method-writer
-description: "Drafts methodology, algorithm, and experimental setup sections with reproducibility in mind. Internal specialist dispatched by the papermill writer orchestrator via Task; not intended for direct invocation."
+description: "Drafts methodology, algorithm, and experimental setup sections with reproducibility in mind. Internal specialist dispatched by the papermill writer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

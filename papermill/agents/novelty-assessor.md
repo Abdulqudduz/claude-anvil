@@ -1,6 +1,6 @@
 ---
 name: novelty-assessor
-description: "Assesses whether claimed contributions are genuine advances over prior work. Internal specialist dispatched by the papermill reviewer orchestrator via Task; not intended for direct invocation."
+description: "Assesses whether claimed contributions are genuine advances over prior work. Internal specialist dispatched by the papermill reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

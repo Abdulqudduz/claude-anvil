@@ -54,6 +54,9 @@ papermill/
 │   ├── prose-auditor.md          # Writing quality and narrative structure
 │   ├── citation-verifier.md      # Reference accuracy and completeness
 │   └── format-validator.md       # Build verification and venue compliance (shared)
+├── docs/
+│   ├── state-schema.md           # Canonical .papermill/state.md schema (init skill references it)
+│   └── plans/                    # Historical design records (implemented); not loaded at runtime
 └── CLAUDE.md                     # This file
 ```
 
@@ -70,8 +73,8 @@ papermill/
 Skills read and write a `.papermill/state.md` file in each paper repo. This file has YAML frontmatter (structured project state) and a markdown body (free-form session notes). It persists across Claude Code sessions.
 
 The `.papermill/` directory also contains:
-- `reviews/YYYY-MM-DD/` — multi-agent review output (unified report + individual specialist reports)
-- `drafts/YYYY-MM-DD/` — multi-agent draft output (section drafts + writing plan + literature context)
+- `reviews/YYYY-MM-DD-HHMM/` — multi-agent review output (unified report + individual specialist reports). One directory per run (local time of the run), so same-day runs never collide; older projects may also have plain `YYYY-MM-DD/` directories, which sort before same-day `-HHMM` ones, so "newest by name" stays correct
+- `drafts/YYYY-MM-DD-HHMM/` — multi-agent draft output (section drafts + writing plan + literature context)
 
 Legacy: older projects may have a `.papermill.md` file in the project root. The init skill auto-migrates this to `.papermill/state.md`.
 

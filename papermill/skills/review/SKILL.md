@@ -48,7 +48,7 @@ If the user specifies focus areas, note them for the orchestrator. If they want 
 
 ## Step 4: Launch the Reviewer Orchestrator
 
-Launch the **reviewer** agent (Task tool with `subagent_type: "papermill:reviewer"`).
+Launch the **reviewer** agent (Agent tool with `subagent_type: "papermill:reviewer"`).
 
 Pass the agent:
 - Path to the manuscript file(s)
@@ -61,11 +61,11 @@ The agent will:
 2. Spawn 2 literature scouts in parallel for field context
 3. Spawn 6 specialist reviewers in parallel
 4. Cross-verify critical findings
-5. Write individual specialist reports and a unified report to `.papermill/reviews/YYYY-MM-DD/`
+5. Write individual specialist reports and a unified report to `.papermill/reviews/YYYY-MM-DD-HHMM/`
 
 ## Step 5: Present Results
 
-After the agent completes, read `.papermill/reviews/YYYY-MM-DD/review.md` (Read tool).
+After the agent completes, read `.papermill/reviews/YYYY-MM-DD-HHMM/review.md` (Read tool).
 
 Present a summary to the user:
 
@@ -85,7 +85,7 @@ Present a summary to the user:
 > 2. [Second most important finding]
 > 3. [Third most important finding]
 >
-> The full report is at `.papermill/reviews/YYYY-MM-DD/review.md`.
+> The full report is at `.papermill/reviews/YYYY-MM-DD-HHMM/review.md`.
 > Individual specialist reports are in the same directory.
 
 Then ask: "Would you like to go through the findings in detail, or address the critical issues first?"
@@ -100,12 +100,15 @@ Add a review record to `review_history`:
 review_history:
   - date: "YYYY-MM-DD"
     type: "multi-agent-review"
+    findings_critical: K
     findings_major: N
     findings_minor: M
     recommendation: "ready | minor-revision | major-revision | not-ready"
     notes: "Brief summary of key findings"
-    report_path: ".papermill/reviews/YYYY-MM-DD/review.md"
+    report_path: ".papermill/reviews/YYYY-MM-DD-HHMM/review.md"
 ```
+
+Advance `stage` to `review` unless it is already `review` or `submission` (never move it backward).
 
 Append a timestamped note to the markdown body.
 

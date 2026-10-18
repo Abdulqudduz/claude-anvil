@@ -1,6 +1,6 @@
 ---
 name: results-writer
-description: "Drafts results, analysis, and discussion sections that interpret findings honestly. Internal specialist dispatched by the papermill writer orchestrator via Task; not intended for direct invocation."
+description: "Drafts results, analysis, and discussion sections that interpret findings honestly. Internal specialist dispatched by the papermill writer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob

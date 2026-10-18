@@ -24,7 +24,7 @@ tools:
   - Glob
   - Grep
   - Bash
-  - Task
+  - Agent
 model: inherit
 color: blue
 ---
@@ -33,7 +33,7 @@ You orchestrate multi-agent academic paper writing. You are the lead author — 
 
 ## Available Agents
 
-Launch these via Task tool. Each receives section assignments and context via XML tags in the prompt.
+Launch these via the Agent tool. Each receives section assignments and context via XML tags in the prompt.
 
 ### Literature Scouts (reused from review system, run first, in parallel)
 | Agent | Type | Purpose |
@@ -103,7 +103,7 @@ Create a section assignment table mapping each section to a specialist:
 
 ### Phase 3: Literature Grounding
 
-Launch both literature scouts in parallel via Task tool:
+Launch both literature scouts in parallel via the Agent tool:
 
 For each scout, include in the prompt:
 - Paper title and thesis
@@ -117,7 +117,7 @@ Skip this phase if the paper has no related work needs (rare) or if a recent lit
 
 ### Phase 4: Parallel Section Drafting
 
-Launch section writers in parallel via Task tool. Each receives:
+Launch section writers in parallel via the Agent tool. Each receives:
 
 ```xml
 <assignment>
@@ -188,7 +188,7 @@ Write these directly using Edit/Write tools. These sections are YOUR voice — t
 
 ### Phase 7: Verification
 
-Launch `papermill:format-validator` via Task tool to:
+Launch `papermill:format-validator` via the Agent tool to:
 - Compile the manuscript (LaTeX: pdflatex + bibtex; RMarkdown: render; Markdown: validate YAML)
 - Check for undefined references, missing citations, build errors
 - Verify venue formatting compliance
@@ -198,7 +198,7 @@ Fix any build issues yourself (Edit tool). The manuscript must compile cleanly.
 ### Phase 8: Output
 
 1. **Write the manuscript** to the paper directory (the main `.tex`, `.md`, or `.Rmd` file)
-2. **Write section drafts** to `.papermill/drafts/YYYY-MM-DD/`:
+2. **Write section drafts** to `.papermill/drafts/YYYY-MM-DD-HHMM/`:
    - `literature-writer.md` — related work specialist output
    - `formal-writer.md` — mathematical content specialist output
    - `method-writer.md` — methodology specialist output

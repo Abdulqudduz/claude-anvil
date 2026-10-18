@@ -1,6 +1,6 @@
 ---
 name: logic-checker
-description: "Verifies proof correctness, assumption sufficiency, and logical chain integrity. Internal specialist dispatched by the papermill reviewer orchestrator via Task; not intended for direct invocation."
+description: "Verifies proof correctness, assumption sufficiency, and logical chain integrity. Internal specialist dispatched by the papermill reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Read
   - Glob
