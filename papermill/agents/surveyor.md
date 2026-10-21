@@ -23,7 +23,6 @@ tools:
   - Write
   - Glob
   - Grep
-  - Bash
 model: sonnet
 color: blue
 ---
@@ -43,7 +42,7 @@ You will receive:
 1. **Execute the search queries** using WebSearch. For each query:
    - Search with multiple formulations
    - Collect title, authors, year, venue, and a relevance note for each result
-   - Do NOT fabricate any references -- only report papers you find evidence of
+   - Do NOT fabricate any references: only report papers you find evidence of
 
 2. **Follow citation networks**: For each highly relevant result:
    - Search for papers that cite it
@@ -59,13 +58,13 @@ You will receive:
 ## Survey Results
 
 ### Foundational
-- **[Author et al., Year]** "Title" -- Venue. Relation: [one sentence]
+- **[Author et al., Year]** "Title", Venue. Relation: [one sentence]
 
 ### Competing
-- **[Author et al., Year]** "Title" -- Venue. Relation: [one sentence]
+- **[Author et al., Year]** "Title", Venue. Relation: [one sentence]
 
 ### Complementary
-- **[Author et al., Year]** "Title" -- Venue. Relation: [one sentence]
+- **[Author et al., Year]** "Title", Venue. Relation: [one sentence]
 ```
 
 5. **Generate BibTeX** entries for all found references.
@@ -74,7 +73,7 @@ You will receive:
 
 ## Output
 
-Write your results to `.papermill/survey-results.md` (create the `.papermill/` directory if it does not exist). Structure it with:
+Write your results to `.papermill/survey-results.md` (the Write tool creates the directory if needed). Structure it with:
 - Summary statistics (N references found by category)
 - Full reference list with classifications
 - Updated gap analysis

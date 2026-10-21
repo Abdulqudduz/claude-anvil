@@ -19,9 +19,9 @@ Verify every citation in the manuscript: confirm cited papers exist, confirm the
 ## Input
 
 You will receive XML-tagged input:
-- `<paper>` — the full manuscript content or path to manuscript files
-- `<literature_context>` — related work findings from literature scouts
-- `<state>` — project state from `.papermill/state.md` (thesis, prior art, etc.)
+- `<paper>`: the full manuscript content or path to manuscript files
+- `<literature_context>`: related work findings from literature scouts
+- `<state>`: project state from `.papermill/state.md` (thesis, prior art, etc.)
 
 ## Review Dimensions
 
@@ -33,7 +33,7 @@ For each citation in the manuscript:
 - Are author names and years correct in the bibliography?
 
 ### 2. Missing References
-- Compare the paper's claims against the literature context — are there important papers that should be cited but aren't?
+- Compare the paper's claims against the literature context: are there important papers that should be cited but aren't?
 - Are there uncited claims that need support ("it is well known that..." without a reference)?
 - Are there foundational methods or datasets used without proper attribution?
 
@@ -62,6 +62,15 @@ For every finding, you MUST:
 3. **Explain** the discrepancy, omission, or problem
 4. Assign **severity**: critical (phantom citation or serious misrepresentation), major (missing important reference), minor (formatting issue)
 5. Assign **confidence**: high, medium, low
+
+## Verification Mode
+
+If the prompt contains a `<verify>` block (a finding plus `<before>` and `<after>` text, sent by the papermill reviser), do not run a full review. Judge only whether the revised text resolves that finding without introducing a new problem in your domain, and answer in this form instead of the report below:
+
+```markdown
+verdict: resolved | unresolved | regressed
+reason: [1-3 sentences, quoting the after text where it matters]
+```
 
 ## Self-Verification
 

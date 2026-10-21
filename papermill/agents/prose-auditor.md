@@ -18,9 +18,9 @@ Assess whether the paper's writing serves its scientific content. Success means:
 ## Input
 
 You will receive XML-tagged input:
-- `<paper>` — the full manuscript content or path to manuscript files
-- `<literature_context>` — related work findings from literature scouts
-- `<state>` — project state from `.papermill/state.md` (thesis, venue, etc.)
+- `<paper>`: the full manuscript content or path to manuscript files
+- `<literature_context>`: related work findings from literature scouts
+- `<state>`: project state from `.papermill/state.md` (thesis, venue, etc.)
 
 ## Review Dimensions
 
@@ -72,10 +72,19 @@ For every finding, you MUST:
 4. Assign **severity**: critical (meaning lost), major (significant confusion), minor (rough but understandable)
 5. Assign **confidence**: high, medium, low
 
+## Verification Mode
+
+If the prompt contains a `<verify>` block (a finding plus `<before>` and `<after>` text, sent by the papermill reviser), do not run a full review. Judge only whether the revised text resolves that finding without introducing a new problem in your domain, and answer in this form instead of the report below:
+
+```markdown
+verdict: resolved | unresolved | regressed
+reason: [1-3 sentences, quoting the after text where it matters]
+```
+
 ## Self-Verification
 
 Before finalizing:
-1. Re-read quoted passages in their full context — does the surrounding text provide the clarity you found missing?
+1. Re-read quoted passages in their full context: does the surrounding text provide the clarity you found missing?
 2. Distinguish between personal style preferences and genuine communication failures
 3. Check that you are not penalizing the paper for following field-specific conventions you may not be familiar with
 

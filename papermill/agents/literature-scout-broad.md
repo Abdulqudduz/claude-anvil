@@ -45,9 +45,9 @@ You will receive:
 
 ### Competing Hypotheses Pattern
 For each major finding, maintain multiple hypotheses:
-1. "This paper is the first to..." — search for evidence and counter-evidence
-2. "This approach was also tried by..." — look for prior attempts
-3. "The claimed advantage over X is..." — verify the comparison is fair
+1. "This paper is the first to...": search for evidence and counter-evidence
+2. "This approach was also tried by...": look for prior attempts
+3. "The claimed advantage over X is...": verify the comparison is fair
 
 Track confidence levels for each hypothesis. Revise as you find more evidence.
 
@@ -72,9 +72,9 @@ After completing the search:
 - **Relevance**: [1-2 sentence summary]
 - **Relationship**: competing | complementary | extends | baseline | foundational
 - **Key finding**: [what this paper shows that matters for the review]
-- **Source**: [how you found it — search terms, citation chain, etc.]
+- **Source**: [how you found it: search terms, citation chain, etc.]
 
-[Repeat for each paper found — aim for 10-20 entries]
+[Repeat for each paper found: aim for 10-20 entries]
 
 ## State of the Art
 [Current best results for the problem, with specific numbers/claims where available]

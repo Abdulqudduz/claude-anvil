@@ -29,9 +29,9 @@ You will receive:
 ## Search Strategy
 
 ### Phase 1: Citation Network
-- Start from the paper's own bibliography — these are the authors' acknowledged related work
+- Start from the paper's own bibliography: these are the authors' acknowledged related work
 - For each highly relevant cited paper, search for its citations (forward citation search)
-- Identify the paper's "intellectual ancestors" — the work it most directly builds on
+- Identify the paper's "intellectual ancestors": the work it most directly builds on
 
 ### Phase 2: Exact Problem Match
 - Construct precise search queries from the paper's problem statement
@@ -72,7 +72,7 @@ For each paper found, assess its threat to the reviewed paper's novelty:
 - **Differentiator**: [what makes the reviewed paper different, if anything]
 - **Source**: [how you found it]
 
-[Repeat — aim for 5-10 high-relevance entries]
+[Repeat: aim for 5-10 high-relevance entries]
 
 ## Citation Network Findings
 [Papers found through forward/backward citation that the authors may have missed]

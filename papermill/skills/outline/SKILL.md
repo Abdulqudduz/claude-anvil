@@ -13,13 +13,13 @@ Help the researcher design the structure of their paper. A good outline is the s
 ## Step 1: Read Context
 
 Read `.papermill/state.md` (Read tool) for:
-- **Thesis**: The central claim and novelty (critical -- the outline serves the thesis).
+- **Thesis**: The central claim and novelty (critical: the outline serves the thesis).
 - **Prior art**: Key references and gaps (these shape the related work section).
 - **Format**: `latex`, `markdown`, or `rmarkdown` (affects section conventions).
 - **Stage**: Current progress.
 - **Venue**: Target venue (affects length, section naming, and emphasis).
 
-If `.papermill/state.md` does not exist, outlining can still proceed — ask the user to describe the thesis and intended contribution type directly. Suggest running `/papermill:init` afterward to persist the outline.
+If `.papermill/state.md` does not exist, outlining can still proceed: ask the user to describe the thesis and intended contribution type directly. Suggest running `/papermill:init` afterward to persist the outline.
 
 Also scan existing paper files (Glob/Read tools). If there is already a partial draft, read it to understand what exists.
 
@@ -31,7 +31,7 @@ Different paper types have different conventional structures. Identify which app
 - **Empirical/experimental**: Introduction, Related Work, Method, Experiments, Results, Discussion, Conclusion
 - **Systems/engineering**: Introduction, Background, Design, Implementation, Evaluation, Related Work, Conclusion
 - **Survey/tutorial**: Introduction, Taxonomy/Framework, Section per topic, Discussion, Open Problems
-- **Short paper/workshop**: Compressed -- Introduction, Approach, Results, Conclusion
+- **Short paper/workshop**: Compressed: Introduction, Approach, Results, Conclusion
 
 Ask the user if you are unsure. The structure should match the contribution type.
 
@@ -88,8 +88,8 @@ Iterate until the user approves.
 
 Once approved, update `.papermill/state.md` (Edit tool). If `.papermill/state.md` does not exist, skip this step and suggest `/papermill:init`. Updates:
 
-- Set `stage` to `outlining` (or `drafting` if progressing).
-- Append the outline to the markdown body under a `## Outline` heading.
+- Advance `stage` to `outlining` if it is earlier in the stage enum (never move it backward).
+- Write the outline to the markdown body under a `## Outline` heading (replace an existing `## Outline` section rather than adding a second one).
 
 Append a timestamped note documenting the outline creation.
 

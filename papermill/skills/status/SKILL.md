@@ -8,7 +8,7 @@ description: >-
 
 # Status Dashboard
 
-Present a concise project status dashboard for an academic paper managed by Papermill. This skill is **read-only** -- it does not modify any files.
+Present a concise project status dashboard for an academic paper managed by Papermill. This skill is **read-only**: it does not modify any files.
 
 ## Step 1: Read the project file
 
@@ -32,13 +32,13 @@ Display a dashboard with the following sections, using the exact headers shown. 
 
 Show the current `stage` value with a brief one-line description:
 
-- **idea** -- Exploring research questions and directions
-- **thesis** -- Refining the central claim and novelty
-- **literature** -- Surveying prior work and identifying gaps
-- **outlining** -- Structuring the argument and paper skeleton
-- **drafting** -- Writing sections and producing content
-- **review** -- Incorporating feedback and revising
-- **submission** -- Final editing, formatting, and submission prep
+- **idea**: Exploring research questions and directions
+- **thesis**: Refining the central claim and novelty
+- **literature**: Surveying prior work and identifying gaps
+- **outlining**: Structuring the argument and paper skeleton
+- **drafting**: Writing sections and producing content
+- **review**: Incorporating feedback and revising
+- **submission**: Final editing, formatting, and submission prep
 
 If no stage is set, show: "No stage set. Run `/papermill:init` to configure."
 

@@ -19,14 +19,14 @@ Write sections that present evidence and interpret it with intellectual honesty.
 
 You will receive XML-tagged input:
 
-- `<assignment>` — section title, purpose, key content, estimated length
-- `<outline>` — full paper outline for context
-- `<thesis>` — central claim and novelty statement
-- `<literature_context>` — related work context (for comparing results to baselines/prior work)
-- `<existing_content>` — any existing results, data, analysis, figures, or tables
-- `<prior_sections>` — preceding sections (especially methodology defining what was done)
-- `<format>` — target format, document class, table/figure conventions
-- `<venue>` — target venue and requirements
+- `<assignment>`: section title, purpose, key content, estimated length
+- `<outline>`: full paper outline for context
+- `<thesis>`: central claim and novelty statement
+- `<literature_context>`: related work context (for comparing results to baselines/prior work)
+- `<existing_content>`: any existing results, data, analysis, figures, or tables
+- `<prior_sections>`: preceding sections (especially methodology defining what was done)
+- `<format>`: target format, document class, table/figure conventions
+- `<venue>`: target venue and requirements
 
 ## Writing Approach
 
@@ -95,6 +95,10 @@ If the assignment describes results from experiments not yet run:
 - Limitations are specific, not vague ("our method may not scale" → "our method was tested up to N=10000; scaling beyond this is untested")
 - The section can be read after the methodology section and makes complete sense
 
+## Revision Mode
+
+If the prompt contains `<finding>` and `<instruction>` blocks instead of `<assignment>` (sent by the papermill reviser to repair one review finding), rewrite only the text in `<current_text>` to resolve that finding, and return the replacement text alone: no section-draft wrapper, no Notes for Integrator. Do not edit files.
+
 ## Output Format
 
 ```markdown
@@ -102,7 +106,7 @@ If the assignment describes results from experiments not yet run:
 
 ## Section Content
 
-[The actual LaTeX/Markdown content — results, tables, figures, analysis, discussion — ready for the manuscript]
+[The actual LaTeX/Markdown content (results, tables, figures, analysis, discussion), ready for the manuscript]
 
 ## Notes for Integrator
 

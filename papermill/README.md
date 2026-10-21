@@ -8,16 +8,16 @@ Papermill provides interactive skills and autonomous agents that cover the full 
 
 ```bash
 /plugin marketplace add queelius/claude-anvil
-/plugin install papermill@queelius
+/plugin install papermill@queelius-plugins
 ```
 
-## Commands
+## Skills
 
-Invoke commands with `/papermill:<name>` in Claude Code. Each command triggers its corresponding skill.
+Each skill is a slash command: invoke it as `/papermill:<name>` in Claude Code (arguments, e.g. a review report path for `revise`, follow the name). Skills also trigger from natural-language requests.
 
 | Skill | Description |
 |-------|-------------|
-| **init** | Initialize a paper repo -- discovers structure, sets up `.papermill/state.md` state file |
+| **init** | Initialize a paper repo: discovers structure, sets up `.papermill/state.md` state file |
 | **status** | Dashboard showing current stage, thesis, experiments, reviews, and next steps |
 | **thesis** | Extract or refine the central claim and novelty (Socratic dialogue or draft extraction) |
 | **prior-art** | Interactive literature survey with keyword generation, screening, classification, and gap analysis |
@@ -33,23 +33,23 @@ Invoke commands with `/papermill:<name>` in Claude Code. Each command triggers i
 
 ## Agents
 
-Agents run autonomously and produce structured output files. The plugin has two multi-agent systems — one for **writing** and one for **reviewing** — that share literature scouts and the format validator.
+Agents run autonomously and produce structured output files. The plugin has three multi-agent systems (**writing**, **reviewing**, and **revising**) that share literature scouts and the format validator.
 
 ### Writing System
 
 | Agent | Model | Description |
 |-------|-------|-------------|
-| **writer** | inherit | Multi-agent writing orchestrator (lead author) — plans paper, spawns writers, integrates draft |
-| **literature-writer** | inherit | Related work and background sections — narrative synthesis of prior work |
-| **formal-writer** | inherit | Mathematical content — definitions, theorems, proofs, derivations |
-| **method-writer** | inherit | Methodology and algorithms — experimental design, pseudocode, reproducibility |
-| **results-writer** | inherit | Results, analysis, and discussion — evidence interpretation and implications |
+| **writer** | inherit | Multi-agent writing orchestrator (lead author): plans paper, spawns writers, integrates draft |
+| **literature-writer** | inherit | Related work and background sections: narrative synthesis of prior work |
+| **formal-writer** | inherit | Mathematical content: definitions, theorems, proofs, derivations |
+| **method-writer** | inherit | Methodology and algorithms: experimental design, pseudocode, reproducibility |
+| **results-writer** | inherit | Results, analysis, and discussion: evidence interpretation and implications |
 
 ### Review System
 
 | Agent | Model | Description |
 |-------|-------|-------------|
-| **reviewer** | inherit | Multi-agent review orchestrator (area chair) — spawns specialists and synthesizes unified report |
+| **reviewer** | inherit | Multi-agent review orchestrator (area chair): spawns specialists and synthesizes unified report |
 | **reviser** | inherit | Multi-agent revision orchestrator: routes findings to section writers, verifies fixes with the owning specialist |
 | **logic-checker** | inherit | Proof correctness, logical chain integrity, assumption sufficiency |
 | **novelty-assessor** | inherit | Contribution evaluation against literature context |
@@ -61,8 +61,8 @@ Agents run autonomously and produce structured output files. The plugin has two 
 
 | Agent | Model | Description |
 |-------|-------|-------------|
-| **literature-scout-broad** | inherit | Broad field survey — competing approaches, benchmarks, state of the art |
-| **literature-scout-targeted** | inherit | Direct comparison finder — same problem, same techniques, overlapping claims |
+| **literature-scout-broad** | inherit | Broad field survey: competing approaches, benchmarks, state of the art |
+| **literature-scout-targeted** | inherit | Direct comparison finder: same problem, same techniques, overlapping claims |
 | **format-validator** | sonnet | Build verification, label resolution, venue formatting compliance |
 | **surveyor** | sonnet | Deep autonomous literature search with citation network exploration |
 
@@ -74,7 +74,7 @@ Papermill uses a `.papermill/` directory in each paper repository to persist sta
 .papermill/
 ├── state.md                      # Project state (YAML frontmatter + session notes)
 ├── drafts/
-│   └── YYYY-MM-DD/
+│   └── YYYY-MM-DD-HHMM/
 │       ├── writing-plan.md       # Section assignment table
 │       ├── literature-writer.md  # Individual specialist drafts
 │       ├── formal-writer.md
@@ -82,8 +82,9 @@ Papermill uses a `.papermill/` directory in each paper repository to persist sta
 │       ├── results-writer.md
 │       └── literature-context.md # Merged literature scout output
 └── reviews/
-    └── YYYY-MM-DD/
-        ├── review.md             # Unified review report
+    └── YYYY-MM-DD-HHMM/
+        ├── review.md             # Unified review report (findings carry stable ids F1, F2, ...)
+        ├── revision.md           # Revision report from /papermill:revise (if run)
         ├── logic-checker.md      # Individual specialist reports
         ├── novelty-assessor.md
         ├── methodology-auditor.md
@@ -99,16 +100,17 @@ The state file is created by `/papermill:init` and updated by other skills as yo
 
 A typical workflow:
 
-1. **`/papermill:init`** -- Set up the state file in your paper repo
-2. **`/papermill:thesis`** -- Crystallize your central claim
-3. **`/papermill:prior-art`** -- Survey the literature, identify gaps
-4. **`/papermill:outline`** -- Design the paper structure
-5. **`/papermill:draft`** -- Multi-agent paper drafting
-6. **`/papermill:experiment`** / **`/papermill:simulation`** -- Design computational work
-7. **`/papermill:proof`** -- Develop and verify proofs
-8. **`/papermill:review`** -- Get multi-agent editorial feedback
-9. **`/papermill:venue`** -- Choose where to submit
-10. **`/papermill:polish`** -- Final pre-submission check
+1. **`/papermill:init`**: Set up the state file in your paper repo
+2. **`/papermill:thesis`**: Crystallize your central claim
+3. **`/papermill:prior-art`**: Survey the literature, identify gaps
+4. **`/papermill:outline`**: Design the paper structure
+5. **`/papermill:draft`**: Multi-agent paper drafting
+6. **`/papermill:experiment`** / **`/papermill:simulation`**: Design computational work
+7. **`/papermill:proof`**: Develop and verify proofs
+8. **`/papermill:review`**: Get multi-agent editorial feedback
+9. **`/papermill:revise`**: Apply the review findings with fix-then-verify, then re-review
+10. **`/papermill:venue`**: Choose where to submit
+11. **`/papermill:polish`**: Final pre-submission check
 
 Skills can be used in any order and revisited as needed. Use `/papermill:status` at any time for orientation.
 

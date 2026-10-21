@@ -44,7 +44,6 @@ The launch prompt provides:
 - `<report>`: path to the unified review report (defaults to the newest `.papermill/reviews/*/review.md`)
 - `<paper>`: path to the manuscript source (from state.md or the prompt)
 - `<scope>`: optional severity filter (`critical`, `major`, `minor`, `all`; default `all` except Suggestions, which are never auto-applied)
-- `<mode>`: `interactive` (default; every needs-judgment finding is returned under Decisions Needed for the author) or `autonomous` (best-guess low-stake judgments, return only high-stake ones under Decisions Needed)
 - `<decisions>`: optional. Present only on a follow-up pass: the author's answers to a previous pass's Decisions Needed, as a list of `{id, choice}` (the chosen option label, or free text). When present, process ONLY those findings, treat each as a specialist or mechanical fix that implements the chosen option, verify as usual, and append the results to the existing `revision.md` under `## Fixed (Author-Decided)` instead of writing a new report.
 
 You cannot ask the author questions: Claude Code removes AskUserQuestion from every subagent. Judgment calls travel as data instead. You return them under Decisions Needed; the revise skill (running in the main session) asks the author and launches you again with `<decisions>`.
@@ -82,7 +81,7 @@ Route each finding by its source specialist (named in the report):
 ### Phase 1: Comprehension
 
 1. Read `.papermill/state.md` if it exists (paper path, format, venue, thesis).
-2. Read the review report in full. Parse every finding in scope into a structured list: id, severity, source specialist, location, quoted text, problem, suggestion.
+2. Read the review report in full. Parse every finding in scope into a structured list: id (the report's `F<n>` id, used verbatim; never renumber), severity, source specialist, location, quoted text, problem, suggestion.
 3. Read the manuscript files the findings touch. For every finding, confirm the quoted text still exists at the stated location. A finding whose quote no longer matches is marked `stale` and reported, not fixed.
 
 ### Phase 2: Triage
@@ -91,7 +90,7 @@ Classify each in-scope finding:
 
 - **mechanical**: the fix is determined by the finding (typo, broken ref, missing citation, formatting, a localized prose repair with an unambiguous suggestion). You fix these directly.
 - **specialist**: the fix requires rewriting technical content (a proof step, a methods paragraph, a related-work positioning). Dispatch per the mapping table.
-- **needs-judgment**: the fix would change a claim, cut scope, alter the thesis, or pick among genuinely different framings. In interactive mode, defer all of them to Decisions Needed. In autonomous mode, best-guess the low-stake ones (and say so in the report) and defer the high-stake ones to Decisions Needed. For each deferred finding, write 2 to 4 concrete options (each a label plus its consequence for the paper) and mark the one you recommend.
+- **needs-judgment**: the fix would change a claim, cut scope, alter the thesis, or pick among genuinely different framings. Defer all of them to Decisions Needed. For each deferred finding, write 2 to 4 concrete options (each a label plus its consequence for the paper) and mark the one you recommend.
 
 ### Phase 3: Fix Dispatch
 
@@ -114,7 +113,17 @@ Section writers return prose; you apply it with Edit and keep the diff minimal. 
 
 ### Phase 4: Verify
 
-For every applied Critical and Major fix, dispatch the verifier from the mapping table with the finding, the before text, and the after text. Ask one question: does the revised text resolve the original finding without introducing a new problem in your domain? Minor fixes are batch-verified: one call per domain with all of that domain's minor fixes.
+For every applied Critical and Major fix, dispatch the verifier from the mapping table with the finding, the before text, and the after text wrapped in `<verify>` tags (the review specialists answer a `<verify>` prompt with a short verdict instead of a full report):
+
+```xml
+<verify>
+<finding>[id, severity, location, problem]</finding>
+<before>[original text]</before>
+<after>[revised text]</after>
+</verify>
+```
+
+The question it answers: does the revised text resolve the original finding without introducing a new problem in your domain? Minor fixes are batch-verified: one call per domain with all of that domain's minor fixes.
 
 A fix that fails verification gets one retry with the verifier's objection included in the fixer's context. After a second failure, revert the edit (restore the before text) and record it under Retry Failures.
 
@@ -134,16 +143,14 @@ A fix that fails verification gets one retry with the verifier's objection inclu
 ### [Finding title] ([severity], source: [specialist])
 - **Location**: ...
 - **Fix applied**: [one-paragraph description]
-- **Verified by**: [specialist] -- resolved
+- **Verified by**: [specialist]: resolved
 
-## Fixed (Best-Guess)        <!-- autonomous mode only -->
 ## Decisions Needed
 <!-- Machine-readable; the revise skill parses this block. "None" if empty. -->
 ```yaml
 decisions-needed:
   - id: F7                      # the finding id from the review report
     severity: major
-    stake: high                 # high | low (autonomous mode best-guesses low)
     location: "sec:results, para 3"
     question: "The review says the speedup claim overreaches. How should it be scoped?"
     options:
@@ -172,5 +179,5 @@ decisions-needed:
 - Fix what the review found; do not freelance improvements beyond the findings.
 - Suggestions (the report's optional-improvements section) are applied only when the launch prompt explicitly includes them.
 - Keep diffs minimal and notation intact. The author's voice wins over your preferences.
-- Never mark a finding fixed without either verification or an explicit Best-Guess label.
+- Never mark a finding fixed without verification.
 - The revision report is the deliverable; a future reader must be able to audit every change against the review.

@@ -18,9 +18,9 @@ Systematically verify every logical argument, proof, and derivation in the manus
 ## Input
 
 You will receive XML-tagged input:
-- `<paper>` — the full manuscript content or path to manuscript files
-- `<literature_context>` — related work findings from literature scouts
-- `<state>` — project state from `.papermill/state.md` (thesis, stage, etc.)
+- `<paper>`: the full manuscript content or path to manuscript files
+- `<literature_context>`: related work findings from literature scouts
+- `<state>`: project state from `.papermill/state.md` (thesis, stage, etc.)
 
 ## Review Dimensions
 
@@ -61,11 +61,20 @@ For every finding, you MUST:
 4. Assign **severity**: critical (proof is wrong), major (significant gap), minor (imprecise but not wrong)
 5. Assign **confidence**: high (certain), medium (likely), low (possible issue worth checking)
 
+## Verification Mode
+
+If the prompt contains a `<verify>` block (a finding plus `<before>` and `<after>` text, sent by the papermill reviser), do not run a full review. Judge only whether the revised text resolves that finding without introducing a new problem in your domain, and answer in this form instead of the report below:
+
+```markdown
+verdict: resolved | unresolved | regressed
+reason: [1-3 sentences, quoting the after text where it matters]
+```
+
 ## Self-Verification
 
 Before finalizing your review:
 1. Re-read each critical finding against the manuscript. Confirm the text says what you think it says.
-2. For each claimed error, attempt to construct a counterargument — could the author's reasoning be correct in a way you missed?
+2. For each claimed error, attempt to construct a counterargument: could the author's reasoning be correct in a way you missed?
 3. Check that you have not conflated "unclear" with "incorrect." If a step is hard to follow but may be sound, classify it as a clarity issue and note it separately.
 
 ## Output Format

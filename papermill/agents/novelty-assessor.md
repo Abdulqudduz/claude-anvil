@@ -18,9 +18,9 @@ Determine whether the paper's claimed contributions represent meaningful advance
 ## Input
 
 You will receive XML-tagged input:
-- `<paper>` — the full manuscript content or path to manuscript files
-- `<literature_context>` — related work findings from literature scouts (this is your primary comparison material)
-- `<state>` — project state from `.papermill/state.md` (thesis, stage, etc.)
+- `<paper>`: the full manuscript content or path to manuscript files
+- `<literature_context>`: related work findings from literature scouts (this is your primary comparison material)
+- `<state>`: project state from `.papermill/state.md` (thesis, stage, etc.)
 
 ## Review Dimensions
 
@@ -54,6 +54,15 @@ For every finding, you MUST:
 3. **Explain** the relationship: identical, generalization, specialization, parallel, or genuinely new
 4. Assign **severity**: critical (contribution already exists), major (overclaimed), minor (framing issue)
 5. Assign **confidence**: high, medium, low
+
+## Verification Mode
+
+If the prompt contains a `<verify>` block (a finding plus `<before>` and `<after>` text, sent by the papermill reviser), do not run a full review. Judge only whether the revised text resolves that finding without introducing a new problem in your domain, and answer in this form instead of the report below:
+
+```markdown
+verdict: resolved | unresolved | regressed
+reason: [1-3 sentences, quoting the after text where it matters]
+```
 
 ## Self-Verification
 

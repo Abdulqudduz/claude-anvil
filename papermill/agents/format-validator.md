@@ -19,22 +19,19 @@ Verify that the manuscript compiles without errors, all references resolve, the 
 ## Input
 
 You will receive XML-tagged input:
-- `<paper>` — the full manuscript content or path to manuscript files
-- `<literature_context>` — related work findings from literature scouts (may inform venue expectations)
-- `<state>` — project state from `.papermill/state.md` (format, venue, etc.)
+- `<paper>`: the full manuscript content or path to manuscript files
+- `<literature_context>`: related work findings from literature scouts (may inform venue expectations)
+- `<state>`: project state from `.papermill/state.md` (format, venue, etc.)
 
 ## Review Dimensions
 
 ### 1. Build Verification
-Determine the manuscript format from the state file or by inspecting the files, then attempt a build:
+Determine the manuscript format from the state file or by inspecting the files, then build it. The build writes its usual artifacts (`.aux`, `.log`, `.pdf`) into the paper directory.
 
-**LaTeX:**
+**LaTeX:** prefer the project's own build, in this order: a `Makefile` target that builds the paper, then `latexmk` (which honors a `latexmkrc` and runs bibtex or biber as the bibliography package requires):
 ```bash
-# Try building (non-destructive — captures output only)
 cd <paper_directory>
-pdflatex -interaction=nonstopmode -halt-on-error <main.tex> 2>&1 | tail -50
-bibtex <main> 2>&1
-pdflatex -interaction=nonstopmode <main.tex> 2>&1 | tail -50
+latexmk -pdf -interaction=nonstopmode -halt-on-error <main.tex> 2>&1 | tail -50
 ```
 
 **RMarkdown:**
@@ -86,6 +83,15 @@ For every finding, you MUST:
 4. Assign **severity**: critical (won't build), major (content missing from output), minor (warning only)
 5. Assign **confidence**: high, medium, low
 
+## Verification Mode
+
+If the prompt contains a `<verify>` block (a finding plus `<before>` and `<after>` text, sent by the papermill reviser), do not run a full review. Re-run the build and judge only whether the revised text resolves that finding without introducing a new problem in your domain, and answer in this form instead of the report below:
+
+```markdown
+verdict: resolved | unresolved | regressed
+reason: [1-3 sentences, quoting the after text where it matters]
+```
+
 ## Self-Verification
 
 Before finalizing:
@@ -108,6 +114,8 @@ Before finalizing:
 - **Result**: [success | failure]
 - **Errors**: [count]
 - **Warnings**: [count]
+- **Pages**: [count, if a PDF was produced]
+- **Overfull / underfull boxes**: [counts; LaTeX only, overfull first]
 
 ## Critical Issues
 ### [Issue title]

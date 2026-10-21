@@ -74,6 +74,19 @@ experiments:
     status: "planned | running | completed | failed"
     script: "path/to/script.R"
     last_run: null  # YYYY-MM-DD when last executed
+    config: {}      # optional; free-form run parameters (the simulation skill records replications, sample_sizes, parameter_configs)
+```
+
+### `prior_art.key_references[]`
+
+Populated by the prior-art skill. One entry per confirmed reference.
+
+```yaml
+prior_art:
+  key_references:
+    - key: "smith2020masked"   # BibTeX citation key
+      class: "foundational | competing | complementary | tangential"
+      relation: "One sentence on how it relates to this paper"
 ```
 
 ### `review_history[]`
@@ -135,6 +148,7 @@ related_papers:
 The markdown body below the frontmatter is free-form. Conventions:
 
 - **`## Notes`**: required section; init writes the first entry here ("Initialized by papermill on YYYY-MM-DD").
+- **`## Outline`** (optional): the approved section-by-section outline, written by the outline skill and read by the draft skill, the writer agent, and the status dashboard. Re-running outline replaces this section.
 - **`## Related Work and Software`** (optional): captures the natural-language context the user provided about related projects, preserved verbatim for Claude to read in future sessions.
 - **Timestamped entries**: skills (init refresh, review, etc.) may append dated bullets, e.g. `- 2026-04-21 (init refresh): Added missing thesis block.`
 

@@ -9,7 +9,7 @@ description: >-
 
 # Prior Art: Systematic Literature Survey
 
-Conduct a **collaborative, iterative** literature survey with the user. This is not a one-shot dump of references -- work together to map the landscape of existing work, identify gaps, and position the user's contribution.
+Conduct a **collaborative, iterative** literature survey with the user. This is not a one-shot dump of references: work together to map the landscape of existing work, identify gaps, and position the user's contribution.
 
 ## Step 1: Read Context
 
@@ -20,9 +20,9 @@ Begin by gathering everything you need to understand the research context.
    - Any existing `prior_art` entries (key references, gaps, last survey date).
    - The paper's target venue, discipline, and methodology.
 
-   If `.papermill/state.md` does not exist, the survey can still proceed — ask the user to describe their research topic and thesis directly. Suggest running `/papermill:init` afterward to persist the results.
+   If `.papermill/state.md` does not exist, the survey can still proceed: ask the user to describe their research topic and thesis directly. Suggest running `/papermill:init` afterward to persist the results.
 
-2. **Read existing `.bib` file(s)** (Glob/Read tools). Scan for all BibTeX files in the project (commonly `references.bib`, `paper/references.bib`, or similar). These are seed references. Parse out author names, titles, years, and keywords -- these seeds will anchor the search.
+2. **Read existing `.bib` file(s)** (Glob/Read tools). Scan for all BibTeX files in the project (commonly `references.bib`, `paper/references.bib`, or similar). These are seed references. Parse out author names, titles, years, and keywords: these seeds will anchor the search.
 
 3. **Summarize your understanding** back to the user before proceeding. Confirm: "Here is what I understand your paper is about, and here are the N existing references I found. Shall I begin the survey from this starting point?"
 
@@ -48,7 +48,7 @@ Use **WebSearch** (WebSearch tool) to query academic sources. For each search qu
 - arXiv (preprints, especially for CS/math/physics/statistics)
 - Semantic Scholar (structured metadata, citation graphs)
 
-Use **multiple formulations per concept** -- rephrase, use synonyms, try with and without quotes around key phrases. Academic search is noisy; redundancy is essential.
+Use **multiple formulations per concept**: rephrase, use synonyms, try with and without quotes around key phrases. Academic search is noisy; redundancy is essential.
 
 For each query, collect the top results. Do not chase every link. Focus on results that appear in multiple searches or that are highly cited.
 
@@ -122,7 +122,7 @@ After approval, append the new entries to the appropriate `.bib` file (Edit tool
 
 Update `.papermill/state.md` (Edit tool) with:
 
-- **`prior_art.key_references`**: Add each confirmed reference with citation key, classification, and a one-sentence relation description.
+- **`prior_art.key_references`**: Add each confirmed reference as `{key, class, relation}` (shape in `${CLAUDE_PLUGIN_ROOT}/docs/state-schema.md`).
 - **`prior_art.last_survey`**: Set to today's date.
 - **`prior_art.gaps`**: A concise summary of identified gaps.
 - **`stage`**: if it is `idea` or `thesis`, advance it to `literature` (never move it backward).
@@ -147,7 +147,7 @@ The agent writes its results to `.papermill/survey-results.md`. After it complet
 
 1. Read `.papermill/survey-results.md` (Read tool).
 2. Present a summary to the user (number of new references by category, updated gap analysis).
-3. Ask the user to confirm which new references to keep — present them in batches of 3-5, same as Step 6.
+3. Ask the user to confirm which new references to keep: present them in batches of 3-5, same as Step 6.
 4. Append confirmed BibTeX entries to the `.bib` file (Edit tool).
 5. Update `prior_art` in `.papermill/state.md` with any new key references and the refined gap analysis (Edit tool).
 

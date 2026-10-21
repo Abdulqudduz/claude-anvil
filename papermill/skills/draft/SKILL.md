@@ -14,8 +14,8 @@ Launch a multi-agent system to draft a research paper. The writing system uses s
 ## Step 1: Read Context
 
 Read `.papermill/state.md` (Read tool) for:
-- **Thesis**: The central claim and novelty (required — the draft serves the thesis)
-- **Outline**: Section structure (strongly recommended — guides section assignment)
+- **Thesis**: The central claim and novelty (required: the draft serves the thesis)
+- **Outline**: Section structure (strongly recommended: guides section assignment)
 - **Venue**: Target venue and format
 - **Prior art**: Key references and gaps
 - **Experiments**: Any registered experiments and their status
@@ -24,29 +24,29 @@ Read `.papermill/state.md` (Read tool) for:
 If `.papermill/state.md` does not exist, warn the user:
 
 > I can draft without a state file, but results will be much better if you first run:
-> 1. `/papermill:init` — to set up the project
-> 2. `/papermill:thesis` — to crystallize the central claim
-> 3. `/papermill:outline` — to design the paper structure
+> 1. `/papermill:init`: to set up the project
+> 2. `/papermill:thesis`: to crystallize the central claim
+> 3. `/papermill:outline`: to design the paper structure
 >
 > Want to proceed anyway, or set up the project first?
 
-If no **outline** exists but a thesis does, the writer orchestrator will create an outline as its first step — but an author-approved outline produces better results.
+If no **outline** exists but a thesis does, the writer orchestrator will create an outline as its first step, but an author-approved outline produces better results.
 
 ## Step 2: Identify Existing Content
 
 Scan the project for existing materials:
 
-1. **Manuscript files** (Glob: `*.tex`, `*.md`, `*.Rmd`) — is there already a partial draft?
-2. **Bibliography** (Glob: `*.bib`) — existing references
-3. **Code and data** (Glob: `code/`, `scripts/`, `data/`, `results/`) — evidence to incorporate
+1. **Manuscript files** (Glob: `*.tex`, `*.md`, `*.Rmd`): is there already a partial draft?
+2. **Bibliography** (Glob: `*.bib`): existing references
+3. **Code and data** (Glob: `code/`, `scripts/`, `data/`, `results/`): evidence to incorporate
 4. **Figures** (Glob: `images/`, `figures/`, `fig/`, `*.png`, `*.pdf` in paper directories)
 
 Summarize what exists to the user:
 
 > **Project inventory:**
-> - Thesis: [yes/no — quote if yes]
-> - Outline: [yes/no — summarize sections if yes]
-> - Existing draft: [yes/no — describe what exists]
+> - Thesis: [yes/no: quote if yes]
+> - Outline: [yes/no: summarize sections if yes]
+> - Existing draft: [yes/no: describe what exists]
 > - Bibliography: [N entries in file.bib]
 > - Code/data: [brief description]
 > - Figures: [N figures available]
@@ -56,9 +56,9 @@ Summarize what exists to the user:
 Ask the user what they want drafted:
 
 > I can draft:
-> 1. **Full paper** — all sections from abstract to conclusion
-> 2. **Specific sections** — choose which sections to write
-> 3. **Extension** — add new sections/content to an existing draft
+> 1. **Full paper**: all sections from abstract to conclusion
+> 2. **Specific sections**: choose which sections to write
+> 3. **Extension**: add new sections/content to an existing draft
 >
 > Which approach? And is there anything specific I should know about the paper's direction?
 
@@ -102,9 +102,9 @@ Present a summary to the user:
 > **Section drafts and writing plan**: `.papermill/drafts/YYYY-MM-DD-HHMM/`
 >
 > The draft is a starting point, not a final product. Key areas to review:
-> 1. [Most important thing to check — e.g., "Proof in Section 4 may need verification"]
-> 2. [Second priority — e.g., "Results section has placeholders for experimental data"]
-> 3. [Third priority — e.g., "Related work positioning could be sharpened"]
+> 1. [Most important thing to check: e.g., "Proof in Section 4 may need verification"]
+> 2. [Second priority: e.g., "Results section has placeholders for experimental data"]
+> 3. [Third priority: e.g., "Related work positioning could be sharpened"]
 
 Then ask: "Would you like to review specific sections, or run `/papermill:review` for a systematic evaluation?"
 
@@ -112,7 +112,7 @@ Then ask: "Would you like to review specific sections, or run `/papermill:review
 
 Update `.papermill/state.md` (Edit tool). If `.papermill/state.md` does not exist, skip this step and suggest `/papermill:init`. Updates:
 
-- Set `stage` to `drafting` (the schema's stage enum has no draft-complete value; `/papermill:review` advances it to `review`)
+- Advance `stage` to `drafting` if it is earlier in the stage enum (never move it backward; `/papermill:review` advances it to `review`)
 - Append a timestamped note documenting the draft:
 
 ```

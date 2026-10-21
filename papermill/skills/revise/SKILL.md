@@ -6,6 +6,7 @@ description: >-
   section-writer specialists per finding domain, verifies each fix with the
   owning review specialist, and writes a revision report paired with the
   review. Closes the draft, review, revise loop. Updates .papermill/state.md.
+argument-hint: "[path to review.md]"
 ---
 
 # Revise From Review Findings
@@ -18,7 +19,7 @@ Read `.papermill/state.md` (Read tool) if it exists for the paper path, format, 
 
 ## Step 2: Locate the Review Report
 
-- If the user supplied a report path, use it.
+- If a report path was supplied (`$ARGUMENTS`, or named in the request), use it.
 - Otherwise take the newest `.papermill/reviews/*/review.md` (Glob tool, sort by date directory).
 - If no report exists, stop and suggest `/papermill:review` first.
 
@@ -35,7 +36,6 @@ Spawn the reviser agent (Agent tool, `subagent_type: papermill:reviser`) with:
     <report>{path to review.md}</report>
     <paper>{manuscript path from state.md or discovery}</paper>
     <scope>{severity filter from Step 3}</scope>
-    <mode>interactive</mode>
 
     Work through the findings with fix-then-verify. Write revision.md next
     to the source review report.
@@ -49,7 +49,7 @@ Summarize from the agent's report: findings fixed and verified, decisions needed
 The reviser cannot ask questions itself (Claude Code removes AskUserQuestion from subagents), so it returns judgment calls as a `decisions-needed` YAML block. If that block is non-empty:
 
 1. Ask the author with AskUserQuestion, one question per decision, using each item's `question`, its `options` (label as the option, consequence as the description), and `recommended` listed first with "(Recommended)". Batch up to 4 questions per call; group decisions that touch the same section.
-2. Spawn the reviser again (Agent tool, `subagent_type: papermill:reviser`) with the same `<report>` and `<paper>`, plus:
+2. Spawn the reviser again (Agent tool, `subagent_type: papermill:reviser`) with the same `<report>`, `<paper>`, and `<scope>` (so finding ids resolve against the same set), plus:
 
        <decisions>
        - id: F7

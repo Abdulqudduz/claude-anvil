@@ -8,11 +8,11 @@ description: >-
 
 # Thesis Extraction and Refinement
 
-Act as a collaborative thinking partner helping the researcher crystallize the central claim and novelty of their work. The goal is to arrive at a thesis that is specific, falsifiable, and clearly distinguished from prior work -- stated in a single sentence.
+Act as a collaborative thinking partner helping the researcher crystallize the central claim and novelty of their work. The goal is to arrive at a thesis that is specific, falsifiable, and clearly distinguished from prior work: stated in a single sentence.
 
 ## Step 1: Read Context
 
-Start by reading `.papermill/state.md` in the project root (Read tool) to check for existing state (prior thesis drafts, paper metadata, outline, etc.). If the file does not exist, that is fine -- proceed without it.
+Start by reading `.papermill/state.md` in the project root (Read tool) to check for existing state (prior thesis drafts, paper metadata, outline, etc.). If the file does not exist, that is fine: proceed without it.
 
 Then determine which mode to operate in:
 
@@ -57,7 +57,7 @@ The sequence:
    Listen for what they have actually done or plan to do. Distinguish between aspirations and concrete results.
 
 3. **"How does this differ from what is already known?"**
-   This is where novelty lives. If they are unsure, that is a useful signal -- it may mean prior-art research is needed before the thesis can be finalized.
+   This is where novelty lives. If they are unsure, that is a useful signal: it may mean prior-art research is needed before the thesis can be finalized.
 
 4. **"Why should the reader care? What does this enable or change?"**
    This grounds the thesis in significance. A correct but trivial result needs a different framing than a surprising one.
@@ -68,7 +68,7 @@ After gathering answers, synthesize them into a one-sentence claim and a one-sen
 
 Before finalizing, run through these checks (silently at first, then raise any concerns with the researcher):
 
-- **Specificity**: Does the claim name concrete objects, properties, or results? "We prove that X has property Y under conditions Z" is good. "We study X" or "We explore Y" is not a thesis -- it is a topic.
+- **Specificity**: Does the claim name concrete objects, properties, or results? "We prove that X has property Y under conditions Z" is good. "We study X" or "We explore Y" is not a thesis: it is a topic.
 
 - **Falsifiability**: Could someone in principle show the claim is wrong? If not, it may be too vague or tautological.
 
@@ -111,15 +111,15 @@ After writing the thesis to the state file, suggest the natural next step:
 
 > Now that the thesis is pinned down, a good next move would be:
 >
-> - **`/papermill:prior-art`** -- to map out related work and make sure the novelty claim holds up against the literature.
-> - **`/papermill:outline`** -- to sketch the paper structure around this thesis.
+> - **`/papermill:prior-art`**: to map out related work and make sure the novelty claim holds up against the literature.
+> - **`/papermill:outline`**: to sketch the paper structure around this thesis.
 >
 > Which would be more useful right now?
 
 ## Tone and Approach
 
 - Be a thinking partner, not an evaluator. The researcher knows their work better than you do.
-- Ask before asserting. "It sounds like X -- is that right?" is better than "Your thesis is X."
+- Ask before asserting. "It sounds like X: is that right?" is better than "Your thesis is X."
 - Be direct about weaknesses. If the claim is vague, say so kindly but clearly.
 - Celebrate clarity when it emerges. A well-stated thesis is hard-won and worth acknowledging.
-- Keep the conversation focused. This skill is about the thesis, not about writing the paper. If the researcher drifts into outline or methodology discussions, gently redirect: "That is great material for the outline -- let us nail down the thesis first."
+- Keep the conversation focused. This skill is about the thesis, not about writing the paper. If the researcher drifts into outline or methodology discussions, gently redirect: "That is great material for the outline: let us nail down the thesis first."

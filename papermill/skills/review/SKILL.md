@@ -9,7 +9,7 @@ description: >-
 
 # Multi-Agent Editorial Review
 
-Launch a comprehensive multi-agent review of a research paper. The review system uses 8 specialist agents orchestrated by an area chair to evaluate logic, novelty, methodology, prose, citations, and formatting — grounded in literature context.
+Launch a comprehensive multi-agent review of a research paper. The review system uses 8 specialist agents orchestrated by an area chair to evaluate logic, novelty, methodology, prose, citations, and formatting: grounded in literature context.
 
 ## Step 1: Read Context
 
@@ -19,7 +19,7 @@ Read `.papermill/state.md` (Read tool) for:
 - **Review history**: Previous reviews and their findings.
 - **Format**: Paper format (latex, markdown, rmarkdown).
 
-If `.papermill/state.md` does not exist, the review can still proceed by reading the manuscript directly — but the review will be less targeted without thesis and venue context. Note this limitation to the user and suggest running `/papermill:init` first for best results.
+If `.papermill/state.md` does not exist, the review can still proceed by reading the manuscript directly, but the review will be less targeted without thesis and venue context. Note this limitation to the user and suggest running `/papermill:init` first for best results.
 
 ## Step 2: Identify the Manuscript
 
@@ -35,12 +35,12 @@ Read the manuscript to confirm it has enough content for review.
 Before launching the review, ask the user:
 
 > I'll launch a multi-agent review with specialists covering:
-> - **Logic & proofs** — mathematical correctness and argument structure
-> - **Novelty** — contribution evaluation against the literature
-> - **Methodology** — experimental design and statistical rigor
-> - **Prose** — writing quality and narrative structure
-> - **Citations** — reference accuracy and completeness
-> - **Formatting** — build verification and venue compliance
+> - **Logic & proofs**: mathematical correctness and argument structure
+> - **Novelty**: contribution evaluation against the literature
+> - **Methodology**: experimental design and statistical rigor
+> - **Prose**: writing quality and narrative structure
+> - **Citations**: reference accuracy and completeness
+> - **Formatting**: build verification and venue compliance
 >
 > Are there specific areas you want me to focus on, or should I run the full review?
 
@@ -61,11 +61,12 @@ The agent will:
 2. Spawn 2 literature scouts in parallel for field context
 3. Spawn 6 specialist reviewers in parallel
 4. Cross-verify critical findings
-5. Write individual specialist reports and a unified report to `.papermill/reviews/YYYY-MM-DD-HHMM/`
+5. Write individual specialist reports and a unified report to `.papermill/reviews/YYYY-MM-DD-HHMM/`, with stable finding ids (F1, F2, ...)
+6. Return the `review.md` path, recommendation, and counts
 
 ## Step 5: Present Results
 
-After the agent completes, read `.papermill/reviews/YYYY-MM-DD-HHMM/review.md` (Read tool).
+After the agent completes, read the `review.md` path it returned (Read tool).
 
 Present a summary to the user:
 
@@ -85,7 +86,7 @@ Present a summary to the user:
 > 2. [Second most important finding]
 > 3. [Third most important finding]
 >
-> The full report is at `.papermill/reviews/YYYY-MM-DD-HHMM/review.md`.
+> The full report is at `[returned review.md path]`.
 > Individual specialist reports are in the same directory.
 
 Then ask: "Would you like to go through the findings in detail, or address the critical issues first?"
@@ -105,7 +106,7 @@ review_history:
     findings_minor: M
     recommendation: "ready | minor-revision | major-revision | not-ready"
     notes: "Brief summary of key findings"
-    report_path: ".papermill/reviews/YYYY-MM-DD-HHMM/review.md"
+    report_path: "[returned review.md path]"
 ```
 
 Advance `stage` to `review` unless it is already `review` or `submission` (never move it backward).

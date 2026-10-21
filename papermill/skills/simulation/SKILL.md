@@ -8,7 +8,7 @@ description: >-
 
 # Monte Carlo Simulation Design
 
-Help the researcher design rigorous Monte Carlo simulations to validate theoretical results. Simulations bridge the gap between theory and practice -- they demonstrate that analytical formulas work as predicted and reveal finite-sample behavior.
+Help the researcher design rigorous Monte Carlo simulations to validate theoretical results. Simulations bridge the gap between theory and practice: they demonstrate that analytical formulas work as predicted and reveal finite-sample behavior.
 
 ## Step 1: Read Context
 
@@ -16,7 +16,7 @@ Read `.papermill/state.md` (Read tool) for:
 - **Thesis**: What theoretical result needs validation.
 - **Experiments**: Any existing simulation experiments.
 
-If `.papermill/state.md` does not exist, ask the user which theoretical result needs validation. Simulation design can proceed without the state file — suggest running `/papermill:init` afterward.
+If `.papermill/state.md` does not exist, ask the user which theoretical result needs validation. Simulation design can proceed without the state file: suggest running `/papermill:init` afterward.
 
 Scan the repository for existing simulation code and results (Glob/Read tools).
 
@@ -110,7 +110,7 @@ experiments:
     status: "planned"
     script: "research/simulate_covariance.R"
     last_run: null
-    config:  # simulation-specific extension, not in the base experiment schema
+    config:  # optional experiment field (see docs/state-schema.md)
       replications: 5000
       sample_sizes: [50, 100, 200, 500, 1000]
       parameter_configs: 3

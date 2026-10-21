@@ -9,7 +9,7 @@ description: >-
 
 # Papermill Init
 
-Initialize a paper repository for use with papermill. Follow every step below in order. Be thorough in discovery but conservative in action -- never overwrite existing state.
+Initialize a paper repository for use with papermill. Follow every step below in order. Be thorough in discovery but conservative in action: never overwrite existing state.
 
 ---
 
@@ -18,7 +18,7 @@ Initialize a paper repository for use with papermill. Follow every step below in
 Check for state files in this order (Read tool):
 
 1. **`.papermill/state.md`** (current format)
-2. **`.papermill.md`** (legacy format — needs migration)
+2. **`.papermill.md`** (legacy format: needs migration)
 
 ### Case A: `.papermill/state.md` exists
 
@@ -37,13 +37,7 @@ Read it, display a summary (title, stage, format, authors), then offer refresh:
 
 ### Case B: `.papermill.md` exists (legacy)
 
-Migrate to the new directory structure:
-
-1. Create `.papermill/` directory and `.papermill/reviews/` subdirectory (Bash tool: `mkdir -p .papermill/reviews`)
-2. Read `.papermill.md` content
-3. Write it to `.papermill/state.md` (Write tool)
-4. Delete `.papermill.md` (Bash tool: `rm .papermill.md`)
-5. Tell the user:
+Migrate it by following the "Migration From Legacy `.papermill.md`" steps in `${CLAUDE_PLUGIN_ROOT}/docs/state-schema.md` (Read tool), then tell the user:
 
   > **Migrated state file.** Moved `.papermill.md` → `.papermill/state.md` and created `.papermill/reviews/` for review output. All existing data preserved.
 
@@ -57,19 +51,11 @@ Continue to Step 2 (fresh initialization).
 
 ## Refresh Mode
 
-Refresh is **additive only** -- it fills gaps without touching existing data. Run through each check below, report what was found, and apply changes only with user confirmation.
+Refresh is **additive only**: it fills gaps without touching existing data. Run through each check below, report what was found, and apply changes only with user confirmation.
 
 ### 1. Schema migration
 
-Compare the existing YAML frontmatter against the current schema (shown in Step 7). For each field in the schema that is missing from the file, add it with its default value. Common cases:
-
-- Missing `thesis` block → add with empty `claim`, `novelty`, `refined: null`
-- Missing `prior_art` block → add with empty defaults
-- Missing `experiments` → add as `[]`
-- Missing `venue` block → add with `target: null`, `candidates: []`
-- Missing `review_history` → add as `[]`
-- Missing `related_papers` → add as `[]`
-- Missing `authors[].orcid` → add as `""`
+Compare the existing YAML frontmatter against the Full Template in `${CLAUDE_PLUGIN_ROOT}/docs/state-schema.md` (Read tool). For each field in the template that is missing from the file, add it with the template's default value.
 
 Report what was added: "Added N missing fields to bring the state file up to the current schema." If nothing is missing, say so.
 
@@ -87,7 +73,7 @@ For format mismatches, ask the user: "The state file says `latex` but I also fou
 
 Check for content that the current init flow captures but older versions may not have asked about:
 
-- **Related papers (Step 6)**: If `related_papers` is empty or missing, run the repoindex discovery query (if `repoindex` is available) and present any papermill-tracked projects found. Also re-ask the Step 6 question about related work and software. If `related_papers` is already populated, still offer repoindex discovery to catch newly-initialized projects: "You have N related papers linked. Want me to check for any new papermill-tracked projects?"
+- **Related papers (Step 6)**: If `related_papers` is empty or missing, run the repoindex discovery query (Step 6, if repoindex is available) and present any papermill-tracked projects found. Also re-ask the Step 6 question about related work and software. If `related_papers` is already populated, still offer repoindex discovery to catch newly-initialized projects: "You have N related papers linked. Want me to check for any new papermill-tracked projects?"
 - **Related work and software (Step 6)**: If the Notes section does not contain a `## Related Work` heading, run the related-work question from Step 6. If the user provides context, append it to the notes.
 - **Author ORCID**: If `authors[].orcid` is empty, check `deets` and offer to fill it in.
 - **Title**: If `title` is empty or looks like a placeholder, re-run title inference from Step 4.
@@ -149,7 +135,7 @@ Report a brief inventory of what was found, for example:
 
 Try to obtain the primary author's identity using the `deets` CLI tool, which manages personal metadata (Bash tool).
 
-Run these commands (each may fail if deets is not installed -- that is fine):
+Run these commands (each may fail if deets is not installed: that is fine):
 
 ```bash
 deets get identity.name
@@ -215,7 +201,7 @@ Ask the user whether this paper connects to any of their other projects or softw
 >
 > If so, briefly describe the relationships. If not, just say "standalone" and we'll move on.
 
-This step is optional — if the user says "standalone" or skips it, proceed without adding anything. Do not press for detail.
+This step is optional: if the user says "standalone" or skips it, proceed without adding anything. Do not press for detail.
 
 If the user describes relationships or software, do two things:
 
@@ -223,13 +209,7 @@ If the user describes relationships or software, do two things:
 
 2. **Structured entries**: For each relationship the user describes, create a `related_papers` entry. Ask the user to confirm for each:
    - The **path** to the related project (absolute or `~/`-relative).
-   - The **relationship type** (`rel`). Present the vocabulary and suggest the best fit:
-     - `extends` / `extended-by` — builds on or is built upon
-     - `implements` / `implemented-by` — theory ↔ software
-     - `companion` — different angle on the same research
-     - `series` — part of a numbered series
-     - `merged-into` — absorbed into another paper
-     - `supersedes` — replaces a previous version
+   - The **relationship type** (`rel`). Present the `rel` vocabulary table from `${CLAUDE_PLUGIN_ROOT}/docs/state-schema.md` and suggest the best fit.
    - A **one-line label** describing the relationship.
 
    Example interaction:
@@ -239,16 +219,16 @@ If the user describes relationships or software, do two things:
    > ```yaml
    > - path: ~/github/papers/masked-causes-in-series-systems
    >   rel: extends
-   >   label: "Foundation paper — general masked-cause framework"
+   >   label: "Foundation paper: general masked-cause framework"
    > ```
    >
    > Does that look right?
 
 ### Repoindex discovery (opt-in)
 
-After the manual question, check if `repoindex` is available (Bash tool: `command -v repoindex`). If it is:
+After the manual question, query the repoindex catalog for other papermill-tracked projects:
 
-1. Query for other papermill-tracked projects:
+1. Run `SELECT name, path FROM repos` through the repoindex MCP `run_sql` tool (e.g. `mcp__repoindex__run_sql`) if it is available. Only if no repoindex MCP tool exists, fall back to the CLI (Bash tool), guarded by `command -v repoindex`:
 
    ```bash
    repoindex sql "SELECT name, path FROM repos" --json
@@ -270,17 +250,17 @@ After the manual question, check if `repoindex` is available (Bash tool: `comman
 
 4. For each confirmed match, ask for `rel` type and label as above.
 
-If `repoindex` is not available or the query fails, skip silently and proceed.
+If neither the MCP tool nor the CLI is available, or the query fails, skip silently and proceed.
 
 ### Repo-clue scanning
 
 Also check for clues already in the repo (Read/Glob/Grep tools):
 - CLAUDE.md, README.md for mentions of related papers or packages
 - Bibliography for self-citations or references to sibling projects
-- DESCRIPTION file (R package), setup.py/pyproject.toml (Python package), or package.json (Node) — these indicate associated software
+- DESCRIPTION file (R package), setup.py/pyproject.toml (Python package), or package.json (Node): these indicate associated software
 - CITATION.cff for software DOIs
 
-If any are found, mention them: "I noticed this repo contains a DESCRIPTION file for an R package called `foo` — is the paper about this package? I also see references to [X] in the bibliography — is that related work of yours?"
+If any are found, mention them: "I noticed this repo contains a DESCRIPTION file for an R package called `foo`; is the paper about this package? I also see references to [X] in the bibliography; is that related work of yours?"
 
 ---
 

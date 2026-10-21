@@ -8,7 +8,7 @@ description: >-
 
 # Submission Polish
 
-Perform a final quality check on a research paper before submission. This is the last line of defense -- catch everything that would annoy a reviewer or cause a desk rejection.
+Perform a final quality check on a research paper before submission. This is the last line of defense: catch everything that would annoy a reviewer or cause a desk rejection.
 
 ## Step 1: Read Context
 
@@ -17,7 +17,7 @@ Read `.papermill/state.md` (Read tool) for:
 - **Format**: Paper format (latex, markdown, rmarkdown).
 - **Review history**: Outstanding issues from previous reviews.
 
-If `.papermill/state.md` does not exist, the pre-flight check can still run — infer the format from the manuscript files and ask the user for the target venue. The checklist works regardless. Suggest running `/papermill:init` to capture venue and format persistently.
+If `.papermill/state.md` does not exist, the pre-flight check can still run: infer the format from the manuscript files and ask the user for the target venue. The checklist works regardless. Suggest running `/papermill:init` to capture venue and format persistently.
 
 Read the complete manuscript (Read tool).
 
@@ -84,28 +84,7 @@ Work through each category systematically. Report issues as they are found.
 
 ## Step 3: Build Verification
 
-Run a clean build appropriate to the paper format (Bash tool). Use the manuscript path discovered in Step 1 (from `.papermill/state.md` or by scanning for `.tex`/`.md`/`.Rmd` files with Glob tool). Examples:
-
-**LaTeX papers:**
-```bash
-latexmk -pdf <path-to-main.tex>
-```
-
-**Markdown papers:**
-```bash
-pandoc <path-to-paper.md> -o paper.pdf
-```
-
-**R Markdown papers:**
-```bash
-Rscript -e "rmarkdown::render('<path-to-paper.Rmd>')"
-```
-
-Report:
-- Number of pages
-- Number of warnings (LaTeX warnings, pandoc warnings, R warnings)
-- Number of undefined references
-- Number of overfull/underfull hbox warnings (LaTeX; prioritize overfull)
+Launch the format validator (Agent tool, `subagent_type: "papermill:format-validator"`) with the manuscript path from Step 1 in `<paper>` and the state file contents in `<state>`. It owns the build recipe for every format and reports build status, page count, warnings, undefined references, and overfull/underfull boxes. Fold its findings into the checklist results.
 
 ## Step 4: Present Results
 
