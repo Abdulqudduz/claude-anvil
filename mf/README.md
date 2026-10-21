@@ -1,4 +1,4 @@
-# mf — Claude Code Plugin
+# mf: Claude Code Plugin
 
 Metafunctor site management for Claude Code. Manage papers, projects, series,
 and content for metafunctor.com, a Hugo site, with blog architecture and content
@@ -11,10 +11,11 @@ Live's `/usr/bin/mf` (Metafont): `uv tool install -e <path-to-mf-checkout>`.
 
 | Type | Name | Purpose |
 |------|------|---------|
-| Skill | `mf` | Site architecture guide, mf CLI reference, content workflows |
-| Skill | `scribe` | Discover latent themes across the corpus (a proposal, not a draft) |
-| Command | `/mf` | Site management (new posts, sync papers, health checks) |
-| Command | `/scribe` | Trigger the scribe theme-discovery skill |
+| Skill | `/mf` | mf CLI workflows: new posts, papers, projects, sync, health checks, deploy |
+| Skill | `/scribe` | Discover latent themes across the corpus (a proposal, not a draft) |
+
+Site facts (taxonomies, front matter, deploy) live in the site repo's own
+`CLAUDE.md`, which the `mf` skill reads at runtime.
 
 Cross-posting lives in the separate **crier** plugin (`/crier`), not here: mf
 creates and updates content, crier distributes it. The `scribe` skill reads the
@@ -25,7 +26,7 @@ self-contained Glob path as fallbacks.
 
 ```bash
 # From the marketplace
-/plugin install mf@queelius
+/plugin install mf@queelius-plugins
 ```
 
 ## Workflows

@@ -12,18 +12,28 @@ CLI is the mechanics. The skill turns a natural-language request into the right
 
 ## Components
 
-- **`skills/mf/SKILL.md`**: the site-architecture guide, `mf` CLI reference, and
-  content workflows. This is the source of truth for CLI syntax and site
-  conventions. Keep it factual; do not let it drift from the installed CLI.
-  Verify against `mf --help`, `mf <group> --help`, and `mf <group> fields`, and
-  prefer pointing at those over hardcoding lists that will drift. The skill's
-  preflight exists because TeX Live's `/usr/bin/mf` (Metafont) can shadow the
-  CLI; keep it.
-- **`commands/mf.md`**: thin wrapper that triggers the `mf` skill. Keep it thin.
-- **`skills/scribe/SKILL.md`** plus **`commands/scribe.md`**: latent-theme discovery
-  across the corpus. `scribe` is its own skill (not part of the `mf` skill); the
-  command is a thin wrapper. Keep workflow logic in the skill, not the command.
-  (`scribe` may use crier's `crier_search` as an optional accelerator.)
+- **`skills/mf/SKILL.md`**: `mf` CLI workflows (intent mapping, command groups,
+  dry-run semantics, site-root resolution). It is the source of truth for CLI
+  usage only. Keep it factual: verify against `mf --help`, `mf <group> --help`,
+  and `mf <group> fields`, and prefer pointing at those over hardcoding lists
+  that will drift. The preflight exists because TeX Live's `/usr/bin/mf`
+  (Metafont) can shadow the CLI; keep it.
+- **`skills/scribe/SKILL.md`**: latent-theme discovery across the corpus, its
+  own skill (not part of `mf`).
+- **No `commands/`.** Both skills are invoked directly as `/mf` and `/scribe`.
+  Do not add same-name command wrappers: inside a plugin a command with the
+  same name as a skill wins, and the skill never loads. Put `argument-hint` in
+  the skill frontmatter instead.
+
+## Site facts live in the site repo, not here
+
+Taxonomies and their front-matter keys (e.g. `linked-books`, not
+`linked_book`), front matter fields, bundle types, build/deploy, and site
+gotchas are documented once, in the site repo's `CLAUDE.md`
+(`~/github/repos/metafunctor/CLAUDE.md`). The skill's preflight tells Claude to
+Read it. Do not copy those facts back into the skill: the previous copy drifted
+(wrong deploy host, a removed section, a wrong taxonomy key). Fix site facts in
+the site repo.
 
 ## Boundary with the crier plugin
 
@@ -37,16 +47,12 @@ anywhere, declare it explicitly.
 
 ## Conventions to preserve when editing the skill
 
-These live in `skills/mf/SKILL.md`; do not "fix" them without understanding why:
-
-- Front matter uses `linked_project` (not `projects`) to avoid a Hugo URL
-  collision.
-- Front matter references slugs, not paths.
-- Content lives under `content/post` (singular `post`).
-- Rich projects use `_index.md`; simple ones use `index.md`.
-- `generate` verbs (e.g. `mf papers generate`) are read-only on the database; `sync` verbs (e.g. `mf projects sync`) mutate it. Neither is a top-level command. Databases exist
-  only for content whose ground truth lives elsewhere (projects, papers,
-  series), not for posts/writing.
+- `generate` verbs (e.g. `mf papers generate`) are read-only on the database;
+  `sync` verbs (e.g. `mf projects sync`) mutate it. Neither is a top-level
+  command. Databases exist only for content whose ground truth lives elsewhere
+  (projects, papers, series, pubs, packages), not for posts/writing.
+- The global `mf -n` is not honored by every group (`posts` ignores it). Keep
+  the skill's per-group dry-run list accurate when the CLI changes.
 - Site-root resolution order: `MF_SITE_ROOT`, then walk up for a `.mf/`
   directory, then `~/.config/mf/config.yaml`. This is why the skill "works from
   any directory." The `~/github/...` paths shown in the skill are the author's
@@ -61,6 +67,6 @@ without the other.
 ## Validation
 
 ```bash
-# Skill + command frontmatter
-for f in skills/*/SKILL.md commands/*.md; do echo "=== $f ===" && head -5 "$f"; done
+# Skill frontmatter
+for f in skills/*/SKILL.md; do echo "=== $f ===" && head -5 "$f"; done
 ```

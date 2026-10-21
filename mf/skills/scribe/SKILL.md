@@ -1,19 +1,14 @@
 ---
 name: scribe
 description: Discover latent themes in the metafunctor corpus. Use when the user wants to find implicit through-lines across their blog posts, surface recurring ideas they have not consciously framed as a series, or get candidate themes for a synthesis post. Reads titles, descriptions, and tags; proposes 3 themes that connect 4+ posts each, each with a single-sentence through-line. Output is a proposal, not a draft. Trigger phrases include "find themes in my posts", "what threads connect my writing", "latent themes in my corpus", "scribe".
+argument-hint: "[time window like 5y | --tag <name>]"
 ---
 
 # Scribe: latent theme discovery
 
-The smallest useful agent: find threads in your own corpus that you did not realize you had already written.
+Find threads in the user's corpus that they did not realize they had already written. Scan every published post, return up to 3 candidate themes that connect at least 4 posts each, each with a one-sentence through-line and its source posts. The output is a proposal, never a draft.
 
-## What this does (and doesn't)
-
-**Does**: scans every post in the metafunctor `content/post/` directory, returns 3 candidate themes that connect at least 4 posts each, each with a one-sentence through-line and a list of source posts.
-
-**Does NOT**: write a draft. The output is a proposal you accept or reject. If you accept one, you tell me to expand it; we iterate from there. The smallest scribe stops at "here are the candidates."
-
-This is intentional. Voice fidelity is hard. Validating that the corpus has interesting structure is easy. Do the easy thing first; if the candidates feel real, we build the drafting layer next.
+Arguments: a time window (`5y`) or `--tag <name>` filter; default is the full corpus.
 
 ## Workflow
 
@@ -26,10 +21,10 @@ Get title, date, description, and tags for every post. Three paths, in preferenc
    - `/scribe --tag philosophy`: `mf posts list --json -t philosophy`
    - Requires an mf build that includes `description` in the JSON (added 2026-06-09); if `description` is missing from the output, fall through.
    - First confirm `mf --version` prints `mf, version ...`. TeX Live's `/usr/bin/mf` (Metafont) can shadow the metafunctor CLI; if that is what runs, or if the output is not a JSON array for any reason, fall through to the next path (and mention that `uv tool install -e ~/github/repos/mf` fixes it).
-2. **`crier_search` (if the crier plugin is installed)**: `crier_search(limit=300)`.
-3. **Glob fallback (fully self-contained)**: resolve the metafunctor site root the way the `mf` skill does (the `MF_SITE_ROOT` env var, or the configured site root), then `Glob` `content/post/**/index.md` and read the YAML front matter.
+2. **`crier_search` (if the crier plugin is installed)**: `crier_search(limit=1000)` (the default limit is 50, and the corpus is past 250 posts; check that the count returned is below the limit).
+3. **Glob fallback (fully self-contained)**: resolve the metafunctor site root from the `MF_SITE_ROOT` env var or the `site_root` key in `~/.config/mf/config.yaml`, then `Glob` `content/post/**/index.md` and read the YAML front matter.
 
-You only need title, date, description, and tags; do not read post bodies for the smallest scribe. Default is the full corpus.
+You only need title, date, description, and tags; do not read post bodies.
 
 ### 2. Find themes
 
@@ -81,13 +76,7 @@ Pick a theme to develop (1, 2, 3) | Reject all (none feel real) | Show me more t
 
 ### 4. Stop
 
-That's the smallest scribe. After this, the user picks one and either:
-
-- Asks you to expand it: propose a structure, sample paragraph, source-post mapping. (This is the "scribe iterative" loop, not yet built.)
-- Rejects all and asks for more candidates.
-- Says one is interesting but the framing is off and renames it.
-
-For the smallest version, your job ends at presenting the three. Don't auto-expand. The user is the editor.
+Your job ends at presenting the candidates. Do not auto-expand; the user is the editor. They may pick one to expand (then propose a structure and source-post mapping), reject all and ask for more, or rename one whose framing is off.
 
 ## Quality bar
 
@@ -113,18 +102,7 @@ Report this honestly. Do not invent a theme to fill the slot.
 
 ## When to use other things instead
 
-- **Already know the theme**, just want help with the synthesis: skip scribe, use `/mf` with intent "synthesis post about X."
-- **Want to find unposted gaps in cross-posting**: that is the crier plugin's `/chronicler`, not scribe.
+- **Already know the theme**, just want help with the synthesis: skip scribe and use the `mf` skill's New Post workflow.
+- **Want to find unposted gaps in cross-posting**: that is `/crier:chronicler`, not scribe.
 - **Want to audit cross-posting status**: dispatch the crier plugin's `auditor` agent.
 - **Want to draft a brand-new post on a fresh topic** (not synthesis): regular Claude Code, no special command needed.
-
-## Future versions (do NOT implement in the smallest scribe)
-
-The smallest scribe stops at theme proposal. Future iterations would add:
-
-- **Iterative drafting**: theme to outline to sample paragraph to user grades voice to expand section by section.
-- **Link graph signal**: actually parse internal links between posts to find anchor posts and co-citations. The smallest version uses LLM clustering only.
-- **Tag refinement suggestions**: "your tags are too coarse; here are 8 finer-grained tags I'd add."
-- **Cross-pollination**: "this old post about X is relevant to the new conversation about Y."
-
-These are bigger features and need user feedback on the smallest version first. If candidates from the smallest scribe feel real, we keep building. If they don't, we change the signal (link graph, embeddings) before adding drafting.
