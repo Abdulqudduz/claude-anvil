@@ -1,115 +1,66 @@
 ---
 name: pypi-publish
 description: >-
-  Audit a Python package's metadata, verify tests pass, build
-  distributions, test on TestPyPI, then publish to PyPI. Validates name,
-  version, readme rendering, and dependency requirements. Handles
-  credential setup and trusted publishers.
+  Audit a Python package's metadata, verify tests pass, build and check
+  distributions, then publish to PyPI via trusted publishing (GitHub
+  Actions OIDC), with token upload as the fallback. Use for "publish my
+  Python package". For an R package use r-publish; for a standalone LaTeX
+  paper use the papermill plugin instead.
+argument-hint: "[package path]"
 ---
 
 # PyPI Package Publication
 
-Guide the complete workflow for publishing a Python package to the Python Package Index (PyPI). This skill audits package metadata, verifies tests pass, builds distributions, tests on TestPyPI, and handles the final publication.
+Audit, build, and publish a Python package to PyPI. The default publishing path is a trusted publisher: a GitHub Actions workflow authenticated by OIDC, triggered by a GitHub release, with no long-lived token. Every upload command here is non-interactive; never run anything that prompts for credentials.
 
 ## Workflow
 
-### 1. Locate the Package
+### 1. Locate the Package (Glob tool)
 
-Identify the Python package to publish. Use Glob tool to search for:
-- `pyproject.toml` (modern standard)
-- `setup.py` (legacy)
-- `setup.cfg` (legacy configuration)
+Package root: `$ARGUMENTS` if given, else the current directory. Look for `pyproject.toml` (preferred), `setup.py`, or `setup.cfg`. If there are none, say so: point to `/pub-pipeline:r-publish` when a `DESCRIPTION` file exists, or the papermill plugin for a `.tex` paper.
 
-If multiple build configuration files exist, prefer `pyproject.toml`. If no package configuration is found, ask the user which package to publish.
+### 2. Load User Config (Read tool)
 
-### 2. Load User Config
+Read `.claude/pub-pipeline.local.md` if it exists (author metadata for `authors`). If missing, offer to create it from `${CLAUDE_PLUGIN_ROOT}/docs/user-config-template.md`.
 
-Read `.claude/pub-pipeline.local.md` if it exists (Read tool). Extract `python.pypi_username` from YAML frontmatter. If the file is missing, inform the user and offer to create one from the template at `${CLAUDE_PLUGIN_ROOT}/docs/user-config-template.md`.
-
-### 3. Audit Package Metadata
-
-Read the package configuration file(s) and verify all required metadata fields are present and properly formatted.
-
-**Required fields** (Read tool):
+### 3. Audit Package Metadata (Read tool)
 
 | Field | Check |
 |-------|-------|
 | `name` | Present, follows PyPI naming rules (lowercase, hyphens/underscores only) |
-| `version` | Present, follows PEP 440 (e.g., "1.0.0", "0.1.0a1") |
+| `version` | Present, PEP 440 (e.g. "1.0.0", "0.1.0a1") |
 | `description` | Present, concise one-line summary |
-| `readme` | Points to existing README file (README.md, README.rst) |
-| `license` | SPDX license expression string (e.g. `"MIT"`), per PEP 639; the `{text = ...}` / `{file = ...}` table form is deprecated |
+| `readme` | Points to an existing README file |
+| `license` | SPDX expression string (e.g. `"MIT"`), per PEP 639; the `{text = ...}` / `{file = ...}` table form is deprecated |
 | `license-files` | Globs for license files (e.g. `["LICENSE"]`); each must match a file |
 | `authors` or `maintainers` | At least one with name and email |
 | `urls` | Homepage, documentation, repository, bug tracker |
-| `classifiers` | Development status, intended audience, Python versions. No `License ::` classifiers (deprecated by PEP 639; build tools may reject them alongside `license`) |
-| `requires-python` | Minimum Python version; floor it at a non-EOL release (`">=3.11"` as of 2026-10, when 3.10 reached end of life) |
+| `classifiers` | Development status, audience, Python versions. No `License ::` classifiers (deprecated by PEP 639; build tools may reject them alongside `license`) |
+| `requires-python` | Floor at a non-EOL release (`">=3.11"` as of 2026-10, when 3.10 reached end of life) |
 
-**Recommended fields**:
-- `keywords` — searchability on PyPI
-- `dependencies` — runtime requirements
-- `optional-dependencies` — extras like `dev`, `test`, `docs`
+Recommended: `keywords`, `dependencies`, `optional-dependencies` (`dev`, `test`, `docs`).
 
-### 4. Check README Renders Correctly
+### 4. Verify Tests Pass (Bash tool)
 
-Verify the README file renders as valid Markdown or reStructuredText and will display correctly on PyPI.
+Run `python -m pytest` (or `python -m unittest discover` if pytest is not the runner). If tests fail, stop and report. Do not publish.
 
-**Build and validate** (Bash tool):
+### 5. Check the Version Is New (Bash tool)
+
+PyPI's JSON API is structured; query it rather than parsing pip output:
 ```bash
-cd /path/to/package && python -m build && twine check dist/*
+curl -s https://pypi.org/pypi/<name>/json | python3 -c 'import json,sys; print(sorted(json.load(sys.stdin)["releases"]))'
 ```
+A 404 means the project does not exist yet (a first release, which needs a pending publisher in step 8). If the current version is already listed, it must be bumped: PyPI never accepts the same version twice.
 
-With uv, build with `uv build --no-sources` and validate with `uvx twine check dist/*` (uv has no README check of its own). twine must be >= 6.1 to accept Core Metadata 2.4, which PEP 639 license fields produce.
+### 6. Build and Check Distributions (Bash tool)
 
-This creates source distribution and wheel, then validates that PyPI will accept the long description. Any rendering errors must be fixed before proceeding.
-
-### 5. Verify Tests Exist and Pass
-
-Confirm the package has a test suite and all tests pass.
-
-**Run tests** (Bash tool):
+Clean, build once, and validate the long description:
 ```bash
-cd /path/to/package && python -m pytest
+cd /path/to/package && rm -rf dist/* && python -m build && python -m twine check --strict dist/*
 ```
+With uv: `rm -rf dist/* && uv build --no-sources && uvx twine check --strict dist/*`. Use whichever toolchain the project already uses. twine must be >= 6.1 to accept Core Metadata 2.4, which the PEP 639 license fields produce. Confirm `dist/` holds exactly one sdist (`.tar.gz`) and one wheel for this version.
 
-If pytest is not the test runner, try:
-```bash
-cd /path/to/package && python -m unittest discover
-```
-
-If tests fail, stop and report the failures. Do not proceed with publishing.
-
-### 6. Check Version Not Already Published
-
-Verify the version number has been bumped and does not conflict with an existing PyPI release.
-
-**Check PyPI** (Bash tool):
-```bash
-pip index versions package-name
-```
-
-If the current version already exists on PyPI, inform the user. PyPI does not allow re-uploading the same version number. The version must be incremented.
-
-### 7. Build Distributions
-
-Build source distribution (sdist) and wheel (bdist_wheel).
-
-**Clean and build** (Bash tool):
-```bash
-cd /path/to/package && rm -rf dist/* && python -m build
-```
-
-Equivalent with uv (Bash tool): `cd /path/to/package && rm -rf dist/* && uv build --no-sources`. Use whichever toolchain the project already uses.
-
-Important: Always clean `dist/` before building to avoid uploading stale artifacts from previous builds.
-
-Verify that `dist/` now contains:
-- `package-name-X.Y.Z.tar.gz` (source distribution)
-- `package_name-X.Y.Z-py3-none-any.whl` (wheel)
-
-### 8. Produce Pre-Publication Audit Report
-
-Format the pre-publication audit as a structured markdown report:
+### 7. Pre-Publication Audit Report
 
 ```markdown
 # PyPI Audit Report: {package name} v{version}
@@ -117,151 +68,61 @@ Format the pre-publication audit as a structured markdown report:
 ## Summary
 - **Status**: READY / NEEDS WORK / NOT READY
 - **PyPI URL**: https://pypi.org/project/{package-name}/
-- **TestPyPI**: Tested / Not tested
+- **Publishing path**: trusted publisher (workflow found / to create) | token fallback
 - **Checks**: X/Y passed
 
-## Metadata Audit
+## Critical (Must Fix)
+1. [Issue]: [how to fix]
 
-### Required Fields
-- [x] or [ ] name
-- [x] or [ ] version
-- [x] or [ ] description
-- [x] or [ ] readme
-- [x] or [ ] license
-- [x] or [ ] authors/maintainers
-- [x] or [ ] urls
-- [x] or [ ] classifiers
-- [x] or [ ] requires-python (non-EOL floor)
+## Warnings (Should Fix)
+1. [Issue]: [recommendation]
 
-### Recommended Fields
-- [x] or [ ] keywords
-- [x] or [ ] dependencies
-- [x] or [ ] optional-dependencies
-
-## Quality Checks
-- [x] or [ ] README renders correctly (twine check)
-- [x] or [ ] Tests exist and pass
-- [x] or [ ] Version not yet on PyPI
-- [x] or [ ] Build succeeds (sdist + wheel)
-
-## Issues Found
-
-### Critical (Must Fix Before Publishing)
-1. [Issue description]: [how to fix]
-
-### Warnings (Should Fix)
-1. [Issue description]: [recommendation]
+## Passed
+- [Check name]
 
 ## Recommended Next Steps
-1. [Ordered list of actions]
+1. [Ordered actions]
 ```
 
-Do not proceed to TestPyPI or PyPI upload unless the audit Status is READY.
+Do not publish unless Status is READY.
 
-### 9. Test Upload to TestPyPI
+### 8. Publish via Trusted Publisher (default)
 
-Upload to TestPyPI (test.pypi.org) to verify the upload process and package metadata before publishing to production PyPI.
+1. **Workflow** (Glob/Read tools): look in `.github/workflows/` for a workflow using `pypa/gh-action-pypi-publish`. If none exists, write `.github/workflows/publish.yml` from the template in `${CLAUDE_PLUGIN_ROOT}/docs/pypi-reference.md` (separate build and publish jobs; only the publish job gets `id-token: write`; triggered on `release: published`; environment `pypi`).
+2. **Environment** (Bash tool): `gh api -X PUT repos/{owner}/{repo}/environments/pypi` creates the `pypi` environment if missing.
+3. **Register the publisher (user, browser)**: this is the one step that needs the user's PyPI login. Give them the exact values: project name, owner, repository, workflow file name (`publish.yml`), environment `pypi`. Existing project: project settings, Publishing. New project: account Publishing page, **pending publisher** (the first trusted upload creates the project). Wait for the user to confirm.
+4. **Release** (Bash tool): commit and push the workflow, then
+   ```bash
+   gh release create vX.Y.Z --title "vX.Y.Z" --generate-notes
+   gh run watch "$(gh run list --workflow publish.yml --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+   ```
+   The action uploads PEP 740 attestations by default.
 
-**Upload to TestPyPI** (Bash tool):
+**Optional rehearsal on TestPyPI**: register a second trusted publisher on test.pypi.org and add a TestPyPI job (`repository-url: https://test.pypi.org/legacy/`), or use the token fallback below with `--repository testpypi` / `uv publish --index testpypi` (needs a `[[tool.uv.index]]` entry, see the reference). Install with `pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ <name>`, since TestPyPI lacks most dependencies.
+
+### 8b. Token Fallback (no GitHub, or user declines trusted publishing)
+
+Uploads must read the token from the environment, never a prompt. Ask the user to export a project-scoped token in their own shell (or put it in `~/.pypirc`), then run:
 ```bash
-cd /path/to/package && twine upload --repository testpypi dist/*
+TWINE_USERNAME=__token__ python -m twine upload --non-interactive dist/*   # reads TWINE_PASSWORD
+uv publish                                                                 # reads UV_PUBLISH_TOKEN
 ```
+If neither variable is set, stop and ask; do not retry interactively. Never echo, log, or commit the token.
 
-With uv: `uv publish --index testpypi`, which needs a `[[tool.uv.index]]` entry named `testpypi` with `publish-url = "https://test.pypi.org/legacy/"` (see `${CLAUDE_PLUGIN_ROOT}/docs/pypi-reference.md`).
+### 9. Post-Publication (Bash tool)
 
-User will be prompted for TestPyPI credentials:
-- Username: `__token__`
-- Password: TestPyPI API token (starts with `pypi-`)
-
-If the user does not have a TestPyPI account or token, provide instructions:
-1. Create account at https://test.pypi.org/account/register/
-2. Generate API token at https://test.pypi.org/manage/account/token/
-3. Store token in `~/.pypirc` or enter when prompted
-
-### 10. Test Install from TestPyPI
-
-Verify the package installs correctly from TestPyPI.
-
-**Install from TestPyPI** (Bash tool):
 ```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ package-name
+curl -s https://pypi.org/pypi/<name>/<version>/json | python3 -c 'import json,sys; print(json.load(sys.stdin)["info"]["version"])'
+python -m pip install --upgrade <name> && python -c "import <import_name>; print(<import_name>.__version__)"
 ```
-
-The `--extra-index-url` flag allows dependencies to be installed from production PyPI while the target package comes from TestPyPI.
-
-**Verify installation**:
-```bash
-python -c "import package_name; print(package_name.__version__)"
-```
-
-If import fails or version is incorrect, investigate and fix before publishing to production PyPI.
-
-### 11. Publish to PyPI
-
-Upload to production PyPI.
-
-**Final upload** (Bash tool):
-```bash
-cd /path/to/package && twine upload dist/*
-```
-
-With uv: `uv publish` (token via `--token` or `UV_PUBLISH_TOKEN`).
-
-User will be prompted for PyPI credentials:
-- Username: `__token__`
-- Password: PyPI API token (starts with `pypi-`)
-
-If the user does not have a PyPI account or token, provide instructions:
-1. Create account at https://pypi.org/account/register/
-2. Generate API token at https://pypi.org/manage/account/token/
-3. Scope the token to this specific project (recommended) or use account-wide token
-4. Store token in `~/.pypirc` for future uploads
-
-### 12. Post-Publication Tasks
-
-After successful publication, verify the package is installable and complete post-release tasks.
-
-**Verify installation** (Bash tool):
-```bash
-pip install package-name
-python -c "import package_name; print(package_name.__version__)"
-```
-
-**Create GitHub release** (Bash tool):
-```bash
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
-git push origin vX.Y.Z
-gh release create vX.Y.Z --title "vX.Y.Z" --notes "PyPI release: https://pypi.org/project/package-name/X.Y.Z/"
-```
-
-**Additional recommendations**:
-- Update project documentation with installation instructions
-- Announce release on relevant channels (blog, social media, mailing lists)
-- Monitor PyPI project page for download statistics
-- Set up GitHub Actions for automated publishing (see Trusted Publishers below)
+On the token path, also create the GitHub release (`gh release create vX.Y.Z --generate-notes`). Then update the installation docs.
 
 ## Reference Files
 
-For complete PyPI requirements, metadata specifications, and publishing best practices, consult:
-- **`${CLAUDE_PLUGIN_ROOT}/docs/pypi-reference.md`** — Full PyPI metadata requirements, TestPyPI workflow, trusted publisher setup, and common rejection reasons
+- **`${CLAUDE_PLUGIN_ROOT}/docs/pypi-reference.md`**: full metadata requirements, the trusted publisher workflow template, TestPyPI configuration, common upload errors
 
 ## Important Notes
 
-- **Version immutability**: Once a version is published to PyPI, it cannot be deleted or re-uploaded. Increment the version for any changes. Bump the patch version for fixes and the minor version for features; reserve `.postN` for metadata-only corrections. (Avoid `+suffix` forms: PEP 440 local versions are rejected by PyPI.)
-
-- **Clean dist/ before building**: Always `rm -rf dist/*` before running `python -m build`. Stale artifacts from previous builds can cause confusion or upload wrong files.
-
-- **Authentication with `__token__`**: When prompted for username, always use `__token__` (literal string). The password is the API token. Never commit tokens to version control.
-
-- **Trusted Publishers (GitHub Actions OIDC)**: For automated publishing from GitHub Actions, set up a Trusted Publisher at https://pypi.org/manage/account/publishing/. This eliminates the need for long-lived API tokens. The workflow uses OIDC authentication. For a project that does not exist on PyPI yet, register a **pending publisher**; the first trusted upload creates the project. Keep the build in a separate job from the publish job that holds `id-token: write`. `pypa/gh-action-pypi-publish` generates and uploads PEP 740 attestations by default. Full workflow in `${CLAUDE_PLUGIN_ROOT}/docs/pypi-reference.md`.
-
-- **TestPyPI is not a staging environment**: TestPyPI is for testing the upload and installation process. It is not a full mirror of PyPI and may not have all dependencies. Always test with `--extra-index-url https://pypi.org/simple/` to allow dependencies from production PyPI.
-
-- **Classifiers matter**: PyPI classifiers affect discoverability. Include classifiers for development status (Alpha/Beta/Stable), intended audience, and all supported Python versions (e.g., "Programming Language :: Python :: 3.12"). Express the license with the `license` field, not a `License ::` classifier.
-
-- **README is the PyPI homepage**: The README file becomes the project description page on PyPI. Ensure it includes installation instructions, quick start examples, and links to documentation.
-
-- **Build tool requirements**: Ensure `build` and `twine` (>= 6.1) are installed before running this workflow, or use uv instead:
-  ```bash
-  pip install build "twine>=6.1"
-  ```
+- **Version immutability**: a published version can never be re-uploaded, even after deletion. Bump the patch version for fixes and the minor version for features; reserve `.postN` for metadata-only corrections. PyPI rejects PEP 440 local versions (`+suffix`).
+- **README is the PyPI homepage**: include installation, a quick start, and documentation links.
+- **Classifiers** drive discoverability: development status, audience, and every supported Python version. Express the license with `license`, not a classifier.

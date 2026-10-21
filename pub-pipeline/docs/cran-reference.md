@@ -17,11 +17,11 @@
 - [ ] **Title**: Title Case, no terminal period, no redundant "A Package for..." or "R Package for...", no package name in title
 - [ ] **Version**: Follows `major.minor.patch` or `major.minor-patch` convention; incremented from any previous CRAN version
 - [ ] **Authors@R**: Uses `person()` with proper roles:
-  - `aut` — author (wrote substantial code)
-  - `cre` — creator/maintainer (exactly one, with valid email)
-  - `ctb` — contributor
-  - `cph` — copyright holder (required if bundling third-party code)
-  - `fnd` — funder (optional)
+  - `aut`: author (wrote substantial code)
+  - `cre`: creator/maintainer (exactly one, with valid email)
+  - `ctb`: contributor
+  - `cph`: copyright holder (required if bundling third-party code)
+  - `fnd`: funder (optional)
 - [ ] **Maintainer email**: Real, monitored address belonging to a person (not a mailing list or generic address)
 - [ ] **Description**: One paragraph, complete sentences. No package name. Use author-year citations with DOI, ISBN, or URL in angle brackets: `<doi:10.1234/example>` or `<https://example.com>`
 - [ ] **License**: From CRAN's accepted list (MIT, GPL-2, GPL-3, Apache-2.0, BSD_2_clause, BSD_3_clause, LGPL, Artistic-2.0, CC BY 4.0 for data packages). Use `+ file LICENSE` for MIT and BSD variants
@@ -70,7 +70,7 @@
 
 #### File System Discipline
 - [ ] No writing to user's home directory, working directory, or package installation directory
-- [ ] Temporary files written only to `tempdir()` — cleaned up via `on.exit(unlink(tmpfile))`
+- [ ] Temporary files written only to `tempdir()`: cleaned up via `on.exit(unlink(tmpfile))`
 - [ ] Persistent user data stored only via `tools::R_user_dir(package, which = "data")` or `tools::R_user_dir(package, which = "config")`
 - [ ] Cache files stored via `tools::R_user_dir(package, which = "cache")`
 - [ ] All file paths constructed with `file.path()` (not `paste()` with `/`)
@@ -88,7 +88,7 @@
 - [ ] Every exported function has an `@returns` tag describing the return value (type + meaning)
 - [ ] Every exported function has `@examples` with runnable code
 - [ ] Use `\donttest{}` for slow examples (>5s). Since R 4.0.0, `R CMD check --as-cran` DOES run `\donttest{}` examples, so they must still succeed; guard internet-dependent ones (e.g. `if (curl::has_internet())`) or use `\dontrun{}` only when the code genuinely cannot run
-- [ ] Do NOT use `\dontrun{}` unless the example truly cannot run (requires credentials, hardware, etc.) — CRAN reviewers flag this
+- [ ] Do NOT use `\dontrun{}` unless the example truly cannot run (requires credentials, hardware, etc.): CRAN reviewers flag this
 - [ ] `@param` tags for every argument, with type and description
 - [ ] Internal functions documented with `@keywords internal` or `@noRd`
 - [ ] Cross-references use `\code{\link{fun}}` or `[fun()]` in roxygen2 markdown mode
@@ -104,7 +104,7 @@
 - [ ] `NEWS.md` documents user-visible changes for this version
 - [ ] `README.md` with installation instructions, basic usage, badges
 - [ ] `cran-comments.md` prepared with test environments, R CMD check results, and downstream dependencies
-- [ ] All URLs valid — run `urlchecker::url_check()` to verify
+- [ ] All URLs valid: run `urlchecker::url_check()` to verify
 - [ ] No broken internal links in documentation
 
 ### Dependencies
@@ -200,15 +200,15 @@
 11. **Confirm submission**: Click the confirmation link in the email sent to the maintainer address. Submission is not registered until confirmed.
 
 12. **Track progress**: Monitor https://r-hub.github.io/cransays/articles/dashboard.html or https://CRAN.R-project.org/incoming/ for your package's status through the queue folders:
-    - `inspect` — automated checks running
-    - `pretest` — building and testing
-    - `human` — awaiting manual review
-    - `publish` — accepted, will appear on CRAN shortly
+    - `inspect`: automated checks running
+    - `pretest`: building and testing
+    - `human`: awaiting manual review
+    - `publish`: accepted, will appear on CRAN shortly
 
 ### Post-Acceptance
 
-1. **Create GitHub release**: `usethis::use_github_release()` — tags the commit and creates a release
-2. **Bump to dev version**: `usethis::use_dev_version(push = TRUE)` — sets version to `x.y.z.9000`
+1. **Create GitHub release**: `usethis::use_github_release()`: tags the commit and creates a release
+2. **Bump to dev version**: `usethis::use_dev_version(push = TRUE)`: sets version to `x.y.z.9000`
 3. **Monitor CRAN check results**: Watch https://cran.r-project.org/web/checks/check_results_{package}.html for a few days
 4. **Update pkgdown site**: Rebuild and deploy if applicable
 5. **Announce**: Blog post, social media, R-bloggers, rOpenSci newsletter (if applicable)
@@ -265,9 +265,9 @@
 
 ### Timing and Etiquette
 - [ ] Do not resubmit more than once per week unless asked to by CRAN
-- [ ] CRAN reviewers are volunteers — be respectful and concise in all communications
+- [ ] CRAN reviewers are volunteers: be respectful and concise in all communications
 - [ ] Reply to reviewer emails promptly and address all points
-- [ ] If you disagree with a requirement, explain your reasoning politely — but the reviewer's decision is final
+- [ ] If you disagree with a requirement, explain your reasoning politely, but the reviewer's decision is final
 - [ ] Repeated problematic submissions may result in the maintainer being flagged
 
 ### Package Archived by CRAN

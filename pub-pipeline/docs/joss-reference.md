@@ -24,10 +24,10 @@
 - [ ] Packaged per language community standards (CRAN for R, PyPI for Python, etc.)
 
 ### Development History
-- [ ] Minimum 6 months of public development history
-- [ ] Evidence of releases, public issues, and pull requests
-- [ ] Contributions from individuals beyond original team (encouraged but not strictly required)
-- [ ] Active maintenance (recent commits, responsive to issues)
+- [ ] Repository public for more than 6 months before submission, with development sustained over that time (repos made public just before submission, or with work concentrated into a few days or weeks, are not accepted)
+- [ ] Multi-author projects: evidence of issues, pull requests, and public discussion
+- [ ] Single-author projects: multiple indicators among tagged releases or a changelog, tests and CI, clear documentation, and a `CONTRIBUTING` file
+- [ ] Contributions from individuals beyond the original team (encouraged, not required)
 
 ### Author Requirements
 - [ ] Submitting author is a major contributor to the software
@@ -78,19 +78,19 @@ bibliography: paper.bib
 - [ ] **authors**: Every author must have `name`, `orcid`, and `affiliation`. Use `corresponding: true` for the corresponding author
 - [ ] **orcid**: Full 16-digit ORCID for every author (no exceptions). Register at https://orcid.org if needed
 - [ ] **affiliations**: Use `index` numbers referenced by author entries. Include `ror` (Research Organization Registry ID) when available
-- [ ] **date**: Submission date in "DD Month YYYY" format
+- [ ] **date**: Submission date in `%e %B %Y` format (e.g. "9 October 2026", no leading zero)
 - [ ] **bibliography**: Points to `paper.bib` (BibTeX file in the same directory)
 
 ### Required Sections
 
 1. **Summary**: High-level functionality for a non-specialist audience. 1-3 short paragraphs (JOSS sets no fixed count).
-2. **Statement of Need** — Research problem, target audience, why existing tools are insufficient.
-3. **State of the Field** — Name competing packages explicitly and explain how this software differs. Vague claims without citations are flagged by reviewers.
-4. **Software Design** — Architecture, design decisions, and trade-offs.
-5. **Research Impact Statement** — Evidence of realized impact (publications, external use, integrations), or for new software credible near-term significance backed by specifics (benchmarks, reproducible materials, community-readiness signals); JOSS requires the evidence to be "compelling and specific, not aspirational".
-6. **AI Usage Disclosure** — Required even if AI was not used (state "No AI tools were used").
-7. **Acknowledgements** — Financial support, computing resources, non-author contributors.
-8. **References** — Auto-generated from `paper.bib`.
+2. **Statement of Need**: Research problem, target audience, why existing tools are insufficient.
+3. **State of the Field**: Name competing packages explicitly and explain how this software differs. Vague claims without citations are flagged by reviewers.
+4. **Software Design**: Architecture, design decisions, and trade-offs.
+5. **Research Impact Statement**: Evidence of realized impact (publications, external use, integrations), or for new software credible near-term significance backed by specifics (benchmarks, reproducible materials, community-readiness signals); JOSS requires the evidence to be "compelling and specific, not aspirational".
+6. **AI Usage Disclosure**: Required even if AI was not used (state "No AI tools were used").
+7. **Acknowledgements**: Financial support, computing resources, non-author contributors.
+8. **References**: Auto-generated from `paper.bib`.
 
 ### Word Count
 - Target: 750-1750 words (excluding references and frontmatter)
@@ -103,7 +103,7 @@ bibliography: paper.bib
 - In-text: `@key` renders as "Author (Year)"
 - Multiple: `[@key1; @key2]` renders as "(Author1 Year1; Author2 Year2)"
 - With page: `[@key, p. 42]` renders as "(Author Year, p. 42)"
-- BibTeX entries in `paper.bib` — use full venue names (not abbreviations)
+- BibTeX entries in `paper.bib`: use full venue names (not abbreviations)
 
 ### Math Support
 - Inline: `$x$` or `$\sin \frac{\pi}{2}$`
@@ -152,7 +152,6 @@ bibliography: paper.bib
 - [ ] Automated test suite with instructions for running tests
 - [ ] Contribution guidelines (`CONTRIBUTING.md` or equivalent)
 - [ ] Issue reporting and support guidelines
-- [ ] Code of conduct (recommended)
 
 ### Paper Quality
 - [ ] **Summary** is clear and accessible to non-specialists
@@ -191,25 +190,23 @@ bibliography: paper.bib
 
 ### Step-by-Step
 
-1. **Pre-submission inquiry** (optional but recommended): Open an issue at https://github.com/openjournals/joss-reviews/issues to check scope. An editor responds within a few days.
+1. **Prepare repository**: Ensure all reviewer checklist items pass. The repository is the primary artifact under review.
 
-2. **Prepare repository**: Ensure all reviewer checklist items pass. The repository is the primary artifact under review.
+2. **Write `paper.md` and `paper.bib`**: Place in the repository root or a `paper/` subdirectory.
 
-3. **Write `paper.md` and `paper.bib`**: Place in the repository root or a `paper/` subdirectory.
+3. **Submit** at https://joss.theoj.org/papers/new with the repository URL and branch containing `paper.md`.
 
-4. **Submit** at https://joss.theoj.org/papers/new with the repository URL and branch containing `paper.md`.
+4. **Pre-review issue created**: A bot creates a GitHub issue in `openjournals/joss-reviews`. Managing editor checks scope and assigns a handling editor.
 
-5. **Pre-review issue created**: A bot creates a GitHub issue in `openjournals/joss-reviews`. Managing editor checks scope and assigns a handling editor.
+5. **Editor assigns reviewers**: 2+ reviewers assigned (typically within 1-2 weeks).
 
-6. **Editor assigns reviewers**: 2+ reviewers assigned (typically within 1-2 weeks).
+6. **Review period**: Reviewers work through the checklist in the GitHub issue, checking boxes and leaving comments. Target: 2 weeks for initial review, 4-8 weeks total.
 
-7. **Review period**: Reviewers work through the checklist in the GitHub issue, checking boxes and leaving comments. Target: 2 weeks for initial review, 4-8 weeks total.
+7. **Author responds**: Address each checklist item, comment in the review issue confirming what was fixed.
 
-8. **Author responds**: Address each checklist item, comment in the review issue confirming what was fixed.
+8. **Reviewers confirm**: Once all checklist items satisfied, reviewers recommend acceptance.
 
-9. **Reviewers confirm**: Once all checklist items satisfied, reviewers recommend acceptance.
-
-10. **Acceptance and archival**: Create tagged release, deposit with Zenodo/figshare for archive DOI, update review issue. JOSS assigns paper DOI via CrossRef.
+9. **Acceptance and archival**: Create tagged release, deposit with Zenodo/figshare for archive DOI, update review issue. JOSS assigns paper DOI via CrossRef.
 
 **No submission or publication fees.** JOSS is a free, open-access journal.
 
@@ -223,6 +220,10 @@ bibliography: paper.bib
 ---
 
 ## Common Issues in Review
+
+### Paper Checks
+
+Compile with the official toolchain before submitting: `docker run --rm -v "$PWD/paper:/data" -u "$(id -u):$(id -g)" --env JOURNAL=joss openjournals/inara`, or the Open Journals GitHub Action. Check citations with `pandoc paper.md --citeproc --bibliography paper.bib -o /dev/null`, which warns on every unresolved key.
 
 ### Paper Content
 1. **Weak "State of the Field"**: The most common criticism. Name 3-5 competing packages and explain the gap your software fills. Vague claims without citations are insufficient
@@ -272,4 +273,4 @@ bibliography: paper.bib
 
 ---
 
-**Last Updated**: 2026-02-16
+**Last Updated**: 2026-10-21 (verified against the JOSS submitting, paper, and review checklist pages)

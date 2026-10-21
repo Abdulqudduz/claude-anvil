@@ -1,6 +1,6 @@
 ---
 name: software-auditor
-description: "Audits software quality against JOSS criteria: tests, docs, CI, installation, API design. Internal specialist dispatched by the joss-reviewer orchestrator via Task; not intended for direct invocation."
+description: "Audits software quality against JOSS criteria: tests, docs, CI, installation, API design. Internal specialist dispatched by the joss-reviewer orchestrator via the Agent tool; not intended for direct invocation."
 tools:
   - Glob
   - Grep
@@ -116,18 +116,18 @@ Report: errors, warnings, notes.
 ### [Finding title]
 - **Dimension**: installation | tests | docs | ci | api | build
 - **Severity**: critical | major | minor
-- **Evidence**: [specific observation — file, line, output]
+- **Evidence**: [specific observation: file, line, output]
 - **Fix**: [actionable suggestion]
 
 [Repeat for each finding, ordered by severity]
 
 ## Strengths
-[Notable positives — high coverage, good error messages, etc.]
+[Notable positives: high coverage, good error messages, etc.]
 ```
 
 ## Important Notes
 
-- Run actual commands — don't guess. JOSS reviewers will run them too.
+- Run actual commands; don't guess. JOSS reviewers will run them too.
 - Report raw numbers: test count, coverage %, warning count. Don't round or soften.
 - A package with 0 tests is a critical finding. < 50% coverage is major. > 80% is good.
 - Missing vignettes are major for JOSS (they want real-world usage documentation).

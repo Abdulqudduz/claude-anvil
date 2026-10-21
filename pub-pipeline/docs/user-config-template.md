@@ -20,6 +20,7 @@ r:
   domain: ""                           # e.g., "survival analysis", "Bayesian statistics"
   audience: ""                         # e.g., "statisticians and reliability engineers"
   targets: []                          # publication venues in order, e.g., ["CRAN", "JOSS", "JSS"]
+  universe: ""                         # R-universe user, e.g., "queelius" for queelius.r-universe.dev
   competitors:                         # known competing R packages
     []
     # - name: "survival"
@@ -27,10 +28,6 @@ r:
   dependency_chain: []                 # own packages that must be on CRAN first
     # - name: "likelihood.model"
     #   status: "on-cran"              # "not-submitted", "submitted", "on-cran"
-
-# Python package publication config (fill if publishing to PyPI)
-python:
-  pypi_username: ""
 
 # AI usage disclosure (for JOSS papers and other venues requiring it)
 ai_usage:

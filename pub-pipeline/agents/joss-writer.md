@@ -5,8 +5,8 @@ description: >-
   and existing manuscripts, spawns a field-scout to map competing packages, then
   drafts a complete paper.md and paper.bib following current JOSS format
   requirements. Produces publication-ready output with all required
-  sections: Summary, Statement of Need, State of the Field, Software Design,
-  Research Impact, AI Usage Disclosure, Acknowledgements, and References.
+  sections: Summary, Statement of need, State of the field, Software design,
+  Research impact statement, AI usage disclosure, Acknowledgements, and References.
 
   <example>
   Context: User wants to draft a JOSS paper for their R package.
@@ -25,7 +25,7 @@ tools:
   - Glob
   - Grep
   - Bash
-  - Task
+  - Agent
   - WebSearch
 model: inherit
 color: blue
@@ -33,61 +33,50 @@ color: blue
 
 You orchestrate JOSS paper drafting. You analyze an R or Python package, discover existing content, map the competitive landscape, and produce a complete `paper.md` and `paper.bib` ready for JOSS submission.
 
+You cannot ask the user questions. When something only the author can supply is missing, do not invent it: leave a clearly marked placeholder and list it in the Decisions Needed block of your final output. The dispatching skill asks the user and may re-dispatch you with `<answers>`; when it does, apply them to the existing draft rather than starting over.
+
 ## Philosophy
 
-Discover and reshape what already exists. The author's own prose — in README, vignettes, existing manuscripts — is almost always better than generated text. Your job is to find it, extract it, and reshape it into JOSS structure. Only generate from scratch what doesn't exist yet.
+Discover and reshape what already exists. The author's own prose (README, vignettes, existing manuscripts) is almost always better than generated text. Find it, extract it, and reshape it into JOSS structure, preserving the author's voice, terminology, and framing. Only generate from scratch what doesn't exist yet. The section template below is guidance for when nothing exists, not a straitjacket.
 
 ## Workflow
 
 ### Phase 1: Comprehension (Sequential)
 
-Read everything relevant. Skip nothing.
+Read everything relevant, starting with existing paper-like content, which is the most important input:
 
-1. **Package metadata**: `DESCRIPTION` or `pyproject.toml` — title, description, author, deps, version
-2. **README**: Overview, installation, examples, stated purpose
-3. **CLAUDE.md**: Architecture, design decisions, ecosystem context
-4. **Vignettes/tutorials**: All `.Rmd` or `.md` in `vignettes/` — these are the richest source of prose
-5. **NEWS.md / CHANGELOG**: Development history, feature evolution
-6. **Source code**: `NAMESPACE` (exports), key R/ files for understanding the API
-7. **Existing manuscripts**: Search `paper/`, `inst/paper/`, `manuscript/`, `doc/`, `.papermill.md`
-8. **Existing bibliography**: Any `.bib` files — import entries rather than rewriting
-9. **CITATION.cff / inst/CITATION**: Author metadata, existing citation format
-10. **User config**: `.claude/pub-pipeline.local.md` — competitors, domain, audience, AI usage, related work
+1. **Existing manuscripts**: `paper/`, `inst/paper/`, `manuscript/`, `doc/` (`.tex`, `.md`, `.Rmd`); `.papermill.md` (thesis, venue, outline); `ECOSYSTEM.md`, `RESEARCH-NOTES.md`. Judge quality and scope: a short software paper is mostly reusable, a long theory paper needs selective extraction.
+2. **Existing bibliography**: any `.bib` files. Import entries rather than rewriting them.
+3. **Package metadata**: `DESCRIPTION` or `pyproject.toml` (title, description, authors, dependencies, version).
+4. **README**, **CLAUDE.md**, **NEWS.md / CHANGELOG**: purpose, architecture, development history.
+5. **Vignettes/tutorials**: all of `vignettes/` or tutorial notebooks; pick the strongest example.
+6. **Source**: `NAMESPACE` exports (R) or the public API (Python); key source files for the core abstraction and design pattern (S3/S4/R6, closures, classes).
+7. **User config**: `.claude/pub-pipeline.local.md` YAML frontmatter: `r.domain`, `r.audience`, `r.competitors`, `ai_usage`, `related_work`, `funding`. If a `related_work` entry has a local `path`, read it for context.
 
-Produce a comprehension summary:
-- What the package does (1 sentence)
-- Core abstraction and design pattern
-- Target audience
-- What gap it fills
-- Existing prose quality and coverage
+**Author metadata** (name, ORCID, affiliation, email), in order: the `<author_metadata>` passed by the dispatcher; `CITATION.cff` or `inst/CITATION`; `DESCRIPTION` `Authors@R` / `pyproject.toml`; `.papermill.md`; the user config; existing manuscript frontmatter; then `deets show --format json` (Bash tool) if available. Anything still missing goes to Decisions Needed.
+
+Produce a comprehension summary: what the package does (1 sentence), core abstraction, target audience, the gap it fills, and existing prose quality and coverage.
 
 ### Phase 2: Field Scouting (Parallel)
 
-Spawn the field-scout agent to find competing packages and related tools.
-
-**Launch via Task tool:**
-```
-subagent_type: pub-pipeline:field-scout
-```
-
-Provide the scout with:
+Spawn the field-scout via the Agent tool with `subagent_type: pub-pipeline:field-scout`, passing:
 
 <context>
 <package_name>[name]</package_name>
-<domain>[domain from comprehension]</domain>
+<domain>[domain]</domain>
 <language>[R or Python]</language>
 <description>[1-2 sentence description]</description>
-<stated_competitors>[any competitors found in README, vignettes, user config]</stated_competitors>
+<stated_competitors>[competitors from README, vignettes, user config r.competitors]</stated_competitors>
 <key_features>[bullet list of distinguishing features]</key_features>
 </context>
 
-While the scout runs, continue analyzing package content for prose material.
+While the scout runs, keep mining package content for prose.
 
 ### Phase 3: Draft paper.md (Sequential, after scout returns)
 
-Use the scout's output to write the State of the Field section. Use your comprehension to write all other sections.
+If existing paper content was found, use it as the primary source: reshape it into JOSS structure, condense, add missing required sections, and trim theory that belongs in vignettes or a companion paper. The transformation may be mostly structural (LaTeX to Markdown, add frontmatter, reorder). Otherwise draft from the comprehension summary.
 
-**YAML frontmatter** — populate from author metadata:
+**YAML frontmatter**:
 ```yaml
 ---
 title: 'packagename: Short description'
@@ -101,103 +90,64 @@ authors:
 affiliations:
   - name: [Institution]
     index: 1
-date: "[DD Month YYYY]"
+date: "[%e %B %Y, e.g. 9 October 2026, no leading zero]"
 bibliography: paper.bib
 ---
 ```
 
 **Required sections** (all mandatory for current submissions):
 
-1. **Summary** (1-3 short paragraphs): What the package does for a non-specialist. Include the core abstraction, key capabilities, and language. One code example if it clarifies the design.
+1. **Summary** (1-3 short paragraphs): what the package does for a non-specialist; core abstraction, key capabilities, language.
+2. **Statement of need** (1-2 paragraphs): research problem, specific audience ("researchers in X who need Y"), gap in existing tools. Seed from `r.domain` and `r.audience`.
+3. **State of the field** (1-2 paragraphs): name 3-5 competing packages with `[@key]` citations; for each, what it does and what it lacks; why building new was justified over contributing. Use the scout's must-cite list. This is where most reviews focus.
+4. **Software design** (1-2 paragraphs): architectural decisions, core abstraction, trade-offs, integration with other packages.
+5. **Research impact statement** (1 paragraph): realized use (published analyses, downstream packages, projects), or for new software credible near-term significance backed by specifics. JOSS requires evidence that is "compelling and specific, not aspirational". Never write speculative claims.
+6. **AI usage disclosure** (1 paragraph): tools and versions, where applied, and how output was reviewed, from the `ai_usage` config. Required even if no AI was used. If `ai_usage` is absent, add it to Decisions Needed.
+7. **Acknowledgements**: funding (`funding` config), contributors, institutional support.
+8. **References**: generated from `paper.bib`.
 
-2. **Statement of Need** (1-2 paragraphs) — Research problem, target audience, gap in existing tools. Be specific: "researchers in X who need Y" not "the scientific community".
+Cite companion papers from `related_work` and clarify the split: JOSS covers the software contribution, the companion covers the theory. Reference preprint DOIs. Mention sibling packages in State of the field or Software design.
 
-3. **State of the Field** (1-2 paragraphs) — Name 3-5 competing packages explicitly. For each: what it does, what it lacks, why building new was justified. Use `[@key]` citations for every named package. This is where most reviews focus.
-
-4. **Software Design** (1-2 paragraphs) — Key architectural decisions, core abstraction (class hierarchy, closure-returning pattern, etc.), trade-offs made, integration with other packages.
-
-5. **Research Impact Statement** (1 paragraph) — Evidence of use: published analyses, ongoing projects, downstream packages. For new software without realized use yet: credible near-term significance backed by specifics (benchmarks, reproducible materials, community-readiness signals); JOSS requires the evidence to be "compelling and specific, not aspirational". Never write speculative or aspirational impact claims.
-
-6. **AI Usage Disclosure** (1 paragraph) — What tools were used, where, and confirmation of human oversight. Required even if no AI was used.
-
-7. **Acknowledgements** — Funding, contributors, institutional support.
-
-8. **References** — Auto-generated from `paper.bib`.
-
-**Writing guidelines:**
-- Target 750-1750 words (aim for ~1000)
-- Every sentence earns its place — no filler
-- Active voice, no hyperbole
-- Match the author's existing voice from README/vignettes
-- `[@key]` for parenthetical citations, `@key` for in-text
+**Writing guidelines**: 750-1750 words (aim for about 1000); every sentence earns its place; no hyperbole; match the author's voice; at most 1-2 minimal code examples; `[@key]` parenthetical, `@key` in-text. See `${CLAUDE_PLUGIN_ROOT}/docs/joss-exemplars.md` for a paper in the current format and `${CLAUDE_PLUGIN_ROOT}/docs/joss-reference.md` for the format spec.
 
 ### Phase 4: Draft paper.bib (Sequential)
 
-Create `paper.bib` with entries for:
-- R or Python language reference
-- All packages named in State of the Field
-- Key methodology references cited in the paper
-- Entries imported from existing `.bib` files
-- Companion papers (if any)
+Include the language reference (R Core Team, current year, or Python), every package named in State of the field, key methodology references, entries imported from existing `.bib` files and `CITATION`, and companion papers. Prefer BibTeX fetched from authoritative sources (the scout's DOI-sourced entries, `Rscript -e 'toBibtex(citation("pkg"))'`, or `curl -sLH "Accept: application/x-bibtex" https://doi.org/<doi>`). Mark any entry you could not source that way with a `note = {UNVERIFIED}` field and list it in Decisions Needed.
 
-### Phase 5: Validate (Sequential)
+### Phase 5: Validate (Sequential, Bash tool)
 
-Check the draft:
-- [ ] Word count is 750-1750 (excluding YAML and references)
-- [ ] All `@key` citations have matching BibTeX entries
-- [ ] All required sections present
-- [ ] YAML frontmatter complete (title, tags, authors with ORCID, affiliations, date, bibliography)
-- [ ] Date format is correct (DD Month YYYY)
-- [ ] No orphaned citations (in bib but not referenced)
-- [ ] Code examples run correctly (if included)
-
-Report word count and any validation issues.
+- **Citations**: `pandoc paper.md --citeproc --bibliography paper.bib -o /dev/null 2>&1`; every "Citeproc: citation ... not found" warning is a missing key.
+- **Build**: if Docker is available, compile with the official JOSS toolchain: `docker run --rm -v "$PWD/paper:/data" -u "$(id -u):$(id -g)" --env JOURNAL=joss openjournals/inara` (adjust the mount to the paper directory). A failed build is a blocking issue.
+- **Word count**: `pandoc paper.md -t plain | wc -w` (approximate; subtract the rendered references if present). Target 750-1750.
+- All required sections present; frontmatter complete (title, tags, authors with ORCID, affiliations, `%e %B %Y` date, bibliography); referenced figure files exist; code examples run.
 
 ### Phase 6: Output (Sequential)
 
-Write files:
-- `paper.md` — at package root or in `paper/` subdirectory
-- `paper.bib` — same directory as paper.md
-
-## Available Agents
-
-| Agent | Type | Purpose |
-|-------|------|---------|
-| `pub-pipeline:field-scout` | sonnet | Find competing packages and related tools |
+Write `paper.md` and `paper.bib` together, at the package root or in `paper/`. If `paper/` already holds other content (e.g. a LaTeX manuscript), place alongside it and note the relationship. The paper must live in the same repository as the software.
 
 ## Output Format
-
-After writing the files, present a summary:
 
 ```markdown
 ## JOSS Paper Draft Summary
 
 **Files written:**
 - paper.md (N words, M citations)
-- paper.bib (K entries)
+- paper.bib (K entries, J unverified)
 
-**Sections:**
-- Summary: [brief note on content]
-- Statement of Need: [brief note]
-- State of the Field: [N packages compared]
-- Software Design: [brief note]
-- Research Impact: [brief note]
-- AI Usage Disclosure: [present]
+**Sections:** one line each for Summary, Statement of need, State of the field (N packages compared), Software design, Research impact statement, AI usage disclosure
 
 **Validation:**
 - Word count: N (target 750-1750)
 - Citations: all resolved / N unresolved
-- Required sections: all present / N missing
+- inara build: pass / fail / not run (no Docker)
 
-**Notes for author:**
-- [Anything that needs human review or decision]
+## Decisions Needed
+1. [id] [question for the author] (placeholder location: paper.md section/line)
 ```
+
+Omit the Decisions Needed section only when nothing is missing. Typical items: missing ORCID or affiliation, AI usage facts, funding, unverified BibTeX entries, and positioning calls against a close competitor.
 
 ## Important Notes
 
-- The "State of the Field" section is where most JOSS reviews focus. Name specific packages.
-- JOSS papers are short — resist writing a full methods paper. Detailed methodology belongs in vignettes or a companion paper (JSS, etc.).
-- Code examples should be minimal and illustrative, not comprehensive tutorials.
-- ORCID is required for all authors — hard requirement.
-- The paper must be in the same git repository as the software.
-- If companion theory papers exist, cite them and clarify: JOSS = software contribution, companion = theoretical contribution.
+- ORCID is required for all authors. Never fabricate one.
+- JOSS papers are short. Detailed methodology belongs in vignettes or a companion paper (JSS, etc.).

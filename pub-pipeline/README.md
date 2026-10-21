@@ -1,43 +1,34 @@
 # pub-pipeline
 
-A Claude Code plugin for automating publication workflows across multiple ecosystems:
+A Claude Code plugin for publication workflows:
 
-- **R packages**: CRAN → JOSS → JSS
-- **Python packages**: PyPI
+- **R packages**: CRAN (and R-universe status), then JOSS, then optionally JSS
+- **Python packages**: PyPI, via trusted publishing
 
-## Skills & Commands
+## Skills
 
-### R Package Publication
+Each skill is also a slash command.
 
-| Command | Skill | Purpose |
-|---------|-------|---------|
-| `/cran-audit` | cran-audit | Audit package against CRAN Repository Policy |
-| `/joss-audit` | joss-audit | Evaluate against JOSS reviewer checklist |
-| `/joss-draft` | joss-draft | Draft `paper.md` and `paper.bib` for JOSS |
-| `/r-publish` | r-pub-pipeline | Orchestrate the full CRAN → JOSS → JSS pipeline |
+| Command | Purpose |
+|---------|---------|
+| `/pub-pipeline:r-publish` | Orchestrate the full R pipeline: CRAN, JOSS, optional JSS |
+| `/pub-pipeline:cran-audit` | Audit an R package against CRAN Repository Policy |
+| `/pub-pipeline:joss-audit` | Review a package and `paper.md` against the JOSS reviewer checklist |
+| `/pub-pipeline:joss-draft` | Draft `paper.md` and `paper.bib` for JOSS |
+| `/pub-pipeline:pypi-publish` | Audit, build, and publish to PyPI |
 
-### Python Package Publication
-
-| Command | Skill | Purpose |
-|---------|-------|---------|
-| `/pypi-publish` | pypi-publish | Audit, build, test, and publish to PyPI |
-
-### Auto-Detection
-
-Say "publish my package" or "publication pipeline" and the top-level `pub-pipeline` skill will detect your project type (R or Python) and route to the right workflow.
+Saying "publish my R package" or "publish my Python package" also triggers the matching skill.
 
 ## Multi-Agent JOSS System
 
-`/joss-draft` and `/joss-audit` are backed by a multi-agent system: two orchestrators each spawn specialist agents in parallel.
+`/pub-pipeline:joss-draft` and `/pub-pipeline:joss-audit` dispatch two orchestrator agents and relay their questions back to you:
 
-- **joss-writer** drafts `paper.md` and `paper.bib`, spawning **field-scout** to map competing packages for the State of the Field.
-- **joss-reviewer** evaluates the package and paper against the JOSS checklist, spawning **software-auditor** (tests, coverage, CI, API docs), **community-auditor** (LICENSE, CONTRIBUTING, CODE_OF_CONDUCT, development history), and **field-scout** (missing comparisons), then synthesizes a unified gap report.
-
-Agents pass context via XML tags and return structured findings the orchestrator merges.
+- **joss-writer** drafts `paper.md` and `paper.bib`, spawning **field-scout** to map competing packages (BibTeX sourced from DOIs; unverified entries are labeled).
+- **joss-reviewer** spawns **software-auditor**, **community-auditor**, and **field-scout** in parallel, then synthesizes one gap report.
 
 ## Configuration
 
-Copy `docs/user-config-template.md` to `.claude/pub-pipeline.local.md` in your project and fill in your details:
+Copy `docs/user-config-template.md` to `.claude/pub-pipeline.local.md` in your project:
 
 ```yaml
 author:
@@ -47,31 +38,28 @@ author:
   affiliation: "Your Institution"
 ```
 
-The config provides author metadata, competing package info, AI usage disclosure, and ecosystem-specific settings shared across all skills.
+The config holds author metadata, competing packages, the R-universe user, AI usage disclosure, and related work.
 
 ## Installation
 
 ```bash
 /plugin marketplace add queelius/claude-anvil
-/plugin install pub-pipeline@queelius
+/plugin install pub-pipeline@queelius-plugins
 ```
 
 ## Prerequisites
 
-**R packages**: R with `devtools`, `covr`, `testthat`, `urlchecker`; `gh` CLI
-
-**Python packages**: Python with `build`, `twine`, `pytest`
+- **R packages**: R with `devtools`, `covr`, `testthat`, `urlchecker`, `rhub`; `gh` CLI
+- **JOSS papers**: `pandoc`; Docker for the `openjournals/inara` build (optional)
+- **Python packages**: `build` and `twine>=6.1` (or `uv`), `pytest`; `gh` CLI for trusted-publisher releases
 
 ## Reference Documents
 
-The `docs/` directory contains comprehensive reference material:
-
-- `user-config-template.md` — Shared user configuration template
-- `cran-reference.md` — CRAN Repository Policy and submission checklist
-- `joss-reference.md` — JOSS requirements and reviewer checklist
-- `joss-exemplars.md` — Real JOSS R package paper examples
-- `pypi-reference.md` — PyPI publishing requirements and workflow
-
+- `docs/user-config-template.md`: shared user configuration template
+- `docs/cran-reference.md`: CRAN Repository Policy and submission checklist
+- `docs/joss-reference.md`: JOSS requirements and reviewer checklist
+- `docs/joss-exemplars.md`: a JOSS paper in the current required format, analyzed
+- `docs/pypi-reference.md`: PyPI metadata, trusted publisher workflow, token fallback
 
 ## License
 
