@@ -18,21 +18,21 @@ Generate the four marketing artifacts for an Amazon KDP listing: blurb (book des
 
 Read `.claude/kdp.local.md` if it exists (Read tool). Extract the `kdp` section and `author` metadata from YAML frontmatter. Key fields to look for:
 
-- `kdp.blurb` — existing blurb draft (if any)
-- `kdp.keywords` — existing keyword list
+- `kdp.blurb`: existing blurb draft (if any)
+- `kdp.keywords`: existing keyword list
 - `kdp.categories`: existing Amazon categories
-- `kdp.author_bio` — existing bio
-- `kdp.pen_name` — pen name (if different from `author.name`)
-- `kdp.series` — series name and volume number
-- `kdp.genre` — declared genre
-- `author.name` — author's real name
-- `author.bio` — general bio text
+- `kdp.author_bio`: existing bio
+- `kdp.pen_name`: pen name (if different from `author.name`)
+- `kdp.series`: series name and volume number
+- `kdp.genre`: declared genre
+- `author.name`: author's real name
+- `author.bio`: general bio text
 
 If the config file is missing, offer to create one from the template at `${CLAUDE_PLUGIN_ROOT}/docs/user-config-template.md`.
 
 ### 2. Analyze the Manuscript
 
-Gather enough context to write marketing copy. This skill does not read or analyze the full manuscript — it collects what it needs to sell the book.
+Gather enough context to write marketing copy. This skill does not read or analyze the full manuscript; it collects what it needs to sell the book.
 
 **Scan for existing context docs** (Glob tool):
 Search for files that summarize the book's content and intent:
@@ -41,7 +41,7 @@ Search for files that summarize the book's content and intent:
 - `README*`, `CONCEPT*`, `PREMISE*`
 
 **Read found docs** (Read tool):
-Read any matching files. These often contain the clearest distillation of what the book is about — more useful for marketing copy than the manuscript itself.
+Read any matching files. These often contain the clearest distillation of what the book is about, more useful for marketing copy than the manuscript itself.
 
 **Read the opening** (Read tool):
 Find and read the first chapter or opening section to understand tone, voice, and genre register. Look for the first chapter file, or the first 100 lines of the main manuscript file. The opening establishes the voice that the blurb should echo.
@@ -79,7 +79,7 @@ Reference the exemplar blurb patterns for genre-appropriate structures, anti-pat
 
 **Validate**:
 - Under 4000 characters (Amazon's hard limit)
-- Hook lands in the first 2 sentences (these are what Amazon shows in search results and category browse pages — everything after is behind the "Read more" fold)
+- Hook lands in the first 2 sentences (these are what Amazon shows in search results and category browse pages; everything after is behind the "Read more" fold)
 - No spoilers beyond the first act or first 20% of the book
 - No superlative claims ("the best," "an unforgettable," "a masterpiece")
 - No external links or contact information
@@ -88,7 +88,7 @@ Reference the exemplar blurb patterns for genre-appropriate structures, anti-pat
 
 ### 4. Keywords (7 Slots)
 
-Each keyword slot can hold a phrase up to 50 characters. Keywords supplement the title, subtitle, and categories — they help readers find the book through Amazon search but do not appear on the listing page.
+Each keyword slot can hold a phrase up to 50 characters. Keywords supplement the title, subtitle, and categories: they help readers find the book through Amazon search but do not appear on the listing page.
 
 **Consult exemplars** (Read tool):
 Consult the exemplars reference doc for effective keyword patterns and TOS boundaries.
@@ -155,7 +155,7 @@ Consult the exemplars reference doc for genre conventions and annotated bio exam
 
 ### 8. Save Artifacts
 
-Write all outputs back to `.claude/kdp.local.md` under the `kdp` section (Edit tool). Fields to populate:
+Write all outputs back to `.claude/kdp.local.md` under the `kdp` section (Edit tool), using the field names from `${CLAUDE_PLUGIN_ROOT}/docs/user-config-template.md`. Fields to populate (3 categories per format):
 
 ```yaml
 kdp:
@@ -172,6 +172,7 @@ kdp:
   categories:
     - "Fiction > Fantasy > Epic"
     - "Fiction > Fantasy > Action & Adventure"
+    - "Fiction > Fantasy > Coming of Age"
   author_bio: |
     [author bio text]
   series:
@@ -184,13 +185,13 @@ Confirm the save with the user. Summarize what was written and where.
 ## Reference Files
 
 For KDP listing best practices, exemplar blurbs, and metadata requirements, consult:
-- **`${CLAUDE_PLUGIN_ROOT}/docs/kdp-exemplars.md`** — Blurb examples by genre, keyword strategies, category selection tactics, author bio conventions, and anti-patterns
-- **`${CLAUDE_PLUGIN_ROOT}/docs/kdp-reference.md`** — Full KDP metadata requirements, content guidelines, pricing, and submission workflow
+- **`${CLAUDE_PLUGIN_ROOT}/docs/kdp-exemplars.md`**: Blurb examples by genre, keyword strategies, category selection tactics, author bio conventions, and anti-patterns
+- **`${CLAUDE_PLUGIN_ROOT}/docs/kdp-reference.md`**: Full KDP metadata requirements, content guidelines, pricing, and submission workflow
 
 ## Important Notes
 
-- The blurb's first 2 sentences appear in Amazon search results and category pages. The hook MUST land in the opening — everything after is behind the "Read more" fold.
-- Keywords supplement title, subtitle, and categories. Do not duplicate words already indexed elsewhere — that wastes a keyword slot.
+- The blurb's first 2 sentences appear in Amazon search results and category pages. The hook MUST land in the opening; everything after is behind the "Read more" fold.
+- Keywords supplement title, subtitle, and categories. Do not duplicate words already indexed elsewhere; that wastes a keyword slot.
 - This skill crafts the listing, not the book. It reads enough manuscript context to market effectively, not to edit or critique.
-- Run this skill before `/kdp-publish` — the publish workflow reads these artifacts from the config and checks for completeness.
+- Run this skill before `/kdp:kdp-publish`: the publish workflow reads these artifacts from the config and checks for completeness.
 - All artifacts are saved to `.claude/kdp.local.md` in the user's project, not to the plugin repo.

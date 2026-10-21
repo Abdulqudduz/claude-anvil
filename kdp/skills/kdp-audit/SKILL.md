@@ -6,6 +6,7 @@ description: >-
   technical books (LaTeX, math), fiction, and nonfiction. Produces a
   structured gap report with Critical and Warnings sections plus
   automation suggestions.
+argument-hint: "[manuscript path]"
 ---
 
 # KDP Manuscript Audit
@@ -31,32 +32,20 @@ Identify manuscript files and format. Look for these file types in the current d
 - **Fiction**: Structured chapters, scene breaks, dialog formatting
 - **General nonfiction**: Standard chapters, images, minimal equations
 
-If no manuscript is found, ask the user which file to audit.
+If `$ARGUMENTS` names a file or directory, audit that. If no manuscript is found, ask the user which file to audit.
 
 ### 1b. Load User Config
 
-Read `.claude/kdp.local.md` if it exists (Read tool). Extract the `kdp` configuration section and `author` metadata from YAML frontmatter. The config may include:
+Read `.claude/kdp.local.md` if it exists (Read tool). Its YAML frontmatter follows the schema in `${CLAUDE_PLUGIN_ROOT}/docs/user-config-template.md`, which is the only definition of the fields. This skill uses `kdp.trim_size`, `kdp.paper_type`, `kdp.target`, `kdp.genre`, `kdp.page_count`, and `author`.
 
-```yaml
-kdp:
-  trim_size: "6x9"
-  paper_type: "white"
-  binding: "paperback"
-  genre: "technical"
-  target_page_count: 300
-author:
-  name: "Author Name"
-  bio: "Brief author bio"
-```
-
-If the file is missing, inform the user and offer to create one from the template at `${CLAUDE_PLUGIN_ROOT}/docs/user-config-template.md`.
+If the file is missing, inform the user and offer to create one from that template. If `kdp.page_count` is empty and a compiled PDF exists, count its pages (Bash tool: `pdfinfo file.pdf | grep Pages`) and offer to save the count.
 
 ### 2. Check Interior Formatting
 
 Verify the manuscript meets KDP interior requirements. Full specs are in `${CLAUDE_PLUGIN_ROOT}/docs/kdp-reference.md` (Interior Formatting section); read it and check the manuscript against:
 
-- **Trim size**: look for margin or geometry declarations (Grep tool); verify it matches a KDP-supported size (common for nonfiction 6x9, fiction 5.5x8.5 or 5x8, textbooks 7x10 or 8.5x11)
-- **Margins**: inside (gutter) margin steps up with page count per KDP's table: 0.375" (24-150 pages), 0.5" (151-300), 0.625" (301-500), 0.75" (501-700), 0.875" (701-828); outside margins at least 0.25", or 0.375" with bleed
+- **Trim size**: look for margin or geometry declarations (Grep tool); verify it is one of KDP's paperback trims (the `trim_size` enum of `kdp_cover_specs`, or the reference doc) and that the page count is inside the range `kdp_cover_specs` reports as `page_range`
+- **Margins**: inside (gutter) margin steps up with page count; check against the margin table in the reference doc
 - **Fonts**: must be embedded; standard fonts preferred (Times New Roman, Garamond, Arial, Courier); minimum 7pt
 - **Page numbers**: start after front matter, consistent placement
 - **Table of Contents**: present and functional, hyperlinked in eBook, typically 2 to 3 levels deep
@@ -67,13 +56,9 @@ Verify covers meet KDP requirements. Full specs are in `${CLAUDE_PLUGIN_ROOT}/do
 
 **Find cover files** (Glob tool): `cover*.jpg`, `cover*.jpeg`, `cover*.tiff`, `ebook-cover.*` for eBook; `paperback-cover.pdf`, `full-cover.pdf`, `cover-print.*` for paperback.
 
-**Verify dimensions** (kdp_validate_cover MCP tool, preferred): call `kdp_validate_cover` with the cover path and `kind` (`ebook`, `paperback_front`, or `full_wrap`; print kinds also need `page_count`, `trim_size`, `paper_type` from the config). It returns a per-check pass/warn/fail table (dimensions, ratio, format, channels, file size, print resolution) computed from the image metadata; copy fails into Critical and warns into Warnings.
+**Verify dimensions** (kdp_validate_cover MCP tool, preferred): call `kdp_validate_cover` with the cover image path and `kind` (`ebook`, `paperback_front`, or `full_wrap`; print kinds also need `page_count`, `trim_size`, `paper_type` from the config). It returns a per-check pass/warn/fail table (dimensions, ratio, format, channels, file size, print resolution) computed from the image metadata; copy fails into Critical and warns into Warnings. It reads images, not PDFs: for a paperback cover PDF, validate the PNG it was made from (`kdp_generate_full_wrap` returns it as `wrap_png_path`) or rasterize the PDF first (`pdftoppm -r 300 -png cover.pdf cover`).
 
-**Fallback when the MCP server is unavailable** (Bash tool):
-- If `identify` (ImageMagick) is available: `identify -format "%wx%h" cover.jpg`
-- Otherwise: `file cover.jpg` often reports dimensions
-- eBook cover: recommended 1600x2560 pixels (W x H, ratio 1:1.6; hard minimum 1000 px on the longest side), RGB, JPEG or TIFF, under 50MB
-- Paperback cover: a single PDF (back, spine, front), CMYK images, minimum 300 DPI; spine width = `page_count` × per-page rate for the paper type: white 0.002252", cream 0.0025", groundwood 0.00235", standard color 0.002252", premium color 0.002347"
+**Fallback when the MCP server is unavailable** (Bash tool): measure with `identify -format "%wx%h" cover.jpg` (ImageMagick) or `file cover.jpg`, and compare against the Cover Requirements section of the reference doc. KDP's Cover Calculator gives exact paperback wrap dimensions.
 
 **Cover content requirements**: title readable at thumbnail size, author name present, high contrast, no prohibited content. Report actual vs. required dimensions. If cover files are absent, flag as a critical gap.
 
@@ -105,7 +90,8 @@ Verify compilation succeeds with no critical errors.
 **Math rendering**:
 - Check for `\usepackage{amsmath}` or equivalent
 - Verify math symbols render correctly (sample PDF pages)
-- KDP supports PDF with embedded fonts; math must be rasterized
+- Print PDF: math typeset as text is fine as long as every font, math fonts included, is embedded (`pdffonts manuscript.pdf`)
+- Kindle eBook: reflowable formats do not render LaTeX math, so equations need images (with alt text) or MathML via EPUB; complex math usually argues for a print-replica or print-only edition
 
 **Code listings**:
 - Check for `listings` or `minted` package usage
@@ -134,7 +120,7 @@ Check for eBook-specific issues that affect Kindle rendering and KDP acceptance.
   ```bash
   pandoc manuscript.md -o manuscript.epub --toc --metadata title="Book Title"
   ```
-- Note: Kindle Direct Publishing accepts EPUB, DOCX, and PDF. EPUB gives the most control over eBook formatting.
+- Note: KDP recommends DOCX, KPF, or EPUB for eBooks (see the reference doc for the full list). EPUB gives the most control over eBook formatting.
 
 ### 5c. Kindle Format Checks
 
@@ -142,18 +128,18 @@ Check for issues that specifically break on Kindle devices:
 
 **Footnotes** (Grep tool):
 - Search for `\footnote` in LaTeX source, or footnote markers in DOCX/HTML
-- Kindle handles footnotes poorly — recommend converting to endnotes for eBooks
+- Kindle handles footnotes poorly; recommend converting to endnotes for eBooks
 
 **Wide tables** (Grep tool):
-- Flag tables with more than 3 columns — Kindle screens are narrow and tables don't reflow well
+- Flag tables with more than 3 columns: Kindle screens are narrow and tables don't reflow well
 - Recommend converting wide tables to lists or simplifying
 
 **Complex CSS** (Grep tool):
 - If CSS files exist, flag advanced layout rules: absolute positioning, floats, flexbox, grid, fixed widths in pixels
-- Kindle's CSS support is limited — flag any rules that won't render correctly
+- Kindle's CSS support is limited, so flag any rules that won't render correctly
 
 **Large images** (Bash tool):
-- Flag individual images over 5MB — they slow loading on Kindle
+- Flag individual images over 5MB, since they slow loading on Kindle
 - Check with `ls -la` on image files or `identify` if ImageMagick is available
 
 ### 6. Fiction Only
@@ -172,7 +158,7 @@ If manuscript is fiction or narrative nonfiction:
 
 **Back matter order validation** (Grep/Read tools):
 - Expected order: acknowledgments (optional) -> about the author -> also by this author (optional) -> preview of next book (optional)
-- Flag if "About the Author" section is missing entirely — this is expected by KDP and readers
+- Flag if "About the Author" section is missing entirely; readers expect it (KDP does not require it)
 
 **Scene breaks and formatting**:
 - Scene breaks marked with `* * *` or similar (not just blank lines)
@@ -183,7 +169,7 @@ If manuscript is fiction or narrative nonfiction:
 **Scene break consistency** (Grep tool):
 - Check that scene breaks use a consistent marker throughout (all `* * *`, all `---`, all `###`, etc.)
 - Flag if multiple different scene break styles are used in the same manuscript
-- Flag if bare blank lines (no marker) are used as scene breaks — these can be lost in eBook conversion
+- Flag if bare blank lines (no marker) are used as scene breaks, since these can be lost in eBook conversion
 
 **Special elements**:
 - Epigraphs formatted consistently
@@ -203,7 +189,7 @@ After presenting the report, offer to fix issues that can be automated:
 - Create author bio template
 - Add missing TOC entries
 - Fix scene break markers
-- Generate spine width calculation for paperback cover
+- Compute paperback cover dimensions with `kdp_cover_specs`
 
 ## Reference Files
 

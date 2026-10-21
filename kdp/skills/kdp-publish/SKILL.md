@@ -9,7 +9,7 @@ description: >-
 
 # KDP Book Publishing Workflow
 
-Orchestrate the full workflow for publishing a book through Amazon KDP (Kindle Direct Publishing): audit the manuscript, craft the listing, prepare files, and submit. This skill coordinates `/kdp-audit` and `/kdp-listing` into a phased pipeline, then walks through the mechanical submission steps on the KDP dashboard.
+Orchestrate the full workflow for publishing a book through Amazon KDP (Kindle Direct Publishing): audit the manuscript, craft the listing, prepare files, and submit. This skill coordinates `/kdp:kdp-audit` and `/kdp:kdp-listing` into a phased pipeline, then walks through the mechanical submission steps on the KDP dashboard.
 
 ## Strategy
 
@@ -20,7 +20,7 @@ The recommended publication sequence:
 3. **Prepare** -- Convert manuscript to final format, verify cover specs
 4. **Submit** -- Walk through the KDP dashboard, upload files, set pricing, publish
 
-Each phase gates the next. Do not submit a manuscript that fails audit. Do not fill in listing fields without the artifacts from `/kdp-listing`. Present the phase map, confirm the plan, and proceed one phase at a time.
+Each phase gates the next. Do not submit a manuscript that fails audit. Do not fill in listing fields without the artifacts from `/kdp:kdp-listing`. Present the phase map, confirm the plan, and proceed one phase at a time.
 
 ## Workflow
 
@@ -63,7 +63,7 @@ Present the recommended plan and confirm with the user before proceeding.
 
 ### Phase 2: Audit
 
-Run `/kdp-audit` to evaluate the manuscript against KDP requirements.
+Run `/kdp:kdp-audit` to evaluate the manuscript against KDP requirements.
 
 The audit checks interior formatting, cover specs, metadata completeness, and genre-specific requirements. It produces a structured gap report with Critical / Warnings / Passed sections.
 
@@ -77,7 +77,7 @@ If critical gaps are found:
 
 ### Phase 3: Craft Listing
 
-Run `/kdp-listing` to generate the four marketing artifacts:
+Run `/kdp:kdp-listing` to generate the four marketing artifacts:
 - Blurb (book description, max 4000 characters with HTML formatting)
 - Keywords (7 keyword phrases for Amazon search)
 - Amazon categories (3 per format)
@@ -121,6 +121,8 @@ Ensure the manuscript is in final publishable form.
 - [ ] Back matter complete (acknowledgments, About the Author)
 - [ ] No orphan blank pages
 
+**Record the final files** (Edit tool): save the final manuscript path to `kdp.manuscript.path` and the final interior page count to `kdp.page_count` in `.claude/kdp.local.md` (for a PDF: `pdfinfo manuscript.pdf | grep Pages`). Phase 6 and Phase 7 read both.
+
 ### Phase 6: Cover Preparation
 
 Generate or verify cover files for the book. See `${CLAUDE_PLUGIN_ROOT}/docs/kdp-reference.md` for full cover requirements (dimensions, DPI, spine width calculation, bleed).
@@ -131,7 +133,7 @@ Generate or verify cover files for the book. See `${CLAUDE_PLUGIN_ROOT}/docs/kdp
 
 2. **Gather art direction**: If no cover exists (or user wants a new one), ask the user for art direction preferences: visual style, mood, color palette, imagery. If the user has no strong preference, suggest a direction based on the genre from `kdp.genre` and the book title. Check `kdp.cover.art_direction` in the config for any previously saved preferences.
 
-3. **Inform about cost**: Tell the user that each cover generation costs approximately $0.04-$0.08 via OpenAI image generation. Multiple iterations are normal (2-4 attempts to get a cover the user likes).
+3. **Inform about cost**: The `kdp_generate_cover` tool description lists the per-image price for each `quality` (`low`, `medium`, `high`; default `high`), and every result reports `estimated_cost_usd`. Quote that price before the first call. Multiple iterations are normal (2-4 attempts to get a cover the user likes); suggest `quality: "low"` or `"medium"` for exploring art direction and `"high"` for the final cover.
 
 4. **Generate front cover** (kdp_generate_cover MCP tool): Call `kdp_generate_cover` with:
    - `title`: from the book title
@@ -139,8 +141,8 @@ Generate or verify cover files for the book. See `${CLAUDE_PLUGIN_ROOT}/docs/kdp
    - `author_name`: from `kdp.pen_name` or `author.name`
    - `genre`: from `kdp.genre`
    - `art_direction`: from the user's preferences or suggested direction
-   - `width`: 1600 (default)
-   - `height`: 2560 (default)
+   - `quality`: as agreed in step 3
+   - `width` / `height`: omit to get KDP's recommended 1600x2560 eBook size
 
 5. **Show the cover** (Read tool): Read the generated image file to display it inline. Ask the user to verify:
    - Is the title text spelled correctly?
@@ -149,33 +151,33 @@ Generate or verify cover files for the book. See `${CLAUDE_PLUGIN_ROOT}/docs/kdp
 
 6. **Iterate if needed**: If the user wants changes ("try a different style", "make it darker", "more minimalist"), adjust the `art_direction` and call `kdp_generate_cover` again. Repeat steps 5-6 until the user approves.
 
-7. **Save approved cover** (Edit tool): Save the approved front cover file path to `.claude/kdp.local.md` under `kdp.cover.front`. Also save the art direction used under `kdp.cover.art_direction` for future reference.
+7. **Save approved cover** (Bash tool, Edit tool): The tools write to the system temp directory, which is not durable, so first copy the approved file into the project (for example `covers/front.png`). Save that project path to `.claude/kdp.local.md` under `kdp.cover.front`. Also save the art direction used under `kdp.cover.art_direction` for future reference.
 
 8. **Full-wrap cover for paperback** (if `kdp.target` is "paperback" or "both"):
 
-   a. **Calculate dimensions** (kdp_cover_specs MCP tool): Call `kdp_cover_specs` with `page_count` (from manuscript), `trim_size` (from `kdp.trim_size`), and `paper_type` (from `kdp.paper_type`). Display the spine width, total dimensions, and zone layout to the user.
+   a. **Calculate dimensions** (kdp_cover_specs MCP tool): Call `kdp_cover_specs` with `page_count` (from `kdp.page_count`), `trim_size` (from `kdp.trim_size`), and `paper_type` (from `kdp.paper_type`). Display the spine width, total dimensions, and zone layout to the user.
 
    b. **Generate full wrap** (kdp_generate_full_wrap MCP tool): Call `kdp_generate_full_wrap` with:
       - `front_cover_path`: the approved front cover
       - `title` and `author_name`: for spine text
-      - `blurb`: from `kdp.blurb` (for back cover text)
+      - `blurb`: `kdp.blurb` as plain text with its Amazon HTML tags (`<b>`, `<br>`, ...) removed, since the back cover renders text literally
       - `page_count`, `trim_size`, `paper_type`: from config
       - `isbn`: if the user has one
       - `back_color`: from `kdp.cover.color_scheme`, or let the tool auto-extract from the front cover
 
-   c. **Validate the wrap** (kdp_validate_cover MCP tool): Call `kdp_validate_cover` with the preview PNG, `kind: "full_wrap"`, and the same `page_count`/`trim_size`/`paper_type`. Any `fail` check means regenerate before showing the user. Use the same tool with `kind: "ebook"` on the front cover when publishing an eBook.
+   c. **Validate the wrap** (kdp_validate_cover MCP tool): Call `kdp_validate_cover` with the full-resolution `wrap_png_path` (never the half-resolution `preview_path`), `kind: "full_wrap"`, and the same `page_count`/`trim_size`/`paper_type`. Any `fail` check means fix the inputs and regenerate before showing the user. Use the same tool with `kind: "ebook"` on the front cover when publishing an eBook.
 
-   d. **Show the full-wrap preview** (Read tool): Read the preview PNG file to display the complete wraparound cover. Ask the user to verify spine text, back cover blurb readability, and overall composition.
+   d. **Show the full-wrap preview** (Read tool): Read the `preview_path` PNG to display the complete wraparound cover. Ask the user to verify spine text, back cover blurb readability, and overall composition.
 
-   e. **Save full-wrap path** (Edit tool): Save the full-wrap PDF path to `.claude/kdp.local.md` under `kdp.cover.full_wrap`.
+   e. **Save full-wrap path** (Bash tool, Edit tool): Copy the PDF (and `wrap_png_path`) into the project, then save the PDF's project path to `.claude/kdp.local.md` under `kdp.cover.full_wrap`.
 
 ### Phase 7: KDP Dashboard Submission
 
-Automate the KDP dashboard submission using browser automation. This phase reads listing artifacts from the config (populated by `/kdp-listing` in Phase 3) and fills in the dashboard forms.
+Automate the KDP dashboard submission using browser automation. This phase reads listing artifacts from the config (populated by `/kdp:kdp-listing` in Phase 3) and fills in the dashboard forms.
 
 **KDP Account Setup** (first-time publishers only): Complete account setup at https://kdp.amazon.com (tax interview, bank details, email verification). See `${CLAUDE_PLUGIN_ROOT}/docs/kdp-reference.md` for the account setup walkthrough.
 
-**Pre-submission check** (Read tool): Re-read `.claude/kdp.local.md` and verify all required fields are populated: `kdp.blurb`, `kdp.keywords` (7 entries), `kdp.categories`, `kdp.cover.front`, and `kdp.manuscript.path`. If any are missing, stop and direct the user to the appropriate earlier phase.
+**Pre-submission check** (Read tool): Re-read `.claude/kdp.local.md` and verify all required fields are populated: `kdp.blurb`, `kdp.keywords` (1 to 7 entries; all 7 is best), `kdp.categories`, `kdp.cover.front` (plus `kdp.cover.full_wrap` for a paperback), and `kdp.manuscript.path` (saved in Phase 5). If any are missing, stop and direct the user to the appropriate earlier phase.
 
 **Dashboard automation**:
 
@@ -197,20 +199,20 @@ Automate the KDP dashboard submission using browser automation. This phase reads
    - Publishing rights: select "I own the copyright" (confirm with user if uncertain)
    - Keywords: fill the 7 keyword slots from `kdp.keywords`
    - Categories: select the 3 Amazon categories from `kdp.categories`
-   - AI-generated content: KDP asks whether the book contains AI-generated text, images, or translations. Answer truthfully and confirm with the user. Covers produced in Phase 5 with `kdp_generate_cover` / `kdp_generate_full_wrap` are AI-generated images and must be disclosed; AI-assisted editing of the author's own text does not need disclosure ([Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390))
+   - AI-generated content: KDP asks whether the book contains AI-generated text, images, or translations. Answer truthfully and confirm with the user. Covers produced in Phase 6 with `kdp_generate_cover` / `kdp_generate_full_wrap` are AI-generated images and must be disclosed; AI-assisted editing of the author's own text does not need disclosure ([Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390))
    - Age/grade range: skip for adult books, fill for children's/YA
 
 5. **Upload manuscript** (Playwright MCP: browser_snapshot, browser_file_upload): Upload the manuscript file from `kdp.manuscript.path`. Take a snapshot to locate the upload control, then use file upload. Wait for the upload and conversion to complete (this may take 30 seconds to 5 minutes).
 
 6. **Upload cover** (Playwright MCP: browser_snapshot, browser_file_upload): Upload the cover file:
    - eBook: front cover image from `kdp.cover.front`
-   - Paperback: full-wrap PDF from `kdp.cover.full_wrap`, or front cover if no full-wrap exists
+   - Paperback: the full-wrap PDF from `kdp.cover.full_wrap`. KDP does not accept a front-only image for a paperback; without a wrap, stop and either run Phase 6 step 8 or switch to KDP's Cover Creator in the browser
 
 7. **Navigate to preview/review** (Playwright MCP: browser_snapshot, browser_click): Find and click the button to proceed to the preview or review page. Take a snapshot to confirm the page loaded.
 
 8. **Stop and hand off to user**: Tell the user: "Everything is filled in. Review the details in the browser and click publish when you are ready." Do NOT click the publish button. The user must make this final decision.
 
-9. **Capture ASIN after publish** (Playwright MCP: browser_snapshot): After the user confirms they have published, take a snapshot of the bookshelf page to look for the newly assigned ASIN. If the ASIN is not yet visible (KDP review takes 24-72 hours), note this and tell the user to run `/kdp-publish` again later to capture it.
+9. **Capture ASIN after publish** (Playwright MCP: browser_snapshot): After the user confirms they have published, take a snapshot of the bookshelf page to look for the newly assigned ASIN. If the ASIN is not yet visible (KDP review takes 24-72 hours), note this and tell the user to run `/kdp:kdp-publish` again later to capture it.
 
 10. **Save ASIN** (Edit tool): If an ASIN was captured, save it to `.claude/kdp.local.md` under `kdp.asin` (for eBook) or `kdp.asin_paperback` (for paperback).
 
@@ -289,7 +291,7 @@ For complete KDP requirements, formatting guidelines, and exemplar listings:
 
 ## Important Notes
 
-- Run `/kdp-audit` or `/kdp-listing` independently for a specific step without the full pipeline.
+- Run `/kdp:kdp-audit` or `/kdp:kdp-listing` independently for a specific step without the full pipeline.
 - KDP Select is a 90-day exclusive commitment -- the eBook cannot be sold on other platforms during enrollment.
 - KDP is free to use. Amazon takes a percentage via the royalty split (30% or 65% depending on tier).
 - Royalties are paid monthly, ~60 days after month-end. No minimum for direct deposit (EFT); $100 for wire or check on Amazon.com.

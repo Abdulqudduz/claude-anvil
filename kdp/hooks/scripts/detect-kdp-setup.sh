@@ -1,34 +1,51 @@
 #!/bin/bash
-# Detect kdp MCP server readiness on SessionStart.
-# Warns if Node dependencies are missing so cover generation fails loudly, not silently.
-set -euo pipefail
+# SessionStart: report kdp-cover MCP readiness, but only in book projects, so
+# kdp (enabled globally) adds nothing to the context of unrelated sessions.
+# Readiness is decided by mcp/launcher-lib.sh, the same code mcp/run.sh uses.
+# Hook contract: never block, never fail.
+set -uo pipefail
 
-# Hook contract: never block, never crash. Claude Code sets CLAUDE_PLUGIN_ROOT
-# at hook time; if a user runs this script standalone for testing without it,
-# exit silently rather than tripping `set -u`.
 [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] || exit 0
+KDP_MCP_SRC="$CLAUDE_PLUGIN_ROOT/mcp"
+[ -f "$KDP_MCP_SRC/launcher-lib.sh" ] || exit 0
 
-MCP_DIR="${CLAUDE_PLUGIN_ROOT}/mcp"
+project="${CLAUDE_PROJECT_DIR:-$PWD}"
 
-# MCP dir absent (e.g., stripped install): nothing to check
-[ -d "$MCP_DIR" ] || exit 0
+# A book project has a kdp config, or a manuscript-like file at its top level.
+is_book_project() {
+  [ -f "$1/.claude/kdp.local.md" ] && return 0
+  compgen -G "$1/*.kpf" >/dev/null && return 0
+  compgen -G "$1/*.epub" >/dev/null && return 0
+  compgen -G "$1/manuscript*" >/dev/null && return 0
+  return 1
+}
+is_book_project "$project" || exit 0
 
-# Node dependencies not installed
-if [ ! -d "$MCP_DIR/node_modules" ]; then
-  echo "kdp: MCP server dependencies not installed. kdp_cover_specs, kdp_generate_cover, kdp_generate_full_wrap will fail."
-  echo "  Run: (cd \"$MCP_DIR\" && npm install)"
+# shellcheck source=../../mcp/launcher-lib.sh
+. "$KDP_MCP_SRC/launcher-lib.sh"
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "kdp: node is not on PATH, so the kdp-cover MCP tools (kdp_cover_specs, kdp_validate_cover, kdp_generate_cover, kdp_generate_full_wrap) are unavailable. Install Node.js."
   exit 0
 fi
 
-# node binary missing
-if ! command -v node &>/dev/null; then
-  echo "kdp: node not on PATH. Cover generation requires Node.js."
-  exit 0
+if ! kdp_ready_dir >/dev/null; then
+  if [ -z "${CLAUDE_PLUGIN_DATA:-}" ]; then
+    echo "kdp: kdp-cover MCP dependencies are not installed, so the kdp_* cover tools are unavailable. Run: (cd \"$KDP_MCP_SRC\" && npm install)"
+  elif ! command -v npm >/dev/null 2>&1; then
+    echo "kdp: npm is not on PATH, so the kdp-cover MCP dependencies cannot be installed and the kdp_* cover tools are unavailable."
+  else
+    # Prewarm in the background so a slow first install does not outlast the
+    # MCP startup timeout; run.sh waits on the same lock.
+    mkdir -p "$CLAUDE_PLUGIN_DATA"
+    nohup bash "$KDP_MCP_SRC/run.sh" --install-only </dev/null >/dev/null 2>>"$CLAUDE_PLUGIN_DATA/install.log" &
+    disown 2>/dev/null || true
+    echo "kdp: installing kdp-cover MCP dependencies into $CLAUDE_PLUGIN_DATA (first use after an update). If the kdp_* cover tools are missing, run /mcp to reconnect kdp-cover once it finishes; errors go to $CLAUDE_PLUGIN_DATA/install.log."
+  fi
 fi
 
-# OPENAI_API_KEY is needed by kdp_generate_cover
 if [ -z "${OPENAI_API_KEY:-}" ]; then
-  echo "kdp: OPENAI_API_KEY is not set. kdp_generate_cover will fail; set it in your shell environment before publishing."
+  echo "kdp: OPENAI_API_KEY is not set, so kdp_generate_cover will fail (the other cover tools work). Set it in your shell environment."
 fi
 
 exit 0

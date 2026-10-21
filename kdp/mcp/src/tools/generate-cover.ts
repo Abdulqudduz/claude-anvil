@@ -1,27 +1,20 @@
 import { generateCoverImage } from "../lib/openai-client.js";
+import { IMAGE_PRICE_USD, type ImageQuality } from "../lib/kdp-specs.js";
+import { GenerateCoverSchema, type GenerateCoverInput } from "../lib/schemas.js";
 
-export interface GenerateCoverInput {
-  title: string;
-  subtitle?: string;
-  author_name: string;
-  genre: string;
-  art_direction?: string;
-  width?: number;
-  height?: number;
+export interface GenerateCoverOutput {
+  path: string;
+  quality: ImageQuality;
+  /** OpenAI list price for this one image, from IMAGE_PRICE_USD. */
+  estimated_cost_usd: number;
 }
 
-export async function handleGenerateCover(
-  input: GenerateCoverInput,
-): Promise<{ path: string }> {
-  const path = await generateCoverImage({
-    title: input.title,
-    subtitle: input.subtitle,
-    author_name: input.author_name,
-    genre: input.genre,
-    art_direction: input.art_direction,
-    width: input.width ?? 1600,
-    height: input.height ?? 2560,
-  });
-
-  return { path };
+export async function handleGenerateCover(input: GenerateCoverInput): Promise<GenerateCoverOutput> {
+  const args = GenerateCoverSchema.parse(input);
+  const path = await generateCoverImage(args);
+  return {
+    path,
+    quality: args.quality,
+    estimated_cost_usd: IMAGE_PRICE_USD[args.quality],
+  };
 }

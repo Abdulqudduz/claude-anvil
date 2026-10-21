@@ -3,46 +3,52 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import sharp from "sharp";
 import { PDFDocument } from "pdf-lib";
+import { ensureContrast, hexToRgb, rgbToHex } from "../lib/cover-layout.js";
 import {
-  calculateCoverDimensions,
-  ensureContrast,
+  BARCODE_ZONE_INCHES,
+  PRINT_DPI,
+  SPINE_TEXT_EDGE_MARGIN_INCHES,
   SPINE_TEXT_MIN_WIDTH_INCHES,
-  type PaperType,
-} from "../lib/cover-layout.js";
+  SPINE_TITLE_ONLY_BELOW_INCHES,
+} from "../lib/kdp-specs.js";
+import { FullWrapSchema, type FullWrapInput } from "../lib/schemas.js";
 import { handleCoverSpecs, type CoverSpecsOutput } from "./cover-specs.js";
 
-// ── Types ──────────────────────────────────────────────────────────────────
-
 export interface SpineTextResult {
-  svgBuffer: Buffer; // rendered SVG as image buffer
-  titleOnly: boolean; // true if spine is too narrow for author name
-}
-
-export interface FullWrapInput {
-  front_cover_path: string;
-  title: string;
-  author_name: string;
-  blurb: string;
-  page_count: number;
-  trim_size?: string;
-  paper_type?: string;
-  isbn?: string;
-  back_color?: string;
+  svgBuffer: Buffer; // SVG drawn upright: spine length wide, spine thickness tall
+  titleOnly: boolean; // true if the spine is too narrow for the author name
+  titleFontSize: number;
+  authorFontSize: number | null;
 }
 
 export interface FullWrapOutput {
   pdf_path: string;
+  /** Full-resolution 300 DPI wrap; pass this to kdp_validate_cover. */
+  wrap_png_path: string;
+  /** Half-resolution copy for showing the user; never validate this one. */
   preview_path: string;
   specs: CoverSpecsOutput;
 }
 
-// ── Thresholds ─────────────────────────────────────────────────────────────
-
-const SPINE_TOO_NARROW_INCHES = SPINE_TEXT_MIN_WIDTH_INCHES; // shared threshold
-const SPINE_TITLE_ONLY_INCHES = 0.5; // threshold-0.5" renders title only
-
-const DPI = 300;
 const POINTS_PER_INCH = 72;
+/** Rough average glyph advance as a fraction of font size, for fitting text. */
+const GLYPH_WIDTH_EM = 0.6;
+const BACK_TEXT_COLOR = "#ffffff";
+
+const toPx = (inches: number) => Math.round(inches * PRINT_DPI);
+
+const escapeXml = (s: string) =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+/** Largest font size <= maxSize whose estimated run of text fits in lengthPx. */
+function fitFont(text: string, maxSize: number, lengthPx: number): number {
+  const fit = Math.floor(lengthPx / (Math.max(1, text.length) * GLYPH_WIDTH_EM));
+  return Math.max(1, Math.min(maxSize, fit));
+}
 
 // ── createBackCover ────────────────────────────────────────────────────────
 
@@ -55,38 +61,26 @@ export async function createBackCover(opts: {
 }): Promise<Buffer> {
   const { width, height, blurb, bgColor, isbn } = opts;
 
-  // Barcode zone: 2" x 1.2" at 300 DPI in bottom-right corner
-  const barcodeW = Math.round(2 * DPI);
-  const barcodeH = Math.round(1.2 * DPI);
-  const barcodePadding = Math.round(0.25 * DPI);
+  // KDP's barcode area, lower right of the back cover.
+  const barcodeW = toPx(BARCODE_ZONE_INCHES.width);
+  const barcodeH = toPx(BARCODE_ZONE_INCHES.height);
+  const barcodePadding = toPx(0.25);
   const barcodeX = width - barcodeW - barcodePadding;
   const barcodeY = height - barcodeH - barcodePadding;
 
-  // Text area: leave margins and stay above barcode zone
-  const marginPx = Math.round(0.5 * DPI);
+  // Text area: leave margins and stay above the barcode zone.
+  const marginPx = toPx(0.5);
   const textWidth = width - marginPx * 2;
   const textAreaHeight = barcodeY - marginPx * 2;
   const fontSize = Math.max(28, Math.round(width * 0.022));
 
-  // Escape XML entities for safe SVG embedding
-  const escapeXml = (s: string) =>
-    s
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+  const barcodeRect = `<rect x="${barcodeX}" y="${barcodeY}" width="${barcodeW}" height="${barcodeH}" fill="white" rx="4"${isbn ? "" : ' opacity="0.15"'}/>`;
 
-  const barcodeRect = isbn
-    ? `<rect x="${barcodeX}" y="${barcodeY}" width="${barcodeW}" height="${barcodeH}" fill="white" rx="4"/>`
-    : `<rect x="${barcodeX}" y="${barcodeY}" width="${barcodeW}" height="${barcodeH}" fill="white" rx="4" opacity="0.15"/>`;
-
-  // sharp does not support foreignObject/xhtml; plain SVG text with tspan wrapping
-  const words = blurb.split(" ");
+  // sharp does not support foreignObject/xhtml; plain SVG text with tspan wrapping.
   const charsPerLine = Math.floor(textWidth / (fontSize * 0.55));
   const lines: string[] = [];
   let currentLine = "";
-
-  for (const word of words) {
+  for (const word of blurb.split(/\s+/).filter(Boolean)) {
     const candidate = currentLine ? `${currentLine} ${word}` : word;
     if (candidate.length <= charsPerLine) {
       currentLine = candidate;
@@ -97,13 +91,13 @@ export async function createBackCover(opts: {
   }
   if (currentLine) lines.push(currentLine);
 
+  // Long blurbs must not run into the barcode zone or off the panel.
   const lineHeight = Math.round(fontSize * 1.5);
-  // Vertical overflow guard: long blurbs must not render across the barcode
-  // zone or off-panel. Clamp to the lines that fit and ellipsize.
   const maxLines = Math.max(1, Math.floor(textAreaHeight / lineHeight));
   if (lines.length > maxLines) {
     lines.length = maxLines;
-    lines[maxLines - 1] = lines[maxLines - 1].replace(/\s+\S*$/, "") + " ...";
+    const last = lines[maxLines - 1].split(" ");
+    lines[maxLines - 1] = `${last.slice(0, -1).join(" ")} ...`;
   }
   const tspans = lines
     .map(
@@ -112,25 +106,26 @@ export async function createBackCover(opts: {
     )
     .join("\n    ");
 
-  const plainSvg = `<?xml version="1.0" encoding="UTF-8"?>
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <rect width="${width}" height="${height}" fill="${bgColor}"/>
-  <text x="${marginPx}" y="${marginPx + fontSize}" font-family="serif" font-size="${fontSize}" fill="white">
+  <text x="${marginPx}" y="${marginPx + fontSize}" font-family="serif" font-size="${fontSize}" fill="${BACK_TEXT_COLOR}">
     ${tspans}
   </text>
   ${barcodeRect}
 </svg>`;
 
-  const buffer = await sharp(Buffer.from(plainSvg))
-    .resize(width, height)
-    .png()
-    .toBuffer();
-
-  return buffer;
+  return sharp(Buffer.from(svg)).resize(width, height).png().toBuffer();
 }
 
 // ── createSpineText ────────────────────────────────────────────────────────
 
+/**
+ * Spine text drawn upright (length along x), to be rotated 90 degrees
+ * clockwise so it reads top to bottom: title from the top, author near the
+ * bottom. Fonts stay inside KDP's 0.0625" spine-edge margin and shrink until
+ * the text fits along the spine.
+ */
 export function createSpineText(opts: {
   title: string;
   authorName: string;
@@ -138,192 +133,128 @@ export function createSpineText(opts: {
   heightPx: number;
 }): SpineTextResult | null {
   const { title, authorName, spineWidthInches, heightPx } = opts;
+  if (spineWidthInches < SPINE_TEXT_MIN_WIDTH_INCHES) return null;
 
-  if (spineWidthInches < SPINE_TOO_NARROW_INCHES) {
-    return null;
-  }
+  const titleOnly = spineWidthInches < SPINE_TITLE_ONLY_BELOW_INCHES;
+  const svgW = heightPx; // spine length
+  const svgH = toPx(spineWidthInches); // spine thickness
+  const usable = svgH - 2 * toPx(SPINE_TEXT_EDGE_MARGIN_INCHES);
+  const endMargin = toPx(0.5);
 
-  const titleOnly = spineWidthInches < SPINE_TITLE_ONLY_INCHES;
+  // Title gets most of the length; the author name sits in the bottom quarter.
+  const titleLength = (svgW - 2 * endMargin) * (titleOnly ? 1 : 0.68);
+  const authorLength = (svgW - 2 * endMargin) * 0.27;
+  const titleFontSize = fitFont(title, Math.min(48, Math.floor(usable * 0.8)), titleLength);
+  const authorFontSize = titleOnly
+    ? null
+    : fitFont(authorName, Math.min(32, Math.floor(usable * 0.6)), authorLength);
 
-  // Spine rendered rotated: width → height axis, height → width axis
-  const spineWidthPx = Math.round(spineWidthInches * DPI);
+  // Baseline offset that visually centers cap-height text across the spine.
+  const baseline = (size: number) => (svgH / 2 + size * 0.35).toFixed(1);
+  const titleX = endMargin + titleLength / 2;
+  const authorX = svgW - endMargin - authorLength / 2;
 
-  // SVG is drawn upright then rotated — canvas is heightPx wide, spineWidthPx tall
-  const svgW = heightPx;
-  const svgH = spineWidthPx;
+  const authorLine =
+    authorFontSize === null
+      ? ""
+      : `<text x="${authorX}" y="${baseline(authorFontSize)}" text-anchor="middle" font-family="sans-serif" font-size="${authorFontSize}" fill="white" opacity="0.85">${escapeXml(authorName)}</text>`;
 
-  const titleFontSize = Math.max(18, Math.min(Math.round(spineWidthPx * 0.35), 48));
-  const authorFontSize = Math.max(14, Math.min(Math.round(spineWidthPx * 0.22), 32));
-
-  const cx = svgW / 2;
-  const titleY = svgH * 0.45;
-  const authorY = svgH * 0.75;
-
-  const escapeXml = (s: string) =>
-    s
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-
-  const authorLine = titleOnly
-    ? ""
-    : `<text x="${cx}" y="${authorY}" text-anchor="middle" font-family="sans-serif" font-size="${authorFontSize}" fill="white" opacity="0.85">${escapeXml(authorName)}</text>`;
-
-  const svgString = `<?xml version="1.0" encoding="UTF-8"?>
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}">
-  <rect width="${svgW}" height="${svgH}" fill="none"/>
-  <text x="${cx}" y="${titleY}" text-anchor="middle" font-family="sans-serif" font-size="${titleFontSize}" font-weight="bold" fill="white">${escapeXml(title)}</text>
+  <text x="${titleX}" y="${baseline(titleFontSize)}" text-anchor="middle" font-family="sans-serif" font-size="${titleFontSize}" font-weight="bold" fill="white">${escapeXml(title)}</text>
   ${authorLine}
 </svg>`;
 
-  const svgBuffer = Buffer.from(svgString);
-
-  return { svgBuffer, titleOnly };
-}
-
-// ── Dominant color extraction ──────────────────────────────────────────────
-
-async function extractDominantColor(imagePath: string): Promise<string> {
-  const stats = await sharp(imagePath).stats();
-  const r = Math.round(stats.channels[0].mean);
-  const g = Math.round(stats.channels[1].mean);
-  const b = Math.round(stats.channels[2].mean);
-  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  return { svgBuffer: Buffer.from(svg), titleOnly, titleFontSize, authorFontSize };
 }
 
 // ── handleGenerateFullWrap ─────────────────────────────────────────────────
 
-export async function handleGenerateFullWrap(
-  input: FullWrapInput,
-): Promise<FullWrapOutput> {
+async function extractDominantColor(imagePath: string): Promise<string> {
+  const { channels } = await sharp(imagePath).stats();
+  return rgbToHex({ r: channels[0].mean, g: channels[1].mean, b: channels[2].mean });
+}
+
+export async function handleGenerateFullWrap(input: FullWrapInput): Promise<FullWrapOutput> {
+  const args = FullWrapSchema.parse(input);
   const specs = handleCoverSpecs({
-    page_count: input.page_count,
-    trim_size: input.trim_size,
-    paper_type: input.paper_type,
+    page_count: args.page_count,
+    trim_size: args.trim_size,
+    paper_type: args.paper_type,
   });
+  const { total_width_px: totalW, total_height_px: totalH, front_zone, spine_zone, back_zone } = specs;
 
-  const {
-    total_width_px: totalW,
-    total_height_px: totalH,
-    front_zone: frontZone,
-    spine_zone: spineZone,
-    back_zone: backZone,
-    spine_width_inches: spineWidthInches,
-  } = specs;
+  const rawBgColor = args.back_color ?? (await extractDominantColor(args.front_cover_path));
+  const bgColor = ensureContrast(rawBgColor, BACK_TEXT_COLOR);
 
-  // ── Determine background color ──────────────────────────────────────────
-  let rawBgColor = input.back_color ?? (await extractDominantColor(input.front_cover_path));
-  const bgColor = ensureContrast(rawBgColor, "#ffffff");
-
-  // ── Create blank canvas ─────────────────────────────────────────────────
-  // Background is the back-cover color, not black: the 0.125" bleed border
-  // must carry printable art (a stock KDP rejection reason is missing bleed),
-  // and a bgColor canvas makes the back/spine bleed seamless with the back panel.
+  // The canvas is the back-cover color, not black: the bleed border must
+  // carry printable art, and this makes the back/spine bleed seamless.
   const canvas = sharp({
-    create: {
-      width: totalW,
-      height: totalH,
-      channels: 3,
-      background: {
-        r: parseInt(bgColor.slice(1, 3), 16),
-        g: parseInt(bgColor.slice(3, 5), 16),
-        b: parseInt(bgColor.slice(5, 7), 16),
-      },
-    },
+    create: { width: totalW, height: totalH, channels: 3, background: hexToRgb(bgColor) },
   });
 
-  // ── Resize front cover to fill front zone PLUS its bleed ───────────────
-  // The front panel owns the right/top/bottom bleed on its side of the wrap;
-  // extend the art so the trim line never exposes an unprinted border. Size
-  // from canvas geometry (right edge, full height) rather than adding bleed
-  // px, so independent rounding can never overflow the canvas.
-  const frontBuffer = await sharp(input.front_cover_path)
-    .resize(totalW - frontZone.x, totalH, {
-      fit: "cover",
-    })
+  // The front panel owns the right/top/bottom bleed on its side of the wrap,
+  // so its art runs from the front zone's left edge to the canvas edges.
+  const frontBuffer = await sharp(args.front_cover_path)
+    .resize(totalW - front_zone.x, totalH, { fit: "cover" })
     .png()
     .toBuffer();
 
-  // ── Create back cover ──────────────────────────────────────────────────
   const backBuffer = await createBackCover({
-    width: backZone.width,
-    height: backZone.height,
-    blurb: input.blurb,
+    width: back_zone.width,
+    height: back_zone.height,
+    blurb: args.blurb,
     bgColor,
-    isbn: input.isbn,
+    isbn: args.isbn,
   });
 
-  // ── Build composites list ──────────────────────────────────────────────
   const composites: sharp.OverlayOptions[] = [
-    // Back cover
-    {
-      input: backBuffer,
-      left: backZone.x,
-      top: backZone.y,
-    },
-    // Front cover (placed at the bleed-extended origin: top of canvas)
-    {
-      input: frontBuffer,
-      left: frontZone.x,
-      top: 0,
-    },
+    { input: backBuffer, left: back_zone.x, top: back_zone.y },
+    { input: frontBuffer, left: front_zone.x, top: 0 },
   ];
 
-  // ── Spine text (if wide enough) ────────────────────────────────────────
-  const spineResult = createSpineText({
-    title: input.title,
-    authorName: input.author_name,
-    spineWidthInches,
-    heightPx: spineZone.height,
-  });
-
-  if (spineResult) {
-    // Render the SVG upright first (heightPx wide × spineWidthPx tall)
-    const spineWidthPx = Math.round(spineWidthInches * DPI);
-    const renderedSpine = await sharp(spineResult.svgBuffer)
-      .resize(spineZone.height, spineWidthPx)
+  const spine = specs.has_spine_text
+    ? createSpineText({
+        title: args.title,
+        authorName: args.author_name,
+        spineWidthInches: specs.spine_width_inches,
+        heightPx: spine_zone.height,
+      })
+    : null;
+  if (spine) {
+    const upright = await sharp(spine.svgBuffer)
+      .resize(spine_zone.height, spine_zone.width)
       .png()
       .toBuffer();
-
-    // Rotate 90° clockwise so text reads top-to-bottom on the spine
-    const rotatedSpine = await sharp(renderedSpine).rotate(90).png().toBuffer();
-
-    composites.push({
-      input: rotatedSpine,
-      left: spineZone.x,
-      top: spineZone.y,
-    });
+    // Rotate 90 degrees clockwise so the text reads top to bottom.
+    const rotated = await sharp(upright).rotate(90).png().toBuffer();
+    composites.push({ input: rotated, left: spine_zone.x, top: spine_zone.y });
   }
 
-  // ── Composite everything ───────────────────────────────────────────────
-  const fullWrapBuffer = await canvas.composite(composites).png().toBuffer();
+  const fullWrapBuffer = await canvas
+    .composite(composites)
+    .withMetadata({ density: PRINT_DPI })
+    .png()
+    .toBuffer();
 
-  // ── Save PNG preview (half resolution) ────────────────────────────────
-  const previewPath = join(tmpdir(), `kdp-full-wrap-preview-${Date.now()}.png`);
+  const stamp = Date.now();
+  const wrapPngPath = join(tmpdir(), `kdp-full-wrap-${stamp}.png`);
+  await writeFile(wrapPngPath, fullWrapBuffer);
+
+  const previewPath = join(tmpdir(), `kdp-full-wrap-preview-${stamp}.png`);
   await sharp(fullWrapBuffer)
     .resize(Math.round(totalW / 2), Math.round(totalH / 2))
     .png()
     .toFile(previewPath);
 
-  // ── Embed into PDF via pdf-lib ─────────────────────────────────────────
   const pdfDoc = await PDFDocument.create();
-
   const widthPt = specs.total_width_inches * POINTS_PER_INCH;
   const heightPt = specs.total_height_inches * POINTS_PER_INCH;
   const page = pdfDoc.addPage([widthPt, heightPt]);
-
   const pngImage = await pdfDoc.embedPng(fullWrapBuffer);
-  page.drawImage(pngImage, {
-    x: 0,
-    y: 0,
-    width: widthPt,
-    height: heightPt,
-  });
+  page.drawImage(pngImage, { x: 0, y: 0, width: widthPt, height: heightPt });
+  const pdfPath = join(tmpdir(), `kdp-full-wrap-${stamp}.pdf`);
+  await writeFile(pdfPath, await pdfDoc.save());
 
-  const pdfBytes = await pdfDoc.save();
-  const pdfPath = join(tmpdir(), `kdp-full-wrap-${Date.now()}.pdf`);
-  await writeFile(pdfPath, pdfBytes);
-
-  return { pdf_path: pdfPath, preview_path: previewPath, specs };
+  return { pdf_path: pdfPath, wrap_png_path: wrapPngPath, preview_path: previewPath, specs };
 }

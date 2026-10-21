@@ -14,26 +14,28 @@
 ### Manuscript Formatting
 
 #### File Format Requirements
-- [ ] **eBook**: DOCX (recommended), EPUB, or KPF (MOBI is no longer accepted for new uploads, dropped in 2021)
+- [ ] **eBook**: DOCX, KPF, or EPUB are KDP's recommended formats. MOBI is still listed for reflowable books but not accepted for fixed-layout since March 2025. HTML, RTF, TXT, and PDF are accepted but convert less reliably, and PDF only for a few languages ([Supported eBook Formats](https://kdp.amazon.com/en_US/help/topic/G200634390))
 - [ ] **Paperback**: PDF (print-ready) or DOCX (converted by KDP)
 - [ ] **Hardcover**: PDF (print-ready) only
 - [ ] File size under 650MB for eBooks (typically not an issue for text)
 - [ ] Images in high quality: 300 DPI for print, 72 DPI minimum for eBook
 
 #### Standard Trim Sizes (US)
+KDP's full paperback trim list and per-paper page ranges live in `mcp/src/lib/kdp-specs.ts` (`TRIM_SIZES`), which the `kdp_cover_specs` tool exposes as its `trim_size` enum and `page_range` output ([Trim Size](https://kdp.amazon.com/en_US/help/topic/G201834560)). Common choices:
+
 **Non-fiction (most common)**:
-- [ ] 6" × 9" — standard for trade paperbacks, business books, memoirs
-- [ ] 7" × 10" — popular for how-to guides, coffee table books
-- [ ] 8.5" × 11" — textbooks, workbooks, manuals
+- [ ] 6" × 9": standard for trade paperbacks, business books, memoirs
+- [ ] 7" × 10": popular for how-to guides, coffee table books
+- [ ] 8.5" × 11": textbooks, workbooks, manuals
 
 **Fiction**:
-- [ ] 5.5" × 8.5" — standard for novels
-- [ ] 5.25" × 8" — mass market paperback size
-- [ ] 6" × 9" — larger print fiction
+- [ ] 5.5" × 8.5": standard for novels
+- [ ] 5.25" × 8": mass market paperback size
+- [ ] 6" × 9": larger print fiction
 
 **Specialized**:
-- [ ] 8" × 10" — children's books, photography
-- [ ] 8.5" × 8.5" — square format for art/photo books
+- [ ] 8" × 10": children's books, photography
+- [ ] 8.5" × 8.5": square format for art/photo books
 
 #### Margin Requirements (Paperback)
 Minimum margins depend on **page count** and on whether the book uses **bleed**. KDP publishes one table for all ink types ([Set Trim Size, Bleed, and Margins](https://kdp.amazon.com/en_US/help/topic/GVBQ3CMEQW3W2VL6)):
@@ -79,11 +81,14 @@ Minimum margins depend on **page count** and on whether the book uses **bleed**.
 ### Cover Requirements
 
 #### eBook Cover
+Source: [Cover Image Guidelines for Kindle eBooks](https://kdp.amazon.com/en_US/help/topic/G6GTK3T3NUHKLEFX). The `kdp_validate_cover` tool checks these numbers from `EBOOK_COVER` in `mcp/src/lib/kdp-specs.ts`.
+
 - [ ] **Recommended dimensions**: 1600 × 2560 pixels (width × height, ratio 1:1.6)
-- [ ] **Hard minimum**: 1000 px on the longest side (the recommended size or larger is better, up to 10,000 px)
+- [ ] **Minimum**: 500 px on the longest side (smaller covers are not displayed); covers well under the recommended size can fail Amazon's quality review
+- [ ] **Maximum**: 10,000 px on each side
 - [ ] **Aspect ratio**: 1.6:1 (height should be 1.6× width)
-- [ ] **File format**: JPEG (.jpg) or TIFF (.tiff)
-- [ ] **Color mode**: RGB
+- [ ] **File format**: JPEG (preferred), PNG, TIFF, or non-animated GIF; no SVG
+- [ ] **Color mode**: RGB (CMYK is accepted and converted)
 - [ ] **File size**: Under 50MB
 - [ ] **Text**: Clearly readable at thumbnail size (reduce to 300px wide to test)
 - [ ] **Borders**: Avoid white borders (looks like part of page background)
@@ -92,19 +97,19 @@ Minimum margins depend on **page count** and on whether the book uses **bleed**.
 Source: [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020), [Paperback Submission Guidelines](https://kdp.amazon.com/en_US/help/topic/G201857950).
 
 - [ ] **File format**: A single PDF containing back cover, spine, and front cover as one image (Cover Creator is the alternative, and accepts JPG/PNG/GIF art). Maximum 650 MB
-- [ ] **Color mode**: CMYK images; avoid mixing color spaces in one file and don't embed color profiles (KDP strips them)
+- [ ] **Color mode**: KDP asks for CMYK images; RGB is converted at print time, so colors can shift (check a proof). Avoid mixing color spaces in one file and don't embed color profiles (KDP strips them)
 - [ ] **Resolution**: 300 DPI minimum
 - [ ] **Bleed**: Add 0.125" bleed on top, bottom, and outside edges (extends beyond trim)
 - [ ] **Safe zone**: Keep critical text/elements at least 0.25" from the outside edge
 - [ ] **Prepress**: Flatten layers, embed fonts; no crop marks, annotations, or placeholder text
-- [ ] **Spine width**: Page count × paper type multiplier (or use the KDP Cover Calculator)
+- [ ] **Spine width**: Page count × paper type multiplier (or use the KDP Cover Calculator). The `PAPER` table in `mcp/src/lib/kdp-specs.ts` is what `kdp_cover_specs` uses
   - White paper (black ink): 0.002252" per page
   - Cream paper (black ink): 0.0025" per page
   - Groundwood paper (black ink): 0.00235" per page
   - Standard color (white paper): 0.002252" per page
   - Premium color (white paper): 0.002347" per page
   - Example: 300-page white = 300 × 0.002252 = 0.6756"
-- [ ] **Spine text**: KDP requires at least 79 pages for spine text (80 with Cover Creator). This plugin uses a more conservative 0.3" spine-width readability threshold (white paper: ~134+ pages, cream: 120+)
+- [ ] **Spine text**: KDP prints spine text only on books with more than 79 pages, and text must sit at least 0.0625" from each spine edge. This plugin also applies a more conservative 0.3" spine-width readability threshold (white paper: ~134+ pages, cream: 120+)
 - [ ] **Hardcover**: Uses a separate case-wrap template; see [Create a Hardcover Cover](https://kdp.amazon.com/en_US/help/topic/GDTKFJPNQCBTMRV6). The kdp-cover MCP tools compute paperback wraps only
 - [ ] **ISBN/Barcode**: Do NOT add barcode if using free Amazon ASIN (KDP adds it)
 - [ ] **ISBN placement**: If using own ISBN, place barcode on back cover lower right
@@ -302,7 +307,7 @@ Source: [Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390)
 2. **Create new title**: Kindle eBook
 3. **Enter metadata**: Title, author, description, keywords, categories
 4. **Upload manuscript**: DOCX/EPUB/PDF (eBook file)
-5. **Upload cover**: 1600×2560 px (W×H) JPEG/TIFF
+5. **Upload cover**: 1600×2560 px (W×H), JPEG preferred
 6. **Preview**: Use online previewer or download Kindle Previewer app
 7. **Set pricing**: Choose territories, royalty tier, price
 8. **Publish**: Review and click "Publish Your Kindle eBook"
@@ -313,7 +318,7 @@ Source: [Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390)
 2. **Enter metadata**: Same as eBook (can pre-fill from eBook)
 3. **Choose ISBN**: Free KDP ISBN or provide your own
 4. **Upload manuscript**: PDF or DOCX (interior file)
-5. **Upload cover**: Use Cover Creator or upload PDF/JPEG (with exact dimensions)
+5. **Upload cover**: Use Cover Creator, or upload a single print-ready PDF (back, spine, and front at the exact Cover Calculator dimensions)
 6. **Preview**: Use online previewer (check margins, page count)
 7. **Set pricing**: List price (must cover printing costs + minimum royalty)
 8. **Order proof**: Optional but recommended (physical proof copy shipped)
@@ -377,7 +382,7 @@ Source: [Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390)
 6. **Low-quality interior**: Blurry images, unreadable text, poor formatting
 
 ### Cover Issues
-7. **Resolution too low**: Below 1000 px longest side (eBook hard minimum; 1600×2560 recommended), under 300 DPI for print
+7. **Resolution too low**: eBook cover far below the recommended 1600×2560 (under 500 px on the longest side is never displayed), or under 300 DPI for print
 8. **Text cut off**: Cover elements extend beyond safe zone
 9. **Incorrect aspect ratio**: eBook cover not 1.6:1 ratio
 10. **Bleed issues**: Print cover missing bleed or elements in bleed area
@@ -409,7 +414,7 @@ Source: [Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390)
 
 ### Correcting Errors
 - [ ] **Minor fixes**: Upload corrected manuscript anytime (typos, formatting)
-- [ ] **No re-review**: Corrections typically go live within hours
+- [ ] **Review**: Updated files go through review again and typically go live within 24-72 hours
 - [ ] **Customer notification**: Amazon doesn't notify previous buyers of corrections
 - [ ] **Manual notification**: You can contact support to push updates to prior customers (for major fixes)
 
@@ -468,7 +473,7 @@ Source: [Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390)
 
 | Format | Trim Size | Margins | File Type | Cover Size |
 |--------|-----------|---------|-----------|------------|
-| **eBook** | N/A | N/A | DOCX/EPUB | 1600×2560 px (1:1.6) |
+| **eBook** | N/A | N/A | DOCX/KPF/EPUB | 1600×2560 px (1:1.6) |
 | **Paperback** | 5.5×8.5 to 8.5×11 | 0.25-0.875" (varies) | PDF/DOCX | Calculator-based |
 | **Hardcover** | 5 sizes, 5.5×8.5 to 8.25×11 | 0.25-0.875" (varies) | PDF only | Calculator-based |
 
@@ -486,7 +491,7 @@ Source: [Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390)
 First-time publishers must complete the following before submitting a book:
 
 1. **Create account**: Go to https://kdp.amazon.com and sign in with an Amazon account (or create one)
-2. **Tax interview**: Complete the tax interview — W-9 for US residents, W-8BEN for international authors. Required before royalties can be paid.
+2. **Tax interview**: Complete the tax interview: W-9 for US residents, W-8BEN for international authors. Required before royalties can be paid.
 3. **Bank account**: Add bank account details for royalty payments (ACH direct deposit for US, wire transfer for international). Payment thresholds on Amazon.com: $0 for direct deposit (EFT), $100 for wire or check ([Payment Thresholds](https://kdp.amazon.com/en_US/help/topic/G201207800)).
 4. **Email verification**: Verify the email address associated with the KDP account. All review notifications and sales reports go to this address.
 
@@ -538,7 +543,7 @@ Author Central (https://authorcentral.amazon.com) is a separate service from KDP
 **Steps**:
 1. Claim the author page using the same name as the KDP author name
 2. Upload author photo (professional, minimum 300x300 pixels)
-3. Add biography (from `kdp.author_bio` in config — can be longer/different from the product page bio)
+3. Add biography (from `kdp.author_bio` in config; it can be longer/different from the product page bio)
 4. Link all books to the author profile (automatic for KDP titles, manual for other publishers)
 5. Add editorial reviews if available (blurbs, testimonials, review excerpts)
 6. Connect blog or social media feeds (optional)
@@ -547,7 +552,7 @@ Author Central (https://authorcentral.amazon.com) is a separate service from KDP
 
 A+ Content adds rich media (images, comparison charts, expanded descriptions) below the main product description on the Amazon product page.
 
-**Eligibility**: Available for KDP Select books or via vendor/publisher accounts.
+**Eligibility**: Any published (live or pre-order) KDP book, with no KDP Select requirement (see the A+ Content link in the Post-Publication Checklist).
 
 **Impact**: A+ Content typically increases conversion rate (visitors who buy) by providing more visual and structured information about the book.
 
@@ -571,13 +576,13 @@ A+ Content adds rich media (images, comparison charts, expanded descriptions) be
 - Claim the book on Goodreads (separate from Amazon account)
 - Import book details from Amazon
 - Connect author profile to Goodreads Author Program
-- Goodreads is a major book discovery platform — active presence helps discoverability
+- Goodreads is a major book discovery platform, and an active presence helps discoverability
 
 ### Ongoing Monitoring
 
 **Sales dashboard**: Check KDP reports for daily/weekly sales, Kindle Unlimited page reads (if enrolled), and royalty accruals.
 
-**Reviews**: Monitor customer reviews via Author Central. Engage professionally if needed — never argue with reviewers or solicit positive reviews.
+**Reviews**: Monitor customer reviews via Author Central. Engage professionally if needed; never argue with reviewers or solicit positive reviews.
 
 **Ranking**: Track Amazon Best Sellers Rank (ABSR) in chosen categories. Ranking is updated hourly based on recent sales velocity.
 
@@ -585,4 +590,4 @@ A+ Content adds rich media (images, comparison charts, expanded descriptions) be
 
 ---
 
-**Last Updated**: 2026-02-17 (based on current KDP policies)
+**Last Updated**: 2026-10-21 (eBook cover, eBook formats, spine text, and trim sizes re-checked against the KDP help pages cited above)
