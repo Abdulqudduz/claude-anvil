@@ -51,25 +51,34 @@ The password hint is per-lock (`--hint TEXT`), not a `template:` field.
 
 ## CLI Commands
 
+Passwords come from the config, `PAGEVAULT_PASSWORD`, or a prompt. `-p/--password`
+exists but puts the secret on argv (visible in `ps`, saved in history): avoid it.
+
 ### Lock (Encrypt)
+
+Output never overwrites the input. HTML goes to `_locked/` (change with `-d DIR`;
+`-d` may not contain the input). Non-HTML files become a sibling `NAME.html`
+(`report.pdf` -> `report.html`); choose the path with `-o FILE`, since `-d` is
+rejected for non-HTML input.
+
 ```bash
-pagevault lock page.html                    # Encrypt marked <pagevault> regions
-pagevault lock report.pdf                   # Wrap file with appropriate viewer
-pagevault lock image.png                    # Wrap image with image viewer
-pagevault lock site/                        # All files in directory
-pagevault lock site/ --site                 # Bundle as encrypted site
-pagevault lock page.html -s "#secret"       # Encrypt only elements matching selector
-pagevault lock page.html --pad              # Pad to prevent content size leakage
-pagevault lock file.txt -p "password"       # Override config password
-pagevault lock docs/ -r -d _locked/         # Recursive, output to _locked/
+pagevault lock page.html                    # Marked regions (or whole body) -> _locked/page.html
+pagevault lock docs/ -r -d _locked/docs/    # HTML files only, recursive; other files ignored
+pagevault lock report.pdf -o _locked/report.pdf.html   # Wrap a file with its viewer
+pagevault lock site/ --site -o site.html    # Bundle a whole directory (all file types)
+pagevault lock page.html -s "#secret"       # Encrypt only matching selector
+pagevault lock page.html --pad              # Pad to hide content size
 ```
 
 ### Unlock (Decrypt)
 ```bash
-pagevault unlock _locked/page.html          # Decrypt back to marked state
-pagevault unlock _locked/ -r                # Recursive unlock
-pagevault unlock file.pdf.html --stdout -p "$PW" > file.pdf  # Extract original
+pagevault unlock _locked/page.html          # Back to marked state, written to _unlocked/
+pagevault unlock _locked/ -r -d restored/   # Recursive
 ```
+
+`unlock --stdout` in 0.4.2 does NOT recover a wrapped file's original bytes (it
+echoes the HTML), despite its help text. Keep the original, or open the locked
+file in a browser via `pagevault dev serve`.
 
 ### Mark (Add Encryption Tags)
 ```bash
@@ -81,8 +90,8 @@ pagevault mark page.html -s "#secret" --hint "Contact admin"
 ### Inspect and Verify
 ```bash
 pagevault inspect encrypted.html            # Show metadata (no password needed)
-pagevault inspect encrypted.html --check -p "pw"   # Verify password (exit 0 = correct)
-pagevault inspect encrypted.html --check -p "pw" -u alice  # Multi-user check
+pagevault inspect encrypted.html --check   # Prompts for the password (exit 0 = correct)
+pagevault inspect encrypted.html --check -u alice  # Multi-user check
 pagevault audit                             # Health check config and passwords
 ```
 
@@ -109,13 +118,11 @@ pagevault dev serve _locked/                # Local HTTP preview (WebCrypto need
 pagevault sync _locked/ -r                  # Re-wrap keys after adding/removing users
 ```
 
-`sync` requires a `users:` block (it errors without one) and recovers each
-file's content key with the CURRENT passwords, so it cannot re-key after a
-password you no longer have. To change a single shared password, unlock and
-re-lock instead.
-
-```bash
-```
+`sync` requires a `users:` block (it errors without one). It decrypts each file
+with a credential from the current config, then re-encrypts with a fresh content
+key wrapped for the current users, so removed users lose access to the new
+ciphertext. It cannot recover a file none of the current passwords open. To
+change a single shared password, unlock and re-lock instead.
 
 ## Viewer Plugins
 
@@ -145,7 +152,7 @@ Every encrypted HTML file includes the full decryption runtime:
 ## Configuration Cascade
 
 Priority order (highest first):
-1. Command-line arguments (`-p`, `--hint`, etc.)
+1. Command-line arguments (`--hint`, etc.; `-p` works but avoid it)
 2. Environment variables (`PAGEVAULT_PASSWORD`, `PAGEVAULT_SALT`)
 3. `.pagevault.yaml` (searched upward from the working directory)
 4. Global config (`~/.config/pagevault/config.yaml`)
@@ -154,14 +161,16 @@ Priority order (highest first):
 ## Hugo Integration Example
 
 ```bash
-# After Hugo builds HTML output:
 hugo -d build/
-pagevault lock build/posts/ -r --css styles/pagevault.css
-# Deploy build/ to static host
+# lock refuses to write inside its input, so lock to a staging dir...
+pagevault lock build/posts/ -r -d _locked/posts/ --css styles/pagevault.css
+# ...then copy the locked pages over the plaintext ones before deploying build/
+cp -r _locked/posts/. build/posts/
+grep -rl 'TEXT-ONLY-IN-THE-SECRET-PAGE' build/ && echo "PLAINTEXT LEFT, do not deploy"
 ```
 
 ## Known Limitations
 
-- Encrypted regions are replaced with password prompts — page structure is visible
+- Encrypted regions are replaced with password prompts; page structure is visible
 - File sizes may hint at content length (use `--pad` to mitigate)
 - JavaScript must be enabled for decryption

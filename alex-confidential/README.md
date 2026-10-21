@@ -1,4 +1,4 @@
-# alex-confidential — Claude Code Plugin
+# alex-confidential: Claude Code Plugin
 
 Confidentiality toolkit for Claude Code. Smart routing across three
 complementary encryption tools: cryptoid (Hugo site encryption), pagevault
@@ -17,7 +17,7 @@ language (e.g. "encrypt this page", "sign this file"); there is no slash command
 
 ```bash
 # From the marketplace
-/plugin install alex-confidential@queelius
+/plugin install alex-confidential@queelius-plugins
 ```
 
 ## Requirements
@@ -29,14 +29,10 @@ The skill assumes these tools are installed and on PATH:
 
 ## Tool Selection
 
-| Context | Tool | Use Case |
-|---------|------|----------|
-| Hugo site, markdown content | **cryptoid** | Multi-user whole-page encryption integrated with Hugo |
-| HTML files, static output, web delivery | **pagevault** | Section-level or whole-file encryption with embedded viewers |
-| Offline encryption, signing, key exchange | **gpg** | Standard file encryption, detached signatures, PKI |
-
-The skill automatically picks the right tool based on what you're encrypting
-and where it needs to go.
+The skill picks the tool from what you're protecting and where it goes:
+cryptoid for Hugo markdown, pagevault for HTML and files viewed in a browser,
+gpg for signing and offline archives. The full selection table and decision
+tree live in [`skills/confidential/SKILL.md`](skills/confidential/SKILL.md).
 
 ## License
 

@@ -6,7 +6,7 @@ Verified against cryptoid 0.2.0.
 
 Client-side encrypted content for Hugo static sites. AES-256-GCM with PBKDF2-SHA256
 key derivation. Per-user key wrapping so each user has independent credentials. Zero
-server-side components — decryption happens in the browser via WebCrypto API.
+server-side components: decryption happens in the browser via WebCrypto API.
 
 ## Configuration: `.cryptoid.yaml`
 
@@ -53,8 +53,13 @@ Rules:
 ```bash
 cryptoid encrypt --content-dir content/    # Encrypt before Hugo build
 hugo                                        # Build site normally
-cryptoid decrypt --content-dir content/    # Restore plaintext for git
+cryptoid decrypt --content-dir content/    # Restore plaintext for editing
 ```
+
+After `decrypt`, the working tree (and anything you commit) holds PLAINTEXT. The
+source repo must be private, or the protected pages must never be committed. A
+public repo that backs a public site (e.g. a GitHub Pages user site) publishes the
+"encrypted" pages in the clear. Deploy only the built `public/` output.
 
 ## CLI Commands
 
@@ -132,6 +137,10 @@ cryptoid config set-content-dir content/   # Default content dir for this projec
 | Key wrapping | AES-256-GCM per user |
 | Content hash | Truncated SHA-256 (128 bits) |
 
+The ciphertext is public, so anyone can guess passwords offline; 310,000 PBKDF2
+iterations (below OWASP's current 600,000) is the only cost per guess. Use long
+random passphrases (e.g. 5+ diceware words), never short or reused ones.
+
 ## Known Limitations
 
 - External assets (images, PDFs) referenced in encrypted markdown are NOT encrypted
@@ -143,7 +152,7 @@ cryptoid config set-content-dir content/   # Default content dir for this projec
 
 **"Config file not found"**: Create with `cryptoid init` or specify path with `--config`.
 
-**Already-encrypted files**: Running `encrypt` again is safe — already-encrypted files are skipped (idempotent).
+**Already-encrypted files**: Running `encrypt` again is safe; already-encrypted files are skipped (idempotent).
 
 **Decryption fails in browser**: Check password matches, verify JS is loaded (browser console), confirm shortcode HTML is intact.
 
