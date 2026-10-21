@@ -58,11 +58,13 @@ sync or drop the number.
   without a token to get a preview plus token, then call again with the token to
   execute. Agents and commands all depend on this.
 - **Remote-published failures**: `crier_publish` can return
-  `remote_published: true` (live on the platform, registry write failed). Every
-  failure path in this plugin must route that case to `crier_record` or
-  `crier audit --retry`, never back to `crier_publish`: the MCP publish path does
-  not consult recovery receipts, so a retry double-posts. The canonical wording
-  lives in the skill's "Failures" section.
+  `remote_published: true` (live on the platform, registry write failed). Since
+  crier 2.1.0 the MCP path checks crier's recovery receipt before any remote
+  write, so retrying `crier_publish` records the live post instead of reposting
+  it; the preview's `unrecorded_publication` shows that this will happen. Every
+  failure path in this plugin must confirm a retry only when that field is set,
+  and otherwise fall back to `crier_record`. The canonical wording lives in the
+  skill's "Failures" section.
 
 ## Boundary with the mf plugin
 

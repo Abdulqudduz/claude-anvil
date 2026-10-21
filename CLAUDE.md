@@ -18,7 +18,7 @@ A Claude Code **plugin marketplace** (`queelius`). All plugins are distributed a
 | **repoindex** | `repoindex/` | Agent-driven repository intelligence (repo-doctor, repo-polish, repo-explorer) plus five workflow slash commands. MCP-first over a local git catalog | 2.3.4 |
 | **alex-confidential** | `locksmith/` | Confidentiality toolkit: cryptoid, pagevault, gpg encryption | 0.3.1 |
 | **kdp** | `kdp/` | Amazon KDP book publishing: manuscript audit, listing craft, submission workflow | 0.7.0 |
-| **crier** | `crier/` | Cross-post blog content to multiple platforms via the crier CLI | 1.3.2 |
+| **crier** | `crier/` | Cross-post blog content to multiple platforms via the crier CLI | 1.3.3 |
 | **research-agent** | `research-agent/` | Autonomous research agent with parallel sub-agent dispatch and a status/resume/synthesize control surface for managing long runs | 0.5.2 |
 | **vista** | `vista/` | Surface salient research directions from highly-cited papers. Live OpenAlex search, PDF section extraction, structured catalog | 0.3.1 |
 | **bookwright** | `bookwright/` | Non-fiction book authoring: LaTeX + paired computational notebooks, multi-agent drafting/review, design→plan→draft→integrate workflow | 0.3.0 |

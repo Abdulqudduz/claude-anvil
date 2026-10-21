@@ -106,7 +106,7 @@ When writing rewrites for short-form platforms:
 ## Error Handling
 
 - If `crier_publish` fails with a plain `Publish failed` error, record the error and continue with other platforms
-- If `crier_publish` returns `"remote_published": true`, the post is LIVE and only the registry write failed. **Never call `crier_publish` again for that file and platform** (the preview's `already_published` reads the same registry and will not catch the duplicate). Call `crier_record(title, platform, platform_id=<article_id>, url=<url>, source_file=<file>)` with the values from the error, and report it as published. If `crier_record` also fails, report the URL and tell the user to run `crier audit --retry`
+- If `crier_publish` returns `"remote_published": true`, the post is LIVE and only the registry write failed. Request a new preview for that file and platform: if its `unrecorded_publication` is set, confirm it, which records the live post from crier's recovery receipt without reposting (the result has `"recovered": true`). If `unrecorded_publication` is null, do not confirm; call `crier_record(title, platform, platform_id=<article_id>, url=<url>, source_file=<file>)` with the values from the error. Report it as published either way. If both fail, report the URL and tell the user to run `crier audit --retry`
 - If a step-1 preview reports `already_published: true`, skip that platform; do not request a token
 - If `crier_check` finds errors, skip that file and report the issues
 - If a confirmation token expires, request a new one

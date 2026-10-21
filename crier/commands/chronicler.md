@@ -124,4 +124,4 @@ Retry with: crier audit --retry   (replays recovery receipts; never double-posts
 - **One specific post, all platforms**: just use `/crier <file>`.
 - **Bulk publishing 20+ posts autonomously**: dispatch the `cross-poster` agent.
 - **"What should I cross-post?" without a date scope**: use the `auditor` agent for analysis-driven recommendations.
-- **Re-running failures**: `crier audit --retry --dry-run`, then `crier audit --retry` (CLI). Avoid `crier_failures` plus `crier_publish`: the MCP publish path does not check recovery receipts, so it can republish a post that already went live.
+- **Re-running failures**: see the crier skill's "Failures" section. For a bulk re-run, `crier audit --retry --dry-run`, then `crier audit --retry` (CLI).

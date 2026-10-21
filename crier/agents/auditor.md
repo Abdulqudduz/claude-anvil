@@ -92,7 +92,7 @@ Diagnose and resolve publishing failures:
 3. Categorize by error type: auth, rate limit, content, network
 4. For auth errors: suggest checking API keys
 5. For content errors: suggest running `crier_check` on the file
-6. For transient errors: suggest `crier audit --retry --dry-run`, then `crier audit --retry`. Do not suggest `crier_publish` for a failure: if the post actually went live and only the registry write failed, the CLI retry replays crier's recovery receipt, whereas `crier_publish` would post it a second time
+6. For transient errors: suggest `crier audit --retry --dry-run`, then `crier audit --retry`. Both that and a fresh `crier_publish` check crier's recovery receipt first, so a post that went live but was never recorded gets recorded, not reposted
 
 ## Output Format
 

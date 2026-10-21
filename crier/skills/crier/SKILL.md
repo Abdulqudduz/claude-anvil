@@ -69,23 +69,23 @@ confirmation token, so it cannot start the two-step flow.)
 
 ### Failures: never republish a post that went live
 
-A failed `crier_publish` comes in two shapes, and they need opposite handling:
+A failed `crier_publish` comes in two shapes:
 
 - **`{"error": "Publish failed: ..."}`**: nothing reached the platform. Safe to
   retry after fixing the cause (auth, length, rate limit).
 - **`{"error": "Published remotely but registry recording failed: ...",
   "remote_published": true, "article_id": ..., "url": ...}`**: the post IS live;
-  only the local registry write failed. **Do not call `crier_publish` again.**
-  The step-1 preview's `already_published` flag reads that same registry, so it
-  will not catch the duplicate, and short-form platforms like Bluesky have no
-  update path. Instead, repair the record with `crier_record(title, platform,
-  platform_id=<article_id>, url=<url>, source_file=<file>)` using the values from
-  the error. If that also fails, tell the user to run `crier audit --retry` (CLI),
-  which replays crier's saved recovery receipt without republishing.
+  only the local registry write failed. crier saved a recovery receipt for it,
+  and every later `crier_publish` for that file and platform consults the
+  receipt before writing remotely. Request a fresh preview: its
+  `unrecorded_publication` names the live post, and confirming records it
+  (result `"recovered": true`) without reposting. If `unrecorded_publication` is
+  null, do not confirm (short-form platforms like Bluesky have no update path);
+  repair the record with `crier_record(title, platform, platform_id=<article_id>,
+  url=<url>, source_file=<file>)` using the values from the error.
 
-For retrying old failures in bulk, prefer `crier audit --retry --dry-run` then
-`crier audit --retry` over `crier_failures` plus `crier_publish`: the CLI path
-checks recovery receipts first, the MCP publish path does not.
+For retrying old failures in bulk, `crier audit --retry --dry-run` then
+`crier audit --retry` (CLI) applies the same receipt check across every failure.
 
 ### Audit and bulk publish
 
