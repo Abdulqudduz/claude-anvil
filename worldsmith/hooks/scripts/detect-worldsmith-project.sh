@@ -22,12 +22,21 @@ if [ "$WORLDSMITH_PROJECT" != "1" ]; then
   exit 0
 fi
 
-# Multi-work path: project.yaml exists
-if [ -f "$PROJECT_DIR/.worldsmith/project.yaml" ]; then
+# project.yaml exists but could not be parsed: say so loudly instead of
+# silently degrading, then fall through to the single-work inventory.
+if [ -n "$WORLDSMITH_YAML_ERROR" ]; then
+  echo "WARNING: worldsmith could not parse .worldsmith/project.yaml, so multi-work"
+  echo "scoping is OFF this session (hooks fall back to single-work heuristics)."
+  echo "Reason: $WORLDSMITH_YAML_ERROR"
+  echo ""
+fi
+
+# Multi-work path: project.yaml exists and parsed
+if [ -f "$PROJECT_DIR/.worldsmith/project.yaml" ] && [ -z "$WORLDSMITH_YAML_ERROR" ]; then
   # Export multi-work variables for Claude's Bash tool calls
   if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
-    python3 "$PARSER" "$PROJECT_DIR/.worldsmith/project.yaml" --env 2>/dev/null \
-      | sed 's/^/export /' >> "$CLAUDE_ENV_FILE" || true
+    "$WORLDSMITH_PYTHON" "$PARSER" "$PROJECT_DIR/.worldsmith/project.yaml" --export \
+      >> "$CLAUDE_ENV_FILE" || true
   fi
 
   # Use lore dir from project.yaml
@@ -39,9 +48,9 @@ if [ -f "$PROJECT_DIR/.worldsmith/project.yaml" ]; then
   # Output context for Claude
   echo "Worldsmith project detected."
   echo ""
-  echo "This is a multi-work worldsmith project with ${WORLDSMITH_WORK_COUNT:-?} work(s) sharing ${WORLDSMITH_LORE_DIR:-lore}."
+  echo "This is a multi-work worldsmith project with ${WORLDSMITH_WORK_COUNT} work(s) sharing ${WORLDSMITH_LORE_DIR:-lore}."
   echo ""
-  python3 "$PARSER" "$PROJECT_DIR/.worldsmith/project.yaml" --human 2>/dev/null || true
+  "$WORLDSMITH_PYTHON" "$PARSER" "$PROJECT_DIR/.worldsmith/project.yaml" --human || true
 
   if [ -n "$DOCS_DIR" ] && [ -d "$DOCS_DIR" ]; then
     echo ""
@@ -79,7 +88,7 @@ if [ -f "$PROJECT_DIR/.worldsmith/project.yaml" ]; then
   exit 0
 fi
 
-# Single-work path (no project.yaml) — original behavior unchanged
+# Single-work path (no project.yaml, or it failed to parse)
 
 # Output context for Claude
 echo "Worldsmith project detected."

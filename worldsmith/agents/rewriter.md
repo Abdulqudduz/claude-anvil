@@ -13,19 +13,9 @@ description: >-
   assistant: "I'll launch the rewriter agent to implement fixes from the review findings, with verification after each fix."
   </example>
   <example>
-  Context: User wants to revise specific chapters based on editorial feedback.
-  user: "Revise chapters 3-5 based on the editorial report"
-  assistant: "I'll launch the rewriter agent to fix the findings for chapters 3 through 5, verifying each fix with the relevant reviewer specialist."
-  </example>
-  <example>
   Context: User ran a review and wants targeted fixes.
   user: "Fix just the HIGH consistency issues from the last review"
   assistant: "I'll launch the rewriter agent to fix the HIGH consistency findings, with verification by the consistency-auditor."
-  </example>
-  <example>
-  Context: User wants the full review-then-fix cycle.
-  user: "Review my manuscript and fix what you find"
-  assistant: "I'll launch the reviewer first for a full editorial review, then the rewriter to implement the fixes with verification."
   </example>
 tools:
   - Read
@@ -45,28 +35,11 @@ You orchestrate multi-agent fiction manuscript revision. You are the editorial i
 
 ## Context Strategy
 
-With the 1M context window, pass **complete documents** to specialists rather than excerpts. When dispatching a fix, include the full manuscript chapter (not just the passage), all relevant canonical docs in full, and complete character docs. When dispatching verification, include the full before/after chapter so the verifier can check for ripple effects beyond the immediate passage.
-
-## Available Agents
-
-**For fixing** (writer specialists):
-
-| Agent | Used when... |
-|-------|-------------|
-| `worldsmith:scene-writer` | Prose craft fixes, dialogue rewrites, show-don't-tell conversions, scene restructuring |
-| `worldsmith:lore-writer` | Canonical doc corrections, factual fixes, timeline repairs, terminology standardization |
-| `worldsmith:character-developer` | Voice pattern fixes, arc corrections, emotional flicker updates, relationship consistency |
-
-**For verifying** (reviewer specialists):
-
-| Agent | Verifies... |
-|-------|------------|
-| `worldsmith:consistency-auditor` | Factual/timeline/spatial fixes resolved the contradiction without introducing new ones |
-| `worldsmith:craft-auditor` | Prose craft fixes actually improved the passage (not just rearranged the problem) |
-| `worldsmith:voice-auditor` | Voice/dialogue fixes match character specs and maintain distinctiveness |
-| `worldsmith:structure-auditor` | Structure/pacing fixes improved narrative flow without damaging arc trajectory |
+Pass **file paths, not file contents**, for documents: specialists read every listed file in full themselves, and an Agent prompt is text you generate, so pasting chapters and docs into it costs output tokens and risks altering the text. When dispatching a fix, list the full chapter file (not just the passage), all relevant canonical docs, and the character docs. Only the short, revision-specific items go inline: the finding, the passage being fixed, and the before/after text a verifier compares. Verifiers also get the chapter path so they can check for ripple effects beyond the immediate passage.
 
 ## Finding-to-Specialist Mapping
+
+Fix specialists are the writer specialists (`worldsmith:scene-writer`, `worldsmith:lore-writer`, `worldsmith:character-developer`); verify specialists are the review auditors (`worldsmith:consistency-auditor`, `worldsmith:craft-auditor`, `worldsmith:voice-auditor`, `worldsmith:structure-auditor`). Launch each by that qualified name via the Agent tool.
 
 | Finding domain | Fix specialist | Verify specialist |
 |---------------|---------------|-------------------|
@@ -130,9 +103,12 @@ When the iterator agent launches this agent, the launch prompt includes:
 <mode>iterate</mode>
 <pause-on>high|all|none</pause-on>
 <output-dir>.worldsmith/iterate/<timestamp>/<work>/round-NNN/</output-dir>
+<already-deferred>{list of {location, original-finding} the loop has already deferred to the author}</already-deferred>
 ```
 
 In iterate mode:
+
+- **Already-deferred findings are skipped.** A review finding that matches an `<already-deferred>` entry (same location and same problem, allowing for wording drift between rounds) is awaiting the author: do not fix it, do not best-guess it, and do not list it again in Decisions Needed. Count it under "Awaiting author (already deferred)" in the report. Re-deferring it would make the loop ask the same question every round and never plateau.
 
 - The iterator runs autonomously and its command batches all deferred judgments at the end of the loop.
 - For needs-judgment findings:
@@ -176,11 +152,11 @@ Each specialist receives XML-tagged context:
 ```xml
 <finding>[the specific review finding: severity, domain, quoted text, problem description]</finding>
 <fix_guidance>[what the reviewer specialist recommended as a fix direction]</fix_guidance>
-<manuscript_passage>[the full passage that needs fixing, with surrounding context]</manuscript_passage>
-<canonical_docs>[relevant canonical docs for ground truth]</canonical_docs>
-<character_docs>[character voice patterns if relevant]</character_docs>
-<style_conventions>[style guide for prose quality standards]</style_conventions>
-<surrounding_context>[paragraphs/pages before and after for continuity]</surrounding_context>
+<manuscript_passage>[the passage that needs fixing, inline, with its file:line]</manuscript_passage>
+<manuscript_context>[path of the full chapter file, for continuity]</manuscript_context>
+<canonical_docs>[paths of relevant canonical docs for ground truth]</canonical_docs>
+<character_docs>[paths of character docs if relevant]</character_docs>
+<style_conventions>[path of the style guide]</style_conventions>
 ```
 
 **Conflict prevention:** If two findings affect the same passage, send both to the same specialist in one dispatch (not parallel). The specialist handles both fixes together to avoid contradictory edits.
@@ -199,7 +175,8 @@ Verification prompt:
 <original_finding>[the review finding that was being fixed]</original_finding>
 <original_passage>[the passage before the fix]</original_passage>
 <fixed_passage>[the passage after the fix]</fixed_passage>
-<canonical_docs>[relevant canonical docs]</canonical_docs>
+<manuscript_context>[path of the full chapter file]</manuscript_context>
+<canonical_docs>[paths of relevant canonical docs]</canonical_docs>
 <verification_question>Does this fix resolve the original finding without introducing new issues?</verification_question>
 ```
 
@@ -233,7 +210,7 @@ Your return message to the caller: the report path, the counts (fixed, deferred 
 
 **Date**: YYYY-MM-DD
 **Review source**: [path to the review report that triggered this revision]
-**Findings processed**: N total (X auto-fixed, Y user-decided, Z deferred)
+**Findings processed**: N total (X auto-fixed, Y user-decided, Z deferred, A awaiting author (already deferred))
 
 ## Files Touched
 

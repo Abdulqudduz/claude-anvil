@@ -1,12 +1,12 @@
 # Document Structure Guide
 
-What good worldbuilding documents look like, organized by role. This guide serves as reference when generating docs for new projects or assessing existing ones during project adoption. The emphasis throughout is on documents that are useful during active writing — not encyclopedias that are satisfying to create but rarely consulted.
+What good worldbuilding documents look like, organized by role. This guide serves as reference when generating docs for new projects or assessing existing ones during project adoption. The emphasis throughout is on documents that are useful during active writing: not encyclopedias that are satisfying to create but rarely consulted.
 
 ## General Principles
 
 Write docs as working editorial tools, not reference encyclopedias. A document earns its place by answering questions that come up during writing: "What date was the founding?" "How does this character talk when angry?" "Does this scene contradict the magic rules?"
 
-Prefer narrative prose over database-style entries. A lore doc that reads like a Wikipedia article is less useful than one that reads like a historian's notes — it captures not just facts but their significance, their contested interpretations, their emotional weight.
+Prefer narrative prose over database-style entries. A lore doc that reads like a Wikipedia article is less useful than one that reads like a historian's notes: it captures not just facts but their significance, their contested interpretations, their emotional weight.
 
 Include both canonical sections (established, authoritative) and exploratory sections (provisional, under development) where appropriate. Label them clearly. Canonical sections are the source of truth; exploratory sections are the workshop.
 
@@ -26,13 +26,13 @@ The authoritative chronological reference. Contains dates, event sequences, and 
 - Duration claims that other docs or manuscript passages depend on
 
 **What makes it useful:**
-Entries that connect dates to manuscript locations. Not just "The Battle of Greymoor: Year 412" but "The Battle of Greymoor: Year 412 (Ch. 8, day 3 — Sera is 24, Maren is 31. Referenced in Kael's campfire story, Ch. 14)." Cross-referencing makes the timeline a diagnostic tool, not just a list of dates.
+Entries that connect dates to manuscript locations. Not just "The Battle of Greymoor: Year 412" but "The Battle of Greymoor: Year 412 (Ch. 8, day 3; Sera is 24, Maren is 31. Referenced in Kael's campfire story, Ch. 14)." Cross-referencing makes the timeline a diagnostic tool, not just a list of dates.
 
 **Anti-pattern:** A timeline that lists events without connecting them to the manuscript or to character states. Beautiful but unused.
 
 ### Lore/History
 
-The mythological, cultural, and historical backbone of the world. Contains the "why" behind the current state of affairs — founding stories, religious traditions, political history, cultural practices.
+The mythological, cultural, and historical backbone of the world. Contains the "why" behind the current state of affairs: founding stories, religious traditions, political history, cultural practices.
 
 **What it typically contains:**
 - Founding myths and origin stories (canonical)
@@ -42,7 +42,7 @@ The mythological, cultural, and historical backbone of the world. Contains the "
 - Exploratory sections for myths under development or cultural details not yet referenced
 
 **What makes it useful:**
-Narrative truth over exhaustive cataloging. A lore doc is useful when it captures what these stories mean to the people who tell them — which versions are contested, what emotional resonance they carry, how they shape present-day behavior. "The founding myth says the river god sacrificed himself, but the northern clans believe he was murdered — this dispute underlies the current border conflict" is more useful than a neutral retelling of the myth.
+Narrative truth over exhaustive cataloging. A lore doc is useful when it captures what these stories mean to the people who tell them, which versions are contested, what emotional resonance they carry, how they shape present-day behavior. "The founding myth says the river god sacrificed himself, but the northern clans believe he was murdered, this dispute underlies the current border conflict" is more useful than a neutral retelling of the myth.
 
 **Anti-pattern:** An encyclopedia of myths and cultures with no connection to how they manifest in characters' lives or the plot. Worldbuilding for its own sake.
 
@@ -59,7 +59,7 @@ The operational rules of the world: how magic works, how technology functions, h
 - Exploratory sections for systems under development
 
 **What makes it useful:**
-Specs with consequences. Not just "mages draw power from ley lines" but "mages draw power from ley lines — sustained casting causes physical exhaustion proportional to distance from the nearest ley line, which means urban mages (near convergence points) can cast longer than rural ones, creating a geographic power disparity that drives the rural-urban political tension." Rules that connect to character experience and plot logic.
+Specs with consequences. Not just "mages draw power from ley lines" but "mages draw power from ley lines: sustained casting causes physical exhaustion proportional to distance from the nearest ley line, which means urban mages (near convergence points) can cast longer than rural ones, creating a geographic power disparity that drives the rural-urban political tension." Rules that connect to character experience and plot logic.
 
 **Anti-pattern:** A technical manual that describes the system in isolation without exploring what it means for the people who live with it.
 
@@ -72,18 +72,18 @@ The working reference for character consistency during writing. Contains arcs, v
 - Voice patterns: speech tics, vocabulary tendencies, rhetorical habits
 - Emotional flickers: specific moments tracking arc trajectory (chapter + moment)
 - Key scene anchors: pivotal choices, revelations, changes (chapter + moment)
-- Relationship entries (bidirectional — if A relates to B, B relates to A)
+- Relationship entries (bidirectional: if A relates to B, B relates to A)
 - Intellectual frameworks: which ideas the character embodies
 - Knowledge state tracking: what the character knows at various points
 
 **What makes it useful:**
 Behavioral specificity over generic description. Compare:
 - Generic: "Kael is a brooding warrior haunted by his past."
-- Specific: "Kael speaks in short declaratives when comfortable, shifts to passive constructions when lying ('mistakes were made' instead of 'I made a mistake'). Traces the scar on his left wrist when processing difficult emotions — unconscious habit introduced Ch. 3, noticed by Sera in Ch. 11. Thinks in military metaphors even about personal relationships ('tactical retreat' for avoiding a conversation)."
+- Specific: "Kael speaks in short declaratives when comfortable, shifts to passive constructions when lying ('mistakes were made' instead of 'I made a mistake'). Traces the scar on his left wrist when processing difficult emotions; unconscious habit introduced Ch. 3, noticed by Sera in Ch. 11. Thinks in military metaphors even about personal relationships ('tactical retreat' for avoiding a conversation)."
 
 The specific version makes Kael writable. Any new scene can draw on these patterns to produce dialogue and behavior that sounds like Kael, not like a generic brooding warrior.
 
-Emotional flickers work the same way. Not "Sera is becoming more confident" but: "Ch. 4: refuses to speak in council (baseline). Ch. 7: speaks in council but immediately apologizes for interrupting. Ch. 12: speaks in council, doesn't apologize, but hands shake afterward. Ch. 16: speaks in council, doesn't shake, but checks Maren's face for approval." This sequence is a diagnostic tool — any new scene can find its place on the trajectory.
+Emotional flickers work the same way. Not "Sera is becoming more confident" but: "Ch. 4: refuses to speak in council (baseline). Ch. 7: speaks in council but immediately apologizes for interrupting. Ch. 12: speaks in council, doesn't apologize, but hands shake afterward. Ch. 16: speaks in council, doesn't shake, but checks Maren's face for approval." This sequence is a diagnostic tool; any new scene can find its place on the trajectory.
 
 **Anti-pattern:** Character profiles that read like RPG stat blocks or casting notices. "Age: 27. Hair: dark. Personality: brave, loyal, conflicted." These tell nothing about how to write the character.
 
@@ -101,7 +101,7 @@ The prose guardrails: how the story should be told, distinct from what it tells.
 - Voice conventions for different narrative modes (action, introspection, dialogue)
 
 **What makes it useful:**
-Specific rules with examples. Not "avoid cliches" but "avoid: 'a chill ran down her spine,' 'time seemed to stop,' 'little did she know.' Instead: physicalize emotional reactions with character-specific gestures (see character docs for each character's patterns)." The intentional repetitions list is particularly valuable — it prevents well-meaning "corrections" of deliberate stylistic choices.
+Specific rules with examples. Not "avoid cliches" but "avoid: 'a chill ran down her spine,' 'time seemed to stop,' 'little did she know.' Instead: physicalize emotional reactions with character-specific gestures (see character docs for each character's patterns)." The intentional repetitions list is particularly valuable; it prevents well-meaning "corrections" of deliberate stylistic choices.
 
 **Anti-pattern:** Vague aspirational statements ("write with vivid prose") that provide no actionable guidance.
 
@@ -118,7 +118,7 @@ The control panel for the entire project. Scene-by-scene or chapter-by-chapter b
 - Reader-knowledge tracking (what information is revealed to the reader in each chapter)
 
 **What makes it useful:**
-Dense cross-referencing. An outline entry for Chapter 8 that says "Battle scene, Sera and Kael" is less useful than one that says "Battle of Greymoor. Timeline: Year 412, day 3. Characters: Sera (first combat, arc moment — see flicker entry), Kael (tactical mode, commanding), Maren (absent — traveling, arrives Ch. 9). Systems: extended ley-line casting, exhaustion rules apply. Threads: Sera's confidence arc (escalation), Kael's leadership burden (complication), border conflict (climax of Act II). Status: drafted, needs revision for pacing in second half."
+Dense cross-referencing. An outline entry for Chapter 8 that says "Battle scene, Sera and Kael" is less useful than one that says "Battle of Greymoor. Timeline: Year 412, day 3. Characters: Sera (first combat, arc moment, see flicker entry), Kael (tactical mode, commanding), Maren (absent, traveling, arrives Ch. 9). Systems: extended ley-line casting, exhaustion rules apply. Threads: Sera's confidence arc (escalation), Kael's leadership burden (complication), border conflict (climax of Act II). Status: drafted, needs revision for pacing in second half."
 
 **Reader-knowledge tracking** is particularly valuable for multi-work universes. Each chapter entry should note: what world facts the reader learns, what character secrets are revealed, what dramatic irony is in play (what the reader knows that characters do not). This prevents re-exposition (telling the reader what they already know), ensures reveals land (the reader should not already know the "surprise"), and tracks dramatic irony intentionally rather than accidentally. For a shared universe, also track which facts the reader of Work A knows that a reader of Work B might not.
 
@@ -136,7 +136,7 @@ The project's aesthetic and intellectual commitments. What makes this story itse
 - Thematic tracking across chapters (where themes surface, develop, complicate)
 
 **What makes it useful:**
-Specificity about what to avoid and why. Not "avoid fantasy cliches" but "avoid: the Chosen One who reluctantly accepts destiny (this story is about collective action, not individual exceptionalism), evil races (cultures in this world have internal diversity and historical reasons for conflict), prophecy as plot engine (characters make choices, the future isn't written)." The "why" matters — it helps apply the rule to edge cases.
+Specificity about what to avoid and why. Not "avoid fantasy cliches" but "avoid: the Chosen One who reluctantly accepts destiny (this story is about collective action, not individual exceptionalism), evil races (cultures in this world have internal diversity and historical reasons for conflict), prophecy as plot engine (characters make choices, the future isn't written)." The "why" matters; it helps apply the rule to edge cases.
 
 **Anti-pattern:** A list of themes without guidance on how they manifest in editorial decisions. "Theme: identity" tells nothing about what to do differently.
 
@@ -195,18 +195,18 @@ Date stamps and priority rankings. Feedback without dates loses its context ("wa
 
 A good worldbuilding project CLAUDE.md serves as the entry point to the editorial system. It should contain:
 
-**Project overview** — Title, genre, format (novel, series, anthology), premise in one or two sentences, current status (drafting, revising, polishing).
+**Project overview**: Title, genre, format (novel, series, anthology), premise in one or two sentences, current status (drafting, revising, polishing).
 
-**Document roles table** — Maps roles to filenames. "Timeline Authority: docs/timeline.md. Character Tracking: docs/characters.md." This is the lookup table that makes the role-based system work with actual files.
+**Document roles table**: Maps roles to filenames. "Timeline Authority: docs/timeline.md. Character Tracking: docs/characters.md." This is the lookup table that makes the role-based system work with actual files.
 
-**Consistency rules** — What's canonical, what's exploratory, the canonical hierarchy as it applies to this project. Any project-specific rules ("Maren's dialogue is always in present tense, even in flashbacks — this is intentional").
+**Consistency rules**: What's canonical, what's exploratory, the canonical hierarchy as it applies to this project. Any project-specific rules ("Maren's dialogue is always in present tense, even in flashbacks; this is intentional").
 
-**World structure summary** — The key facts about the world in compact form: era, geography basics, major systems, cultural groups. Enough to orient a new session without reading every doc.
+**World structure summary**: The key facts about the world in compact form: era, geography basics, major systems, cultural groups. Enough to orient a new session without reading every doc.
 
-**Character conventions** — Voice pattern summaries, anti-cliche commitments specific to characters ("no 'strong female character' tropes — Sera's strength is political, not physical").
+**Character conventions**: Voice pattern summaries, anti-cliche commitments specific to characters ("no 'strong female character' tropes; Sera's strength is political, not physical").
 
-**Series/related project references** — Paths to related projects, what's shared vs. local, which project is authoritative for shared facts.
+**Series/related project references**: Paths to related projects, what's shared vs. local, which project is authoritative for shared facts.
 
-**Propagation awareness notes** — Project-specific propagation patterns. "The timeline is tightly coupled to the character doc because of age-dependent plot points. Always check both when either changes."
+**Propagation awareness notes**: Project-specific propagation patterns. "The timeline is tightly coupled to the character doc because of age-dependent plot points. Always check both when either changes."
 
 Keep CLAUDE.md concise but current. It is read at the start of every session. Stale or bloated content degrades every interaction.

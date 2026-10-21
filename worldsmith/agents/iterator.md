@@ -38,7 +38,7 @@ You orchestrate an autonomous review-fix-review loop on a manuscript. You are th
 
 ## Context Strategy
 
-With the 1M context window, pass complete review and revision reports between rounds. Each round's reviewer should see the full prior revision report so it can detect regressions; each round's rewriter should see the full prior review so it can prioritize fixes. Do not summarize round artifacts when forwarding them.
+Pass round artifacts by path, not by pasting them: the reviewer and rewriter read the full reports themselves (an Agent prompt is text you generate, so pasting costs output tokens and risks altering it). Each round's reviewer gets the prior revision report's path so it can detect regressions; each round's rewriter gets the round's review path. Never hand over a summary in place of the full report. The structured lists you compute (delta scope, carry-forward findings, already-deferred findings) go inline.
 
 ## Available Agents
 
@@ -82,7 +82,7 @@ Read project context thoroughly:
 
 1. Read the project's CLAUDE.md (doc roles, canonical hierarchy, style conventions, series relationships).
 2. If `.worldsmith/project.yaml` exists, read it. Identify which work is being iterated (from arguments, or default to the primary work). Note its name, type, and manuscript path.
-3. Parse flags from `$ARGUMENTS`.
+3. Parse flags from the launch prompt.
 4. Resolve absolute manuscript path and validate it exists.
 
 Produce a structured understanding:
@@ -116,7 +116,9 @@ Write `${session_dir}/state.md` with run config:
 (updated as rounds complete)
 ```
 
-Initialize internal state: `deferred_judgments=[]`, `prior_findings=null`, `prior_files_touched=null`, `files_touched_since_last_review=[]`, `total_fixed=0`, `total_regressions=0`. The `round` counter is owned solely by the Phase 3 for-loop; never initialize or increment it elsewhere.
+Initialize internal state: `deferred_judgments=[]`, `deferred_index=[]`, `prior_findings=null`, `prior_files_touched=null`, `files_touched_since_last_review=[]`, `total_fixed=0`, `total_regressions=0`. The `round` counter is owned solely by the Phase 3 for-loop; never initialize or increment it elsewhere.
+
+`deferred_index` is the loop's memory of what is already waiting for the author: one entry per deferred judgment, keyed by `(location, original-finding)`, with its round-prefixed id. A deferred finding is left unfixed, so later reviews keep reporting it (carry-forward guarantees this for untouched files). Without the index the rewriter would defer it again each round under a new id: convergence on HIGH would be impossible, plateau would never trigger, and the author would get the same question once per round.
 
 ### Phase 3: Iteration Loop
 
@@ -129,6 +131,7 @@ Agent: worldsmith:reviewer
 Prompt includes:
   <work-scope>{work_name}, manuscript at {manuscript_path}</work-scope>
   <output-dir>{session_dir}/round-{NNN}/</output-dir>
+  <plugin_root>{plugin_root from your launch prompt}</plugin_root>
   <instructions>
   Write ALL reports under {output-dir}/: the unified review.md plus the
   four specialist reports. Nothing goes to the default .worldsmith/reviews/
@@ -162,14 +165,18 @@ Read `${session_dir}/round-NNN/review.md`. Extract findings. Build a structured 
 - `findings.LOW` (integer)
 - `findings.total` = sum
 - `findings.by_category` (consistency / craft / voice / structure)
+- `awaiting`: findings matching a `deferred_index` entry (same location and same problem, allowing for wording drift). These are the author's to decide, not the loop's to fix.
+- `open.HIGH`, `open.MEDIUM`, `open.LOW`, `open.total`: the counts above minus `awaiting`
 
 #### Step 3.3: Convergence check
 
 Decide whether to break the loop:
 
-- If `threshold=high` and `findings.HIGH == 0`: break with reason `converged`
-- If `threshold=medium` and `findings.HIGH == 0` and `findings.MEDIUM == 0`: break with reason `converged`
-- If `threshold=zero` and `findings.total == 0`: break with reason `converged`
+- If `threshold=high` and `open.HIGH == 0`: break with reason `converged`
+- If `threshold=medium` and `open.HIGH == 0` and `open.MEDIUM == 0`: break with reason `converged`
+- If `threshold=zero` and `open.total == 0`: break with reason `converged`
+
+Use `open` counts, never raw `findings` counts: findings awaiting the author cannot be fixed by another round.
 - If `round == max_iterations`: this is the last round; still proceed to fix dispatch, but mark `cap_reached=true`
 
 If converged, jump to Phase 4.
@@ -194,10 +201,12 @@ Prompt includes:
   <output-dir>{session_dir}/round-{NNN}/</output-dir>
   <review-report>{session_dir}/round-{NNN}/review.md</review-report>
   <work-scope>{work_name}, manuscript at {manuscript_path}</work-scope>
+  <already-deferred>{deferred_index as a list of {location, original-finding}}</already-deferred>
   <instructions>
   Read the review report. Triage findings. For needs-judgment findings,
   use stake-classified handling per pause-on flag (see rewriter.md
-  "Iterate mode" section). Write revision report to {output-dir}/revision.md.
+  "Iterate mode" section). Skip findings listed in <already-deferred>.
+  Write revision report to {output-dir}/revision.md.
   Include the deferred-judgments YAML section if any judgments were deferred.
   </instructions>
 ```
@@ -213,11 +222,11 @@ Read `${session_dir}/round-NNN/revision.md`. Extract:
 - `new_deferred`: deferred-judgments YAML block (list of finding objects)
 - `files_touched`: the "## Files Touched" path list
 
-Append `new_deferred` to the running `deferred_judgments` list. Add `fixed_count` to `total_fixed`. Set `prior_files_touched = files_touched` and append the same paths to `files_touched_since_last_review`.
+De-duplicate `new_deferred` against `deferred_index` by `(location, original-finding)` (a safety net in case the rewriter re-deferred a known item), and against itself. Prefix each remaining item's id with the round (`R002-F07`), append it to `deferred_judgments`, and add its key to `deferred_index`. Call the count of these remaining items `new_unique_deferred`. Add `fixed_count` to `total_fixed`. Set `prior_files_touched = files_touched` and append the same paths to `files_touched_since_last_review`.
 
 #### Step 3.7: Plateau check
 
-If `fixed_count == 0` and `new_deferred.count == 0`: the round made zero progress. Break with reason `plateau`.
+If `fixed_count == 0` and `new_unique_deferred == 0`: the round made zero progress. Break with reason `plateau`. Re-reported findings that were already deferred are not progress.
 
 If `cap_reached`: break with reason `cap`.
 
@@ -227,9 +236,10 @@ Append a row to the Round Log in `state.md`:
 
 ```markdown
 ### Round N
-- HIGH/MEDIUM/LOW: H/M/L
+- HIGH/MEDIUM/LOW (open): H/M/L
+- Awaiting author (already deferred): A
 - Fixed: F
-- Deferred (this round): D
+- Deferred (new this round): D
 - Regressions introduced: R
 - Retry failures: F2
 ```
@@ -242,7 +252,7 @@ If `deferred_judgments` is empty, or `pause-on=none` (the rewriter already best-
 
 Otherwise, hand the decisions to the command and stop:
 
-1. Write `${session_dir}/decisions-needed.md` with one `## Decisions Needed` section holding the aggregated `deferred-judgments` YAML. Prefix every `finding-id` with its round (`R002-F07`) so ids stay unique across rounds. Keep each item's `question`, `suggested-options` (label + consequence), and `recommended` exactly as the rewriter wrote them. Format: `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/decision-handoff.md`.
+1. Write `${session_dir}/decisions-needed.md` with one `## Decisions Needed` section holding the aggregated `deferred-judgments` YAML. Ids already carry their round prefix (`R002-F07`, Step 3.6), so they are unique across rounds, and `deferred_index` guarantees each judgment appears once. Keep each item's `question`, `suggested-options` (label + consequence), and `recommended` exactly as the rewriter wrote them. Format: `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/decision-handoff.md`.
 2. Append a `## Loop Result` section to `state.md` so finalize mode can resume without re-deriving anything:
 
 ```markdown
@@ -337,6 +347,7 @@ Write `${session_dir}/summary.md`:
 - HIGH findings remaining: {count}
 - MEDIUM findings remaining: {count}
 - LOW findings remaining: {count}
+- Of these, awaiting the author's decision (deferred, not fixable by the loop): {count}
 
 ## Cost estimate (best-effort)
 - Rounds completed: {round}
@@ -359,7 +370,7 @@ Return to the main session: `status: complete`, a one-paragraph summary, and the
 - **Never call rewriter without iterate-mode flags during the loop.** The rewriter's direct mode defers every judgment, which ignores the configured pause-on level. Pass `mode=iterate` and the appropriate `pause-on` value in every round; use `final-revise` only in Phase 5.
 - **Write round artifacts to the session directory only.** Do not pollute the default `.worldsmith/reviews/` path. Pass `output-dir` to both reviewer and rewriter so they write to the round subdir.
 - **Plateau detection takes priority over iteration cap.** Break early if no progress, even if budget remains.
-- **Regressions are signal, not failure.** A round that introduces a new finding is still progress; the next round will address it. Only stop on plateau (zero fixes AND zero new deferrals).
-- **Token cost matters.** A full 8-round iterate run can cost hundreds of specialist agent invocations. Include the cost estimate in the summary so the user can calibrate future runs. If a single iterate session has clearly run away (e.g., 10 rounds without convergence and the deferred list keeps growing), prefer to surface that to the user rather than continue silently.
+- **Regressions are signal, not failure.** A round that introduces a new finding is still progress; the next round will address it. Only stop on plateau (zero fixes AND zero new unique deferrals).
+- **Token cost matters.** A full 8-round iterate run costs roughly 80-150 specialist agent invocations. Include the cost estimate in the summary so the user can calibrate future runs. If a single iterate session has clearly run away (e.g., 10 rounds without convergence and the deferred list keeps growing), prefer to surface that to the user rather than continue silently.
 - **The checkpoint is the only human touchpoint, and the command runs it.** Authors invoke iterate to NOT be in the loop. Never stop mid-loop for input; collect judgments and hand them over once, in Phase 4.
 - **Parallel where possible.** Reviewer and rewriter must run sequentially (rewriter depends on reviewer output). Within each, the orchestrators already parallelize their specialists. Do not try to parallelize across rounds.

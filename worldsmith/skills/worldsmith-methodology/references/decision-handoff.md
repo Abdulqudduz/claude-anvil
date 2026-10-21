@@ -1,7 +1,7 @@
 # Decision Handoff
 
-How worldsmith agents surface creative judgment calls to the author, and how
-commands resolve them. This file is the single definition: agent prompts and
+How worldsmith agents surface creative judgment calls to the author, how
+provisional content is marked, and how commands resolve them. This file is the single definition: agent prompts and
 commands reference it by path (`${CLAUDE_PLUGIN_ROOT}` is substituted in agent
 and command bodies) rather than copying the schema.
 
@@ -43,6 +43,26 @@ Rules:
 - An empty list means nothing needs the author: write `deferred-judgments: []`.
 - `finding-id` must be unique within one return. The iterator prefixes each
   round's ids with the round (`R002-`) when it aggregates.
+
+## Provisional markers
+
+Content that is not yet canonical (an exploratory idea, or a drafted choice
+awaiting the author) is marked inline with one grammar:
+
+```
+[PROVISIONAL YYYY-MM-DD id=<finding-id>]
+```
+
+- The date is when the content was written. `id=` is optional: include it when
+  the content belongs to a `deferred-judgments` item (`id=lore-2`,
+  `id=char-1`), omit it for a plain exploratory idea.
+- Place the marker at the start of the provisional paragraph, entry, or section
+  heading. Promotion or a decision removes the marker.
+- Readers (the consistency-auditor, `/worldsmith:check`) must also recognize
+  legacy forms already present in project docs: `[PROVISIONAL]`,
+  `[PROVISIONAL — YYYY-MM-DD]` (with an em-dash or hyphen), and
+  `PROVISIONAL (lore-<n>)` / `PROVISIONAL (char-<n>)`. Do not write new
+  markers in those forms.
 
 ## Resolving decisions (commands only)
 

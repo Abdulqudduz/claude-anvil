@@ -22,11 +22,7 @@ The rewriter cannot ask you anything (Claude Code removes AskUserQuestion from s
 
 If `$ARGUMENTS` contains an explicit path (e.g., `.worldsmith/reviews/2026-03-12/Hemorrhagic/review.md`), use it.
 
-Otherwise locate the latest review report:
-- Multi-work project: `.worldsmith/reviews/<latest-date>/<work-name>/review.md`
-- Single-work project: `.worldsmith/reviews/<latest-date>/review.md`
-
-Use Bash to find the latest date directory: `ls -t .worldsmith/reviews/ 2>/dev/null | head -1`.
+Otherwise locate the latest review report as described under "Report paths" in `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/work-scoping.md`: sort the date directories by name, not modification time (revising an older review touches its directory), and in a multi-work project take the latest one containing `<work-name>/review.md`.
 
 If no review report exists, do NOT silently launch the rewriter. Tell the user: "No review report found in `.worldsmith/reviews/`. Run `/worldsmith:review` first to produce one." Then stop.
 
@@ -46,20 +42,7 @@ Forward filter values to the rewriter in the launch prompt. The rewriter's Phase
 
 ## Multi-Work Awareness
 
-If `.worldsmith/project.yaml` exists, this project contains multiple works sharing canonical lore.
-
-**Work selection from `$ARGUMENTS`:**
-- If a recognized work name appears in the arguments, scope to that work's review report (`.worldsmith/reviews/<date>/<work-name>/review.md`).
-- If no work name is specified and multiple works exist, default to the **primary work** (first in `project.yaml`) and note this in the launch prompt.
-- Arguments can combine work name with filters: `/worldsmith:revise Hemorrhagic HIGH consistency`.
-
-**Scoping rules:**
-- Manuscript edits target the selected work's `manuscript` directory only.
-- Canonical doc updates (shared lore) are universe-wide and propagate to all works that reference the changed lore.
-- The rewriter's Phase 5 (Integration + Propagation) handles cross-work propagation when shared lore changes.
-- Revision report path mirrors the review report path (multi-work: `.worldsmith/reviews/<date>/<work-name>/revision.md`).
-
-Pass the resolved work name, review report path, and any filters to the rewriter agent in the launch prompt.
+Resolve the target work per `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/work-scoping.md` (work name in `$ARGUMENTS`, else the primary work, noted in the launch prompt), e.g. `/worldsmith:revise Hemorrhagic HIGH consistency`. Manuscript edits target that work only; shared-lore updates are universe-wide and the rewriter's Phase 5 propagates them across works. The revision report sits next to its review. Pass the resolved work name, review report path, and any filters to the rewriter in the launch prompt.
 
 ## Resolving Decisions
 

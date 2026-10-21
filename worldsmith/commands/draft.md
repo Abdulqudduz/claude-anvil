@@ -33,20 +33,7 @@ If `$ARGUMENTS` is empty or ambiguous, the writer stops before writing and retur
 
 ## Multi-Work Awareness
 
-If `.worldsmith/project.yaml` exists, this project contains multiple works sharing canonical lore.
-
-**Work selection from `$ARGUMENTS`:**
-- If a recognized work name appears in the arguments, scope the draft to that work's manuscript directory.
-- If no work name is specified and multiple works exist, default to the **primary work** (first in `project.yaml`) and note this in the launch prompt.
-- Arguments can combine work name and assignment: `/worldsmith:draft Hemorrhagic the opening scene` or `/worldsmith:draft "The Policy" chapter 5`.
-
-**Scoping rules:**
-- Manuscript output goes to the selected work's `manuscript` directory.
-- Canonical docs (shared lore) are always shared. Updates from the draft affect all works that reference the changed lore.
-- Work-specific lore (per-work `lore:` directory in `project.yaml`, if present) is also available to the writer.
-- For single-work projects (no `project.yaml`), the writer infers the manuscript directory from common conventions (`chapters/`, `manuscript/`, `scenes/`).
-
-Pass the resolved work name, manuscript path, and assignment to the writer agent in the launch prompt.
+Resolve the target work per `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/work-scoping.md` (work name in `$ARGUMENTS`, else the primary work), e.g. `/worldsmith:draft Hemorrhagic the opening scene`. Manuscript output goes to that work's `manuscript` directory; shared-lore updates from the draft are universe-wide. Pass the resolved work name, manuscript path, local lore path, and the assignment to the writer in the launch prompt.
 
 ## Resolving Decisions
 

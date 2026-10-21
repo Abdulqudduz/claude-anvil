@@ -6,7 +6,6 @@ description: >-
   methodology: canonical hierarchy, doc roles (timeline, lore, characters,
   systems), propagation discipline, and the dual canonical and exploratory
   workflow.
-version: 0.2.0
 ---
 
 # Worldsmith Methodology
@@ -15,35 +14,35 @@ Rules and structure for documentation-first fiction worldbuilding. This skill pr
 
 ## 1. Core Philosophy
 
-Treat documentation as the source of truth for the fictional world. The manuscript is one expression of the world; the docs define it. Docs and manuscript should stay consistent with each other, but recognize that creative work is messy — bidirectional updates happen naturally. A scene might introduce a detail that needs to flow back into the docs, or a doc revision might require manuscript changes. Both directions are legitimate.
+Treat documentation as the source of truth for the fictional world. The manuscript is one expression of the world; the docs define it. Docs and manuscript should stay consistent with each other, but recognize that creative work is messy: bidirectional updates happen naturally. A scene might introduce a detail that needs to flow back into the docs, or a doc revision might require manuscript changes. Both directions are legitimate.
 
-When docs and manuscript conflict, the docs are usually right — they represent deliberate editorial decisions. But exercise judgment. Sometimes the manuscript captures a better version of a detail that the docs haven't caught up with. The key discipline is noticing divergence and reconciling it, not enforcing rigid ordering.
+When docs and manuscript conflict, the docs are usually right: they represent deliberate editorial decisions. But exercise judgment. Sometimes the manuscript captures a better version of a detail that the docs haven't caught up with. The key discipline is noticing divergence and reconciling it, not enforcing rigid ordering.
 
-All documents are living documents, including the project's CLAUDE.md. As the world evolves through writing, update the docs. As the docs evolve, keep CLAUDE.md current — it is the most frequently read document in any session and serves as the entry point to the entire editorial system. A stale CLAUDE.md undermines every subsequent action.
+All documents are living documents, including the project's CLAUDE.md. As the world evolves through writing, update the docs. As the docs evolve, keep CLAUDE.md current: it is the most frequently read document in any session and serves as the entry point to the entire editorial system. A stale CLAUDE.md undermines every subsequent action.
 
 ## 2. The Document Ecosystem
 
-Worldbuilding projects organize their editorial knowledge across documents that serve specific roles. Think in terms of roles, not filenames — a project might call its timeline doc `timeline.md`, `chronology.md`, or `history-dates.md`. The role matters, not the name. Consult the project's CLAUDE.md for the mapping between roles and files.
+Worldbuilding projects organize their editorial knowledge across documents that serve specific roles. Think in terms of roles, not filenames: a project might call its timeline doc `timeline.md`, `chronology.md`, or `history-dates.md`. The role matters, not the name. Consult the project's CLAUDE.md for the mapping between roles and files.
 
 ### Document Roles
 
-- **Timeline Authority** — The authoritative source for dates, event sequences, character ages at specific points, and day-numbering within chapters. When any other doc or the manuscript disagrees with the timeline on a date or sequence, the timeline wins.
+- **Timeline Authority**: The authoritative source for dates, event sequences, character ages at specific points, and day-numbering within chapters. When any other doc or the manuscript disagrees with the timeline on a date or sequence, the timeline wins.
 
-- **Lore/History** — Mythology, founding stories, cultural context, historical events in narrative form. Contains the "why" behind the world's current state. Typically has both canonical sections (established history) and exploratory sections (myths being developed, histories not yet referenced in manuscript).
+- **Lore/History**: Mythology, founding stories, cultural context, historical events in narrative form. Contains the "why" behind the world's current state. Typically has both canonical sections (established history) and exploratory sections (myths being developed, histories not yet referenced in manuscript).
 
-- **Systems/Mechanics** — Magic systems, technology rules, geography and climate, economic structures, political systems. Specs with consequences: not just "how the system works" but "what it means for characters and plot." Typically has exploratory sections for systems under development.
+- **Systems/Mechanics**: Magic systems, technology rules, geography and climate, economic structures, political systems. Specs with consequences: not just "how the system works" but "what it means for characters and plot." Typically has exploratory sections for systems under development.
 
-- **Character Tracking** — Character arcs, voice patterns, relationships, emotional trajectories, key scene anchors. The working reference during manuscript writing. See Section 5 for documentation standards.
+- **Character Tracking**: Character arcs, voice patterns, relationships, emotional trajectories, key scene anchors. The working reference during manuscript writing. See Section 5 for documentation standards.
 
-- **Style Conventions** — Prose principles, POV rules, tense conventions, intentional repetitions list, anti-cliche rules, consistency checklist. The guardrails for how the story is told, distinct from what it tells.
+- **Style Conventions**: Prose principles, POV rules, tense conventions, intentional repetitions list, anti-cliche rules, consistency checklist. The guardrails for how the story is told, distinct from what it tells.
 
-- **Outline/Diagnostic Hub** — Scene-by-scene or chapter-by-chapter breakdown with cross-references to other docs. Functions as a control panel: what happens, which characters are present, which world elements are in play, what state things are in. The place to check "where does X appear?"
+- **Outline/Diagnostic Hub**: Scene-by-scene or chapter-by-chapter breakdown with cross-references to other docs. Functions as a control panel: what happens, which characters are present, which world elements are in play, what state things are in. The place to check "where does X appear?"
 
-- **Editorial Backlog** — Future ideas, sequel hooks, unexplored threads, deferred decisions. Ranked or prioritized by potential impact. A holding pen that prevents good ideas from being lost while keeping them out of canonical docs until they're ready. Typically has exploratory sections only.
+- **Editorial Backlog**: Future ideas, sequel hooks, unexplored threads, deferred decisions. Ranked or prioritized by potential impact. A holding pen that prevents good ideas from being lost while keeping them out of canonical docs until they're ready. Typically has exploratory sections only.
 
-- **Themes/Anti-Cliche** — Thematic rules, philosophical framework, what patterns to avoid, what patterns to preserve. The project's aesthetic and intellectual commitments — what makes this story this story and not a generic version of itself.
+- **Themes/Anti-Cliche**: Thematic rules, philosophical framework, what patterns to avoid, what patterns to preserve. The project's aesthetic and intellectual commitments; what makes this story this story and not a generic version of itself.
 
-- **Feedback** — Date-stamped editorial reviews, reader feedback, revision notes with priorities. Progress tracking across revision cycles. A historical record of editorial decisions.
+- **Feedback**: Date-stamped editorial reviews, reader feedback, revision notes with priorities. Progress tracking across revision cycles. A historical record of editorial decisions.
 
 - **Universe Bible** (optional, recommended for multi-work projects). A narrative-form synthesis of all canonical lore: history told as story, systems explained through their consequences, cultures described through the lives of the people in them. Think of it as the Silmarillion for this world. Not a database, but a readable document that tells the story of the world itself. Generated and maintained from canonical docs by the lore-writer. Updated when canonical lore changes. For single-work projects the lore docs themselves may suffice, but for a shared universe with multiple works, the universe bible is the single document that synthesizes everything into one coherent narrative.
 
@@ -92,9 +91,9 @@ Determine the appropriate mode from context. Most user requests make it clear wh
 
 A change to one document may require changes to others. Developing this awareness is more important than following a rigid checklist. When making a change, pause and consider: what else in the project depends on or references the thing that just changed?
 
-The scope of propagation varies. A typo fix in a character name propagates narrowly — search and replace across files. A restructured timeline propagates widely — character ages, event references, outline entries, and manuscript passages may all need revision. Recognize which kind of change is happening and respond proportionally.
+The scope of propagation varies. A typo fix in a character name propagates narrowly, search and replace across files. A restructured timeline propagates widely, character ages, event references, outline entries, and manuscript passages may all need revision. Recognize which kind of change is happening and respond proportionally.
 
-Consult the project's CLAUDE.md for the document structure and role mappings. CLAUDE.md itself is part of the ecosystem — when project-level facts change (world structure, canonical tables, character conventions, anti-cliche rules, series relationships), update CLAUDE.md to reflect those changes.
+Consult the project's CLAUDE.md for the document structure and role mappings. CLAUDE.md itself is part of the ecosystem: when project-level facts change (world structure, canonical tables, character conventions, anti-cliche rules, series relationships), update CLAUDE.md to reflect those changes.
 
 For detailed guidance on how changes ripple through interconnected docs, including examples organized by document role and the distinction between shallow and deep changes, consult `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/propagation-awareness.md`.
 
@@ -104,11 +103,11 @@ Character docs earn their place by providing what Claude cannot infer from the m
 
 ### Voice Patterns and Speech Tics
 
-Document how each character sounds — not generic labels ("speaks formally") but specific patterns ("uses rhetorical questions when deflecting, drops contractions under stress, favors botanical metaphors"). A well-documented voice pattern makes a character recognizable without dialogue tags.
+Document how each character sounds: not generic labels ("speaks formally") but specific patterns ("uses rhetorical questions when deflecting, drops contractions under stress, favors botanical metaphors"). A well-documented voice pattern makes a character recognizable without dialogue tags.
 
 ### Emotional Flickers
 
-Track specific moments that mark a character's arc trajectory. Not summaries ("she's getting braver") but anchored observations ("Chapter 12: flinches at the mention of the treaty but doesn't leave the room — first time she's stayed"). These accumulate into an arc map that shows where a character has been and where they're heading.
+Track specific moments that mark a character's arc trajectory. Not summaries ("she's getting braver") but anchored observations ("Chapter 12: flinches at the mention of the treaty but doesn't leave the room; first time she's stayed"). These accumulate into an arc map that shows where a character has been and where they're heading.
 
 ### Key Scene Anchors
 
@@ -124,7 +123,7 @@ Avoid generic descriptions that could apply to any character: "brave warrior," "
 
 ## 6. Series & Shared Universe
 
-Projects may exist within a series or shared universe. Check the project's CLAUDE.md for references to related projects — sibling novels, prequel/sequel relationships, shared-world anthologies.
+Projects may exist within a series or shared universe. Check the project's CLAUDE.md for references to related projects: sibling novels, prequel/sequel relationships, shared-world anthologies.
 
 When working on world facts that are shared across projects (timeline events, geography, system rules, cultural constants), consult the related projects' docs for consistency. Project-local facts (character arcs, plot details, manuscript-specific style choices) do not require cross-project checking.
 
@@ -134,14 +133,14 @@ When a shared world fact changes, note which related projects may need updating.
 
 Watch for these categories of issues during any worldbuilding or editorial work:
 
-- **Timeline inconsistencies** — Dates, ages, event sequences, duration claims that conflict with the timeline authority or with each other in the manuscript.
-- **Factual contradictions** — Canonical values (system rules, geographic facts, established history) that the manuscript states differently.
-- **Character state errors** — Characters knowing things they shouldn't yet know, displaying capabilities they haven't developed, emotional states that don't follow from prior scenes.
-- **Spatial inconsistencies** — Locations, distances, travel times, architectural details that contradict established geography.
-- **Prose pattern issues** — Crutch words, filter words, weak verb constructions, adverb-heavy dialogue tags that accumulate across chapters.
-- **Pacing concerns** — Scene balance, info dumps, rushed transitions, chapters that don't earn their length.
-- **Style drift** — Departures from the project's style-guide conventions (POV rules, tense, intentional repetitions, prose principles).
-- **Thematic drift** — Content that contradicts the themes doc's commitments (anti-cliche rules violated, philosophical framework abandoned, aesthetic principles ignored).
+- **Timeline inconsistencies**: Dates, ages, event sequences, duration claims that conflict with the timeline authority or with each other in the manuscript.
+- **Factual contradictions**: Canonical values (system rules, geographic facts, established history) that the manuscript states differently.
+- **Character state errors**: Characters knowing things they shouldn't yet know, displaying capabilities they haven't developed, emotional states that don't follow from prior scenes.
+- **Spatial inconsistencies**: Locations, distances, travel times, architectural details that contradict established geography.
+- **Prose pattern issues**: Crutch words, filter words, weak verb constructions, adverb-heavy dialogue tags that accumulate across chapters.
+- **Pacing concerns**: Scene balance, info dumps, rushed transitions, chapters that don't earn their length.
+- **Style drift**: Departures from the project's style-guide conventions (POV rules, tense, intentional repetitions, prose principles).
+- **Thematic drift**: Content that contradicts the themes doc's commitments (anti-cliche rules violated, philosophical framework abandoned, aesthetic principles ignored).
 
 Severity depends on context. A wrong date in a throwaway reference is less urgent than a wrong date in a pivotal scene. A crutch word used twice is different from one used twenty times. Exercise judgment rather than applying rigid severity classifications.
 
@@ -161,5 +160,7 @@ When working in a multi-work project:
 
 ## Additional Resources
 
-- **Propagation awareness guidance**: `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/propagation-awareness.md` — How changes ripple through interconnected docs, with examples by document role and guidance on shallow vs. deep changes.
-- **Document structure guide**: `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/doc-structure-guide.md` — What good worldbuilding docs look like, organized by role. Used by init-world when generating docs for new or adopted projects.
+- **Propagation awareness guidance**: `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/propagation-awareness.md`; How changes ripple through interconnected docs, with examples by document role and guidance on shallow vs. deep changes.
+- **Document structure guide**: `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/doc-structure-guide.md`; What good worldbuilding docs look like, organized by role. Used by init-world when generating docs for new or adopted projects.
+- **Decision handoff**: `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/decision-handoff.md`: the `deferred-judgments` format agents return, the `[PROVISIONAL YYYY-MM-DD id=...]` marker grammar, and how commands ask the author.
+- **Work scoping**: `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/work-scoping.md`: how commands pick the work in a multi-work universe, what is shared, and where reports go.

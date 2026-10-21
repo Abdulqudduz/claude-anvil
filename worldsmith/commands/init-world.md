@@ -14,9 +14,9 @@ If `$ARGUMENTS` is provided, use it as the project name or description rather th
 
 Read the current directory. Determine which mode applies:
 
-1. **CLAUDE.md exists and describes a doc structure** (has a document roles table or references worldbuilding docs) -- go to Verify Mode.
-2. **Docs exist but CLAUDE.md is absent or unaware of them** (a `docs/` or `lore/` directory with markdown files, but CLAUDE.md either missing or lacking doc role awareness) -- go to Adopt Mode.
-3. **Nothing exists** (no docs directory, no worldbuilding markdown files) -- go to Scaffold Mode.
+1. **CLAUDE.md exists and describes a doc structure** (has a document roles table or references worldbuilding docs): go to Verify Mode.
+2. **Docs exist but CLAUDE.md is absent or unaware of them** (a `docs/` or `lore/` directory with markdown files, but CLAUDE.md either missing or lacking doc role awareness): go to Adopt Mode.
+3. **Nothing exists** (no docs directory, no worldbuilding markdown files): go to Scaffold Mode.
 
 ## Verify Mode
 
@@ -25,7 +25,7 @@ The project is already set up. Do not overwrite or "improve" anything unless ask
 1. If `.worldsmith/` does not exist, create it (`mkdir -p .worldsmith`). This activates worldsmith hooks for this project.
 2. Read the project's CLAUDE.md. Parse the document roles table.
 3. For each role listed, confirm the referenced file exists and is non-empty.
-4. Check for missing roles -- are there standard roles (timeline, lore, systems, characters, style, outline, themes, backlog, feedback) that the project might benefit from but doesn't have?
+4. Check for missing roles: are there standard roles (timeline, lore, systems, characters, style, outline, themes, backlog, feedback) that the project might benefit from but doesn't have?
 5. Check for exploratory sections that might be ready for promotion.
 6. Report findings: confirmed files, missing files, incomplete sections, suggested additions.
 7. If CLAUDE.md references related projects (series/shared universe), confirm those paths are accessible.
@@ -53,12 +53,12 @@ Nothing exists. Build from scratch.
    - Format: novel, novella, short story, series, anthology
    - Premise (one or two sentences)
    - Manuscript format if any preference (chapter files, single file, etc.)
-2. Ask about related projects -- is this part of a series or shared universe? If so, get paths to related projects.
+2. Ask about related projects: is this part of a series or shared universe? If so, get paths to related projects.
 3. Ask whether this project will contain multiple works (e.g., a novel and short stories sharing the same world). If yes:
    - Ask for each work's name, type (novel/novella/short-story/collection), and manuscript directory path.
    - Generate `.worldsmith/project.yaml` with the universe name, lore directory, and works list.
 4. Create `.worldsmith/` and `docs/` directories.
-5. Generate lightweight starter docs -- not comprehensive schemas, just enough to begin working. Each doc should have:
+5. Generate lightweight starter docs: not comprehensive schemas, just enough to begin working. Each doc should have:
    - A title and brief description of its role
    - A canonical section (mostly empty, with a few placeholder entries if the premise suggests them)
    - An exploratory section where appropriate (lore, systems, backlog, themes)

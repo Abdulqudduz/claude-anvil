@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Worldsmith is a Claude Code **plugin** for documentation-first fiction worldbuilding (the "Silmarillion approach"). There is no build system or compiled code. The codebase is Markdown files with YAML frontmatter, bash scripts, and JSON hooks. "Development" means editing skills, commands, agents, hooks, and scripts. The hook scripts have bash regression tests in `tests/` (run each `tests/test-*.sh`; they need `jq`).
+Worldsmith is a Claude Code **plugin** for documentation-first fiction worldbuilding (the "Silmarillion approach"). There is no build system or compiled code. The codebase is Markdown files with YAML frontmatter, bash scripts, and JSON hooks. "Development" means editing skills, commands, agents, hooks, and scripts. Tests live in `tests/`: bash hook regression tests (run each `tests/test-*.sh`; they need `jq`) and pytest suites for the Python scripts (`python3 -m pytest tests/`, with a python3 that has pytest and PyYAML).
 
 ## Plugin Structure
 
 ```
 .claude-plugin/plugin.json                       # Manifest (name, version, description)
 skills/worldsmith-methodology/SKILL.md            # Editorial methodology skill
-skills/worldsmith-methodology/references/          # Deep reference docs (propagation, doc structure, decision handoff)
+skills/worldsmith-methodology/references/          # Deep reference docs (propagation, doc structure, decision handoff, work scoping)
 skills/prose-craft/SKILL.md                      # Prose craft rules (show-don't-tell, dialogue, scene structure)
 commands/{init-world,change,check,review,draft,revise,iterate,help}.md  # 8 slash commands
 agents/reviewer.md                                # Review orchestrator (spawns specialist auditors)
@@ -21,15 +21,17 @@ agents/iterator.md                                # Iterator orchestrator (auton
 agents/{consistency,craft,voice,structure}-auditor.md  # 4 review specialists (read-only)
 agents/{lore-writer,scene-writer,character-developer}.md  # 3 writing specialists
 hooks/hooks.json                                  # SessionStart + PostToolUse hooks
-hooks/scripts/worldsmith-env.sh                  # Sourced by every hook: derives WORLDSMITH_* state from .worldsmith/ on disk
+hooks/scripts/worldsmith-env.sh                  # Sourced by every hook: derives WORLDSMITH_* state from disk; worldsmith_python, worldsmith_classify_path
 hooks/scripts/detect-worldsmith-project.sh        # SessionStart: project detection + doc/work inventory
 hooks/scripts/propagation-reminder.sh            # PostToolUse propagation reminders (additionalContext JSON)
-hooks/scripts/check-fiction-cliches.sh           # Cliche detection (stock reactions, dead metaphors, emotional labeling, redundant adverbs, fancy dialogue tags)
+hooks/scripts/check-fiction-cliches.sh           # Cliche detection: manuscript scoping, then count_patterns.py --check-text
 hooks/scripts/parse-project-yaml.py              # Parse .worldsmith/project.yaml; emits shell-quoted WORLDSMITH_* assignments
 tests/test-hook-gating.sh                        # Hook gating, output contract, multi-work, eval-safety tests
 tests/test-cliche-scoping.sh                     # Cliche hook manuscript-scoping tests
-scripts/count_patterns.py                         # Prose pattern counting (reads patterns.md)
-scripts/patterns.md                               # Default pattern definitions (overridable per project)
+tests/test_count_patterns.py                     # pytest: pattern parsing, word-boundary matching, --check-text, overrides
+tests/test_parse_project_yaml.py                 # pytest: project.yaml schema validation and --env/--human output
+scripts/count_patterns.py                         # Prose pattern audit (counts) and hook check (--check-text), both from patterns.md
+scripts/patterns.md                               # Pattern definitions incl. hook-enforced cliche categories (overridable per project)
 ```
 
 ## File Format Conventions
@@ -39,10 +41,10 @@ YAML frontmatter with `description`, `allowed-tools`, and optional `argument-hin
 
 ### Skills (`skills/*/SKILL.md`)
 Two skills, independently triggered:
-- **worldsmith-methodology** — Editorial methodology: canonical hierarchy, propagation, doc roles, dual workflow. Triggers on doc ecosystem and worldbuilding keywords.
-- **prose-craft** — Sentence-level prose craft: show-don't-tell, dialogue mechanics, scene structure, AI-fiction failure modes. Triggers on fiction writing and editing keywords.
+- **worldsmith-methodology**: Editorial methodology: canonical hierarchy, propagation, doc roles, dual workflow. Triggers on doc ecosystem and worldbuilding keywords.
+- **prose-craft**: Sentence-level prose craft: show-don't-tell, dialogue mechanics, scene structure, AI-fiction failure modes. Triggers on fiction writing and editing keywords.
 
-YAML frontmatter with `name`, `description` (trigger phrases for auto-detection), and `version`. Body is lean methodology with references to detailed docs via `${CLAUDE_PLUGIN_ROOT}`. When adding references, verify the target file exists.
+YAML frontmatter with `name` and `description` (trigger phrases for auto-detection). Body is lean methodology with references to detailed docs via `${CLAUDE_PLUGIN_ROOT}`. When adding references, verify the target file exists.
 
 ### Agents (`agents/*.md`)
 Four orchestrators and seven specialists. YAML frontmatter with `name`, `description`, `tools` (list), `model: inherit`, and `color`. The four orchestrators carry rich descriptions with `<example>` blocks for auto-delegation; the seven specialists use a one-sentence description with no examples, because the orchestrators dispatch them by hardcoded name and every agent description loads into every session's context (see the root CLAUDE.md agent description policy).
@@ -54,31 +56,31 @@ Four orchestrators and seven specialists. YAML frontmatter with `name`, `descrip
 - **iterator**: Autonomous review-fix-review loop. Composes reviewer and rewriter, drives toward convergence with regression and plateau detection. `loop` mode returns high-stake deferred judgments (persisting state to the session's `state.md`); `finalize` mode applies the author's answers and writes the summary. Writes per-round artifacts to `.worldsmith/iterate/<timestamp>/`.
 
 **Review specialists** (read-only, launched by reviewer):
-- **consistency-auditor** — Timeline, facts, character state, spatial contradictions
-- **craft-auditor** — Prose quality, cliche detection, scene mechanics (has Bash for `count_patterns.py`)
-- **voice-auditor** — Character voice consistency, dialogue distinctiveness, POV
-- **structure-auditor** — Pacing, tension, scene turns, thematic coherence, arc trajectory
+- **consistency-auditor**: Timeline, facts, character state, spatial contradictions
+- **craft-auditor**: Prose quality, cliche detection, scene mechanics (has Bash for `count_patterns.py`)
+- **voice-auditor**: Character voice consistency, dialogue distinctiveness, POV
+- **structure-auditor**: Pacing, tension, scene turns, thematic coherence, arc trajectory
 
 **Writing specialists** (launched by writer):
-- **lore-writer** — History, mythology, cultures, systems with consequence chains
-- **scene-writer** — Prose scenes with craft discipline (read-only, produces draft in output)
-- **character-developer** — Voice patterns, arc development, relationship mapping
+- **lore-writer**: History, mythology, cultures, systems with consequence chains
+- **scene-writer**: Prose scenes with craft discipline (read-only, produces draft in output)
+- **character-developer**: Voice patterns, arc development, relationship mapping
 
 ### Hooks (`hooks/hooks.json`)
 Two event types:
 - **SessionStart** (command): Runs `detect-worldsmith-project.sh`: checks for `.worldsmith/` directory, reads `project.yaml` for multi-work projects, outputs doc/work inventory as session context, and exports `WORLDSMITH_*` variables to `$CLAUDE_ENV_FILE` for Claude's Bash tool calls
-- **PostToolUse** (command, matcher: `Write|Edit`): Two hooks. Propagation reminders fire for any doc or manuscript edit and are returned as `hookSpecificOutput.additionalContext` JSON (plain stdout from a PostToolUse hook only reaches the debug log). Cliche detection (stock body reactions, dead metaphors, emotional labeling, redundant adverbs, fancy dialogue tags) fires only for edits inside the manuscript directory (multi-work: paths from `project.yaml`; single-work: `chapters/`, `manuscript/`, `scenes/`, `stories/` heuristics), reporting via stderr + exit 2. Skips README, CLAUDE.md, `docs/plans/`, and other non-prose files.
+- **PostToolUse** (command, matcher: `Write|Edit`): Two hooks. Propagation reminders fire for any doc or manuscript edit and are returned as `hookSpecificOutput.additionalContext` JSON (plain stdout from a PostToolUse hook only reaches the debug log). Both hooks classify the edited path with `worldsmith_classify_path` (one definition: `project.yaml` manuscript/lore paths win when they match; otherwise, in both single- and multi-work mode, the `docs/`, `lore/`, `worldbuilding/` directory heuristics, the role-doc filenames in `WORLDSMITH_ROLE_DOC_NAMES` such as `timeline.md` anywhere in the project, and the `chapters/`, `manuscript/`, `scenes/`, `stories/` manuscript heuristics, with doc taking precedence). Add role-doc filenames only to that one list. Cliche detection fires only for manuscript files and delegates matching to `count_patterns.py --check-text`, which reads the hook-enforced categories (`<!-- hook: block -->`) of `scripts/patterns.md` or the project's `.worldsmith/patterns.md` and matches on word boundaries; it reports via stderr + exit 2 (after the write; PostToolUse cannot block). The phrase lists live only in `patterns.md`: never hardcode phrases in the hook.
 
-**Hook gating invariant.** Hooks are separate processes and never see variables written to `$CLAUDE_ENV_FILE`; that file only feeds Claude's Bash tool. Every hook therefore sources `worldsmith-env.sh` and calls `worldsmith_load_env`, which derives project state from the `.worldsmith/` directory on each run. Never gate a hook on an inherited `WORLDSMITH_*` variable, and never write a test that pre-sets one: that is exactly how an earlier version shipped with its PostToolUse and Stop hooks silently disabled. (The Stop hook was removed in 0.14.0.)
+**Hook gating invariant.** Hooks are separate processes and never see variables written to `$CLAUDE_ENV_FILE`; that file only feeds Claude's Bash tool. Every hook therefore sources `worldsmith-env.sh` and calls `worldsmith_load_env`, which derives project state from the `.worldsmith/` directory on each run. It parses `project.yaml` with the first python3 that has PyYAML (`worldsmith_python`: PATH, then system interpreters, since an active venv often lacks it); on failure it sets `WORLDSMITH_YAML_ERROR`, hooks fall back to single-work heuristics, and SessionStart prints a warning. Never swallow that error. Never gate a hook on an inherited `WORLDSMITH_*` variable, and never write a test that pre-sets one: that is exactly how an earlier version shipped with its PostToolUse and Stop hooks silently disabled. (The Stop hook was removed in 0.14.0.)
 
 ### Scripts
-- `scripts/count_patterns.py` — Python, reads pattern definitions from `scripts/patterns.md`. Projects can override by placing `patterns.md` in `.worldsmith/` at project root.
-- `scripts/patterns.md` — Default pattern list (crutch words, filter words, weak verbs, dialogue tags). Plain markdown, self-documenting, editable by Claude or by hand.
-- `hooks/scripts/detect-worldsmith-project.sh` — Bash, runs on SessionStart.
+- `scripts/count_patterns.py`: audit mode counts every category across manuscript files; `--check-text` checks stdin against the hook-enforced categories (used by the cliche hook). Projects override by placing `patterns.md` in `.worldsmith/` at project root; an override with no hook-enforced category falls back to the bundled hook categories.
+- `scripts/patterns.md`: default pattern list (crutch words, filter words, weak verbs, adverb dialogue tags, and the hook-enforced cliche categories). Plain markdown with `<!-- key: value -->` directives (`regex`, `hook`, `hint`, `scope`), self-documenting, editable by Claude or by hand.
+- `hooks/scripts/detect-worldsmith-project.sh`: Bash, runs on SessionStart.
 
 ### Decision handoff invariant
 
-No worldsmith agent asks the author anything: Claude Code removes `AskUserQuestion` from every subagent, even when it is listed in `tools`, so never add it to an agent. Judgment calls travel as data. Agents return a `## Decisions Needed` section (a `deferred-judgments` YAML block of question, 2-4 options with consequences, and a recommendation); the slash command, running in the main session, asks via `AskUserQuestion` and re-dispatches with the answers (`/worldsmith:revise` and `/worldsmith:draft` relaunch their orchestrator; `/worldsmith:iterate` runs the checkpoint between the iterator's `loop` and `finalize` launches). Specialists never block: they draft the recommended option marked PROVISIONAL. The format and the asking procedure are defined once in `skills/worldsmith-methodology/references/decision-handoff.md`, which agents and commands reference by `${CLAUDE_PLUGIN_ROOT}` path. Do not paste the schema into an agent: one definition, no copies to drift.
+No worldsmith agent asks the author anything: Claude Code removes `AskUserQuestion` from every subagent, even when it is listed in `tools`, so never add it to an agent. Judgment calls travel as data. Agents return a `## Decisions Needed` section (a `deferred-judgments` YAML block of question, 2-4 options with consequences, and a recommendation); the slash command, running in the main session, asks via `AskUserQuestion` and re-dispatches with the answers (`/worldsmith:revise` and `/worldsmith:draft` relaunch their orchestrator; `/worldsmith:iterate` runs the checkpoint between the iterator's `loop` and `finalize` launches). Specialists never block: they draft the recommended option marked `[PROVISIONAL YYYY-MM-DD id=<finding-id>]`. The format, the marker grammar, and the asking procedure are defined once in `skills/worldsmith-methodology/references/decision-handoff.md`, which agents and commands reference by `${CLAUDE_PLUGIN_ROOT}` path. Do not paste the schema into an agent: one definition, no copies to drift.
 
 ## Core Concepts
 
@@ -94,9 +96,13 @@ No worldsmith agent asks the author anything: Claude Code removes `AskUserQuesti
 
 **Series awareness.** Projects can reference related projects (prequels, sequels, shared-world companions) in their CLAUDE.md. Shared world facts propagate across projects; project-local facts don't.
 
-**Multi-work projects.** A universe can contain multiple works (novel plus short stories, etc.) sharing canonical lore. Configured via `.worldsmith/project.yaml`. If absent, worldsmith infers a single work (backward compatible).
+**Multi-work projects.** A universe can contain multiple works (novel plus short stories, etc.) sharing canonical lore. Configured via `.worldsmith/project.yaml`. If absent, worldsmith infers a single work (backward compatible). Work selection, sharing rules, and report paths are defined once in `skills/worldsmith-methodology/references/work-scoping.md`; commands reference it rather than restating it.
 
-The cross-language mechanism: `worldsmith-env.sh` invokes `parse-project-yaml.py --env`, which emits `shlex`-quoted shell variable assignments (`WORLDSMITH_UNIVERSE`, `WORLDSMITH_LORE_DIR`, `WORLDSMITH_WORK_COUNT`, `WORLDSMITH_WORK_N_{NAME,TYPE,MANUSCRIPT,MASTER,FILETYPES,LORE}`) that each hook `eval`s, so hooks scope behavior to the active work without parsing YAML in bash. The SessionStart hook also appends them to `$CLAUDE_ENV_FILE` for Claude's Bash calls. The quoting must stay single-quote/`shlex`: the output is `eval`'d, and double quotes would execute `$(...)` from `project.yaml`. This is the parent CLAUDE.md's "no regex parsing of structured data" rule made concrete.
+**Context passing.** Orchestrators pass documents to subagents as file paths in XML tags, never pasted contents: an Agent prompt is generated output, so pasting a manuscript costs output tokens and exceeds per-response output limits on real novels. Specialists Read every listed file in full. Only short items (assignment, finding, passage under revision) go inline.
+
+**Iterate dedup.** The iterator keeps a `deferred_index` keyed by `(location, original-finding)`, passes it to the rewriter as `<already-deferred>`, excludes those findings from the convergence threshold, and counts only new unique deferrals for plateau. Without it the loop re-defers the same finding every round and never converges.
+
+The cross-language mechanism: `worldsmith-env.sh` invokes `parse-project-yaml.py --env`, which emits `shlex`-quoted shell variable assignments (`--export` prefixes each with `export` for `$CLAUDE_ENV_FILE`, so multi-line values stay intact) (`WORLDSMITH_UNIVERSE`, `WORLDSMITH_LORE_DIR`, `WORLDSMITH_WORK_COUNT`, `WORLDSMITH_WORK_N_{NAME,TYPE,MANUSCRIPT,MASTER,FILETYPES,LORE}`) that each hook `eval`s, so hooks scope behavior to the active work without parsing YAML in bash. The SessionStart hook also appends them to `$CLAUDE_ENV_FILE` for Claude's Bash calls. The quoting must stay single-quote/`shlex`: the output is `eval`'d, and double quotes would execute `$(...)` from `project.yaml`. This is the parent CLAUDE.md's "no regex parsing of structured data" rule made concrete.
 
 Each work can optionally have its own local lore directory for work-specific docs. Conflict hierarchy: shared lore > local lore > manuscript. Commands, orchestrator agents, and hooks all respect work scoping when `project.yaml` is present.
 
@@ -135,9 +141,9 @@ ls -la hooks/scripts/*.sh
 
 ## Editing Guidelines
 
-- Commands provide rules and awareness, not rigid step-by-step scripts — Claude Code is the intelligence layer
+- Commands provide rules and awareness, not rigid step-by-step scripts: Claude Code is the intelligence layer
 - Skills are lean (~2000 words max) with detailed content in `references/`
-- Review specialists are strictly read-only — only Read/Grep/Glob tools (craft-auditor also gets Bash)
+- Review specialists are strictly read-only: only Read/Grep/Glob tools (craft-auditor also gets Bash)
 - Orchestrators coordinate specialists via the Agent tool; don't add Agent to specialist tool lists
 - Hook prompts are carefully worded to avoid false positives on non-worldbuilding edits
 - When editing propagation-related content, check both `references/propagation-awareness.md` and `hooks/hooks.json`

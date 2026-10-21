@@ -6,7 +6,7 @@ argument-hint: [description of change or idea]
 
 # /worldsmith:change
 
-Apply a change to the worldbuilding project. Determine the appropriate mode from the user's request and the project context. This is not a rigid step-by-step script -- understand the rules, then reason about the specific change.
+Apply a change to the worldbuilding project. Determine the appropriate mode from the user's request and the project context. This is not a rigid step-by-step script: understand the rules, then reason about the specific change.
 
 ## Setup
 
@@ -16,9 +16,9 @@ Read the project's CLAUDE.md first. Parse the document roles table to know which
 
 Determine the mode from the user's request:
 
-- **Canonical change** -- The user is fixing, revising, or updating established facts. Correcting a date, updating a character arc after writing a chapter, revising a system rule, reconciling a contradiction.
-- **Exploratory idea** -- The user is developing something new that isn't established yet. Drafting mythology, sketching a future plot thread, experimenting with a system extension, noting an idea for later.
-- **Promotion** -- The user wants to make an exploratory idea canonical. Moving provisional content to established status.
+- **Canonical change**: The user is fixing, revising, or updating established facts. Correcting a date, updating a character arc after writing a chapter, revising a system rule, reconciling a contradiction.
+- **Exploratory idea**: The user is developing something new that isn't established yet. Drafting mythology, sketching a future plot thread, experimenting with a system extension, noting an idea for later.
+- **Promotion**: The user wants to make an exploratory idea canonical. Moving provisional content to established status.
 
 If the mode is unclear from `$ARGUMENTS`, ask.
 
@@ -35,15 +35,15 @@ If the mode is unclear from `$ARGUMENTS`, ask.
 
 1. Identify which doc role the idea belongs to (lore, systems, characters, backlog, themes).
 2. Write to the appropriate doc's exploratory or provisional section. If no such section exists, create one clearly labeled.
-3. Mark the content as provisional with a date: `[PROVISIONAL — YYYY-MM-DD]`.
-4. Note any conflicts with existing canonical facts. Do not resolve them yet -- just flag them.
+3. Mark the content with `[PROVISIONAL YYYY-MM-DD]` (grammar: "Provisional markers" in `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/decision-handoff.md`).
+4. Note any conflicts with existing canonical facts. Do not resolve them yet: just flag them.
 5. Do NOT update the manuscript based on exploratory content.
 6. Do NOT propagate to other canonical sections.
 
 ## Promotion
 
 1. Find the exploratory content to be promoted.
-2. Check for conflicts with canonical facts. If conflicts exist, resolve them -- this may require the user's input.
+2. Check for conflicts with canonical facts. If conflicts exist, resolve them: this may require the user's input.
 3. Move the content from the exploratory section to the canonical section. Remove the provisional marker.
 4. Treat it as a canonical change from this point: reconcile affected docs and manuscript.
 

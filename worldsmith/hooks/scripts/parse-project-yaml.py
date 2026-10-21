@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-parse-project-yaml.py — Parse a worldsmith project.yaml and output structured data.
+parse-project-yaml.py: parse a worldsmith project.yaml and output structured data.
 
 Usage:
-    parse-project-yaml.py <path-to-project.yaml> [--env | --human]
+    parse-project-yaml.py <path-to-project.yaml> [--env | --export | --human]
 
 Arguments:
     <path-to-project.yaml>   Path to the project.yaml file, typically
                              <project_root>/.worldsmith/project.yaml
     --env                    Output shell-eval-able variable assignments
                              (WORLDSMITH_UNIVERSE, WORLDSMITH_WORK_0_NAME, etc.)
+    --export                 Same, each prefixed with `export` (for $CLAUDE_ENV_FILE)
     --human                  Output a human-readable summary with file counts
                              (default if flag is omitted)
 
@@ -135,7 +136,7 @@ def shell_quote(value: str) -> str:
     return shlex.quote(value)
 
 
-def output_env(universe: str, lore_dir: str, works: list[dict]) -> None:
+def output_env(universe: str, lore_dir: str, works: list[dict], export: bool = False) -> None:
     lines = []
     lines.append(f"WORLDSMITH_UNIVERSE={shell_quote(universe)}")
     lines.append(f"WORLDSMITH_LORE_DIR={shell_quote(lore_dir)}")
@@ -150,7 +151,11 @@ def output_env(universe: str, lore_dir: str, works: list[dict]) -> None:
         lines.append(f"{prefix}_MASTER={shell_quote(w['master'])}")
         lines.append(f"{prefix}_FILETYPES={shell_quote(','.join(w['file_types']))}")
         lines.append(f"{prefix}_LORE={shell_quote(w['lore'])}")
-    print("\n".join(lines))
+    # Prefix here, per assignment, rather than with `sed 's/^/export /'`
+    # downstream: a quoted value may span lines, and a line-based prefix would
+    # corrupt its continuation lines.
+    prefix = "export " if export else ""
+    print("\n".join(prefix + line for line in lines))
 
 
 def output_human(universe: str, lore_dir: str, works: list[dict], project_dir: Path) -> None:
@@ -164,7 +169,7 @@ def output_human(universe: str, lore_dir: str, works: list[dict], project_dir: P
         file_label = f"{n_files} file{'s' if n_files != 1 else ''}"
         ms = w["manuscript"] or "(no manuscript)"
         lore_label = f", lore: {w['lore']}" if w["lore"] else ""
-        print(f"  - {w['name']} [{w['type']}] — {ms} ({file_label}{lore_label})")
+        print(f"  - {w['name']} [{w['type']}]: {ms} ({file_label}{lore_label})")
 
 
 def main() -> None:
@@ -184,6 +189,11 @@ def main() -> None:
         help="Output shell-eval-able variable assignments",
     )
     mode_group.add_argument(
+        "--export",
+        action="store_true",
+        help="Like --env, but each assignment is an `export` (for $CLAUDE_ENV_FILE)",
+    )
+    mode_group.add_argument(
         "--human",
         action="store_true",
         help="Output human-readable summary (default)",
@@ -198,8 +208,8 @@ def main() -> None:
     data = load_project_yaml(yaml_path)
     universe, lore_dir, works = validate(data)
 
-    if args.env:
-        output_env(universe, lore_dir, works)
+    if args.env or args.export:
+        output_env(universe, lore_dir, works, export=args.export)
     else:
         # --human is default
         output_human(universe, lore_dir, works, project_dir)

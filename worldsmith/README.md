@@ -17,11 +17,11 @@ Worldsmith provides methodology, workflow discipline, and editorial practices fo
 ```bash
 # Via the marketplace
 /plugin marketplace add queelius/claude-anvil
-/plugin install worldsmith@queelius
+/plugin install worldsmith@queelius-plugins
 
 # Or from a local checkout of the marketplace
 /plugin marketplace add ~/github/alex-claude-plugins
-/plugin install worldsmith@queelius
+/plugin install worldsmith@queelius-plugins
 ```
 
 ## What's Included
@@ -68,12 +68,12 @@ Four orchestrators that compose seven specialists for the heavy editorial work:
 | Event | Behavior |
 |-------|----------|
 | `SessionStart` | Detects worldsmith projects via `.worldsmith/` directory; reads `project.yaml` for multi-work projects; surfaces doc and work inventory |
-| `PostToolUse` (Write/Edit) | Propagation reminders for doc and manuscript edits; cliche detection (manuscript-scoped only, skips README and plans) |
+| `PostToolUse` (Write/Edit) | Propagation reminders for doc and manuscript edits; cliche detection (manuscript-scoped only, skips README and plans). Cliches are flagged after the write, not blocked; the phrase lists are the hook-enforced categories of `patterns.md` |
 
 ### Scripts
 
-- `count_patterns.py` counts prose patterns across manuscript files. Reads pattern definitions from `patterns.md`, customizable per project by placing `.worldsmith/patterns.md` in your project root.
-- `patterns.md` provides default pattern definitions (crutch words, filter words, weak verbs, adverb dialogue tags). Human-readable, Claude-editable.
+- `count_patterns.py` counts prose patterns across manuscript files, and with `--check-text` runs the cliche hook's check. Reads pattern definitions from `patterns.md`, customizable per project by placing `.worldsmith/patterns.md` in your project root.
+- `patterns.md` provides default pattern definitions (crutch words, filter words, weak verbs, adverb dialogue tags, and the hook-enforced cliche categories). Human-readable, Claude-editable. Matching is case-insensitive on word boundaries.
 - `parse-project-yaml.py` parses `.worldsmith/project.yaml` and emits shell-quoted variable assignments that every hook loads via `worldsmith-env.sh`. Enables structured multi-work configuration without bash YAML parsing.
 
 ## Getting Started
@@ -85,7 +85,7 @@ Four orchestrators that compose seven specialists for the heavy editorial work:
    - **Existing docs**: adopts your current documentation by mapping files to roles.
    - **Already configured**: verifies the setup and reports any gaps.
 
-For a multi-work universe (novel plus short stories sharing canonical lore), add a `.worldsmith/project.yaml` declaring the universe and its works. Commands, agents, and hooks automatically respect work scoping when this file is present.
+For a multi-work universe (novel plus short stories sharing canonical lore), add a `.worldsmith/project.yaml` declaring the universe and its works. Commands, agents, and hooks automatically respect work scoping when this file is present. Parsing it needs a `python3` with PyYAML (`pip install pyyaml`); if none is found, the session-start message warns you and the hooks fall back to single-work behavior.
 
 ## Workflows
 
@@ -103,7 +103,7 @@ Claude identifies the canonical source, updates it, finds all references in the 
 /worldsmith:change What if the magic system also affects dreams?
 ```
 
-Claude writes the idea to an exploratory section, marked `[PROVISIONAL]`. When ready to promote:
+Claude writes the idea to an exploratory section, marked `[PROVISIONAL YYYY-MM-DD]`. When ready to promote:
 
 ```
 /worldsmith:change promote dream magic

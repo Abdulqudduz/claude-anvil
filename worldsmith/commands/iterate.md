@@ -24,7 +24,7 @@ The author resumes control only at the end-of-loop checkpoint, not per-finding. 
 
 The iterator cannot ask questions itself (Claude Code removes AskUserQuestion from subagents), so this command runs the checkpoint between two launches:
 
-1. Launch the iterator with the resolved work name and flags (loop mode is the default).
+1. Launch the iterator with the resolved work name, flags, and `<plugin_root>` (`${CLAUDE_PLUGIN_ROOT}`, as expanded here; loop mode is the default).
 2. If it returns `status: complete`, present its summary and stop.
 3. If it returns `status: awaiting-decisions`, read the `deferred-judgments` list from its `## Decisions Needed` section (or `<session>/decisions-needed.md`). Follow the asking procedure in `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/decision-handoff.md`:
    - More than 12 items: ask the meta question first. "Best-guess all" turns every item into a decision using its `recommended` option (rationale "best guess: author delegated"). "Stop here" makes every item unresolved.
@@ -61,18 +61,19 @@ The summary report includes a best-effort cost estimate so future runs can be ca
 
 The iterator stops earlier than the cap when:
 
-- **Converged**: no findings at the configured threshold remain
-
-Rounds 2+ are delta-scoped: the reviewer re-audits only the files the prior
-round's revision touched (at full manuscript context) and carries forward
-untouched findings, which cuts the dominant per-round reviewer cost.
-- **Plateau**: a round produces zero new fixes and zero new deferred judgments (no further progress possible)
+- **Converged**: no open findings at the configured threshold remain (findings already deferred to you do not count; the loop cannot fix them)
+- **Plateau**: a round produces zero new fixes and zero new deferred judgments (no further progress possible; a re-reported, already-deferred finding is not progress)
 
 Both are reported in the final summary with the reason.
 
+Rounds 2+ are delta-scoped: the reviewer re-audits only the files the prior
+round's revision touched (at full manuscript context) and carries forward
+untouched findings, which cuts the dominant per-round reviewer cost. Each
+deferred judgment is asked once at the checkpoint, however many rounds re-report it.
+
 ## Output
 
-All session artifacts live under `.worldsmith/iterate/<timestamp>/<work>/`:
+All session artifacts live under `.worldsmith/iterate/<timestamp>/` (multi-work: `.worldsmith/iterate/<timestamp>/<work>/`):
 
 - `state.md`: run configuration and per-round log
 - `summary.md`: final user-facing summary with cost estimate
@@ -85,19 +86,7 @@ The default `.worldsmith/reviews/` directory is untouched. Direct `/worldsmith:r
 
 ## Multi-Work Awareness
 
-If `.worldsmith/project.yaml` exists, this project contains multiple works sharing canonical lore.
-
-**Work selection from `$ARGUMENTS`:**
-- If a recognized work name appears in the arguments, scope iteration to that work.
-- If no work name is specified and multiple works exist, default to the **primary work** (first in `project.yaml`) and note this in the launch prompt.
-- Arguments can combine work name and flags: `/worldsmith:iterate Hemorrhagic --max-iterations 12 --pause-on all`.
-
-**Scoping rules:**
-- Manuscript edits target the selected work's `manuscript` directory only.
-- Canonical doc updates (shared lore) propagate across works via the rewriter's Phase 5.
-- Session artifacts go under the work's subdirectory in `.worldsmith/iterate/<timestamp>/<work>/`.
-
-Pass the resolved work name and all flags to the iterator agent in the launch prompt.
+Resolve the target work per `${CLAUDE_PLUGIN_ROOT}/skills/worldsmith-methodology/references/work-scoping.md` (work name in `$ARGUMENTS`, else the primary work, noted in the launch prompt), e.g. `/worldsmith:iterate Hemorrhagic --max-iterations 12 --pause-on all`. Manuscript edits target that work only; shared-lore updates propagate across works via the rewriter's Phase 5. Pass the resolved work name and all flags to the iterator in the launch prompt.
 
 ## When NOT to use iterate
 

@@ -5,94 +5,11 @@ allowed-tools: Read
 
 # /worldsmith:help
 
-Display a quick-reference guide to the worldsmith plugin.
+Read `${CLAUDE_PLUGIN_ROOT}/README.md`, the single source for this guide, and present a quick reference from it:
 
-## Commands
+1. The Commands table (from "What's Included").
+2. The Agents table and the two Skills, briefly.
+3. The Hooks: say that they fire automatically in any project with a `.worldsmith/` directory, and that the cliche check flags phrases after a manuscript write (a PostToolUse hook cannot block the write).
+4. The Workflows section, condensed to one line per workflow with its example command.
 
-| Command | Purpose |
-|---------|---------|
-| `/worldsmith:init-world [name]` | Scaffold or adopt a worldbuilding doc ecosystem |
-| `/worldsmith:change [description]` | Apply a change — canonical edits, exploratory ideas, or promotions |
-| `/worldsmith:check [work] [scope]` | Run diagnostics: `consistency`, `editorial`, `xref`, `status`, `cross-work`, `all` |
-| `/worldsmith:review [work] [scope]` | Deep multi-agent editorial review (4 specialists in parallel) |
-| `/worldsmith:draft [work] [assignment]` | Launch the writer orchestrator (scenes, chapters, lore, character work) |
-| `/worldsmith:revise [work] [filter]` | Launch the rewriter orchestrator (apply fixes from a review report) |
-| `/worldsmith:iterate [work] [flags]` | Autonomous review-fix loop until convergence (composes review and revise) |
-| `/worldsmith:help` | This guide |
-
-## Skills (auto-triggered)
-
-| Skill | Triggers when... |
-|-------|-------------------|
-| **worldsmith-methodology** | You work on worldbuilding docs, lore, or editorial structure |
-| **prose-craft** | You write or edit fiction prose, scenes, or dialogue |
-
-## Agents
-
-| Agent | Role | Launched by |
-|-------|------|-------------|
-| **reviewer** | Multi-agent editorial review (consistency, craft, voice, structure) | `/worldsmith:review` |
-| **writer** | Multi-agent content generation (lore, scenes, characters) | `/worldsmith:draft` |
-| **rewriter** | Fix-then-verify revision (reads review, fixes issues, verifies fixes) | `/worldsmith:revise` |
-| **iterator** | Autonomous review-fix-review loop with end-of-loop user checkpoint | `/worldsmith:iterate` |
-| **consistency-auditor** | Timeline, facts, character state, spatial | reviewer |
-| **craft-auditor** | Prose quality, cliches, scene mechanics | reviewer |
-| **voice-auditor** | Character voice, dialogue, POV | reviewer |
-| **structure-auditor** | Pacing, tension, scene turns, themes | reviewer |
-| **lore-writer** | History, mythology, cultures, systems | writer |
-| **scene-writer** | Prose scenes with craft discipline | writer |
-| **character-developer** | Voice patterns, arcs, relationships | writer |
-
-## Typical Workflows
-
-**Starting a new project:**
-1. Navigate to your project directory
-2. `/worldsmith:init-world` — creates `.worldsmith/`, scaffolds docs and CLAUDE.md
-
-**Writing a chapter:**
-1. The prose-craft skill auto-triggers with craft guardrails
-2. The cliche detection hook fires on each Write/Edit, catching stock phrases in real-time
-3. Propagation reminders fire if you edit docs or manuscript
-
-**Adding or changing lore:**
-1. `/worldsmith:change add a new faction called the Ashwalkers`
-2. Worldsmith updates canonical docs first, then propagates to manuscript
-
-**Drafting new content:**
-1. `/worldsmith:draft chapter 5` (or specify a scene, lore entry, or character work)
-2. The writer orchestrator routes to lore, scene, and character specialists in parallel
-3. Output lands in the manuscript directory and canonical docs are updated
-
-**Revising after a review:**
-1. `/worldsmith:review` produces a review report in `.worldsmith/reviews/`
-2. `/worldsmith:revise` reads the latest report, fixes findings, verifies each fix
-3. Optionally filter: `/worldsmith:revise HIGH` or `/worldsmith:revise consistency`
-
-**Running the autonomous loop (finishing pass):**
-1. `/worldsmith:iterate` (defaults: 8 rounds, stop when zero HIGH findings, defer high-stake judgments)
-2. The iterator runs reviewer + rewriter in a loop, writing per-round artifacts to `.worldsmith/iterate/<timestamp>/`
-3. At the end, the command asks you about any deferred high-stake judgments in one batched checkpoint, then the iterator applies your answers
-4. After you resolve, runs one final revise round with your answers
-5. Reports total fixes, regressions, convergence reason, and cost estimate
-
-**Before a writing session:**
-1. `/worldsmith:check status` — project health overview
-2. `/worldsmith:check consistency` — catch contradictions
-3. `/worldsmith:check editorial` — prose pattern audit with `count_patterns.py`
-
-**After a big revision:**
-1. `/worldsmith:check all` — full diagnostic sweep
-
-**Multi-work universe:**
-1. Place a `project.yaml` in `.worldsmith/` declaring the universe and its works
-2. `/worldsmith:review WorkName` — review a specific work
-3. `/worldsmith:check status` — see all works and their health
-4. Shared lore propagation automatically checks all works
-
-## Automatic Guards
-
-These fire automatically in any project with a `.worldsmith/` directory:
-
-- **Cliche detection** (manuscript-scoped): blocks stock body reactions, dead metaphors, emotional labeling, redundant adverbs, and fancy dialogue tags on Write/Edit inside the manuscript directory. Skips README, CLAUDE.md, plans, and other non-prose files.
-- **Propagation reminders** — reminds you to check downstream docs when you edit a canonical source or manuscript
-- **Completion check** — verifies propagation before session exit
+If `$ARGUMENTS` names a command or topic (for example `iterate` or `multi-work`), show only the README sections about it, in full. Do not add commands, hooks, or behavior the README does not describe.

@@ -1,10 +1,12 @@
 #!/bin/bash
-# Fiction cliche check: detect stock body reactions, dead metaphors,
-# emotional labeling, redundant adverbs, and fancy dialogue tags in prose content.
-# Runs as a PostToolUse hook on Write|Edit for fiction files (.tex, .md, .mdx, .txt).
+# PostToolUse hook on Write|Edit: flag fiction cliches in manuscript prose.
 #
-# If it fires, rewrite the passage to show the sensation through physical
-# detail or action rather than naming it. See the worldsmith prose-craft skill.
+# The phrase lists live in scripts/patterns.md (categories marked
+# `<!-- hook: block -->`), overridable per project via .worldsmith/patterns.md.
+# This script only scopes the check to manuscript files and hands the written
+# text to `count_patterns.py --check-text`, which matches on word boundaries.
+# On a match it reports on stderr and exits 2, which Claude Code feeds back to
+# Claude (the write itself has already happened; PostToolUse cannot block it).
 set -euo pipefail
 
 # Gate: only run in worldsmith projects (derived from disk; see worldsmith-env.sh)
@@ -15,165 +17,29 @@ if [ "$WORLDSMITH_PROJECT" != "1" ]; then
 fi
 
 input=$(cat)
-tool_name=$(echo "$input" | jq -r '.tool_name')
-file_path=$(echo "$input" | jq -r '.tool_input.file_path // ""')
+tool_name=$(printf '%s' "$input" | jq -r '.tool_name // ""')
+file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
 
-# Only check fiction-relevant file types
 case "$file_path" in
   *.tex|*.md|*.mdx|*.txt) ;;
   *) exit 0 ;;
 esac
 
-# Skip files inside the fiction plugin itself (SKILL.md mentions these phrases as examples)
+# Skip files inside the plugin itself (patterns.md and the skills quote these phrases)
 if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [[ "$file_path" == "$CLAUDE_PLUGIN_ROOT"* ]]; then
   exit 0
 fi
 
-# Scope to manuscript files only. Without this, the hook fires on README,
-# CLAUDE.md, docs/plans/, and any other .md/.tex file in the project, which
-# produces false positives on prose that is not held to fiction-craft standards.
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-is_manuscript=0
+# Manuscript files only: README, CLAUDE.md, docs/plans/ and lore are not held
+# to fiction-craft standards.
+[ "$(worldsmith_classify_path "$file_path")" = "manuscript" ] || exit 0
 
-if [ -n "${WORLDSMITH_WORK_COUNT:-}" ] && [ "${WORLDSMITH_WORK_COUNT:-0}" -gt 0 ]; then
-  # Multi-work mode: check configured manuscript paths from project.yaml
-  for i in $(seq 0 $((WORLDSMITH_WORK_COUNT - 1))); do
-    ms_var="WORLDSMITH_WORK_${i}_MANUSCRIPT"
-    ms_rel="${!ms_var:-}"
-    [ -z "$ms_rel" ] && continue
-    ms_abs="$PROJECT_DIR/${ms_rel%/}"
-    case "$file_path" in
-      "$ms_abs"|"$ms_abs"/*) is_manuscript=1; break ;;
-    esac
-  done
-else
-  # Single-work mode: dirname/dirpath heuristics matching propagation-reminder.sh
-  dirpath=$(dirname "$file_path")
-  dirname_only=$(basename "$dirpath")
-  case "$dirname_only" in
-    chapters|manuscript|scenes|stories) is_manuscript=1 ;;
-  esac
-  if [ "$is_manuscript" = "0" ]; then
-    case "$dirpath" in
-      */chapters/*|*/manuscript/*|*/scenes/*|*/stories/*) is_manuscript=1 ;;
-    esac
-  fi
-fi
+case "$tool_name" in
+  Write) field=content ;;
+  Edit) field=new_string ;;
+  *) exit 0 ;;
+esac
 
-if [ "$is_manuscript" = "0" ]; then
-  exit 0
-fi
-
-# Extract the text that was written
-if [ "$tool_name" = "Write" ]; then
-  text=$(echo "$input" | jq -r '.tool_input.content // ""')
-elif [ "$tool_name" = "Edit" ]; then
-  text=$(echo "$input" | jq -r '.tool_input.new_string // ""')
-else
-  exit 0
-fi
-
-if [ -z "$text" ]; then
-  exit 0
-fi
-
-# Normalize typographic punctuation so curly-quote manuscripts still match the
-# straight-quote patterns below
-text=$(printf '%s' "$text" | sed "s/\xe2\x80\x99/'/g; s/\xe2\x80\x98/'/g; s/\xe2\x80\x9c/\"/g; s/\xe2\x80\x9d/\"/g")
-
-violations=""
-
-# --- Stock body reactions (show it, don't name the sensation) ---
-while IFS= read -r phrase; do
-  [ -z "$phrase" ] && continue
-  if echo "$text" | grep -qi -F "$phrase"; then
-    violations="${violations}- \"${phrase}\" (show it, don't name the sensation)\n"
-  fi
-done <<'PHRASES'
-heart raced
-heart pounded
-heart skipped
-eyes widened
-eyes went wide
-breath caught
-blood ran cold
-PHRASES
-
-# --- Dead metaphors (show it, don't name the sensation) ---
-while IFS= read -r phrase; do
-  [ -z "$phrase" ] && continue
-  if echo "$text" | grep -qi -F "$phrase"; then
-    violations="${violations}- \"${phrase}\" (show it, don't name the sensation)\n"
-  fi
-done <<'PHRASES'
-sent a chill down
-a chill ran down
-weight of the world
-knot in her stomach
-knot in his stomach
-PHRASES
-
-# --- Emotional labeling (show it, don't name the sensation) ---
-while IFS= read -r phrase; do
-  [ -z "$phrase" ] && continue
-  if echo "$text" | grep -qi -F "$phrase"; then
-    violations="${violations}- \"${phrase}\" (show it, don't name the sensation)\n"
-  fi
-done <<'PHRASES'
-couldn't help but think
-couldn't help but feel
-couldn't help but notice
-a mixture of excitement
-filled with a sense of
-let out a breath
-didn't realize they had been holding
-PHRASES
-
-# --- Redundant adverbs (adverb duplicates the verb — cut or choose a more precise verb) ---
-while IFS= read -r phrase; do
-  [ -z "$phrase" ] && continue
-  if echo "$text" | grep -qi -F "$phrase"; then
-    violations="${violations}- \"${phrase}\" (adverb duplicates the verb — cut it or choose a more precise verb)\n"
-  fi
-done <<'PHRASES'
-whispered quietly
-shouted loudly
-sprinted quickly
-crept slowly
-muttered softly
-screamed loudly
-tiptoed quietly
-rushed hurriedly
-PHRASES
-
-# --- Fancy dialogue tags (use "said" or a physical beat instead) ---
-# Only flag tag words on lines that contain dialogue quotes; bare narration
-# ("The king declared war") is legitimate prose.
-quoted_lines=$(printf '%s\n' "$text" | grep -F '"' || true)
-while IFS= read -r phrase; do
-  [ -z "$phrase" ] && continue
-  if [ -n "$quoted_lines" ] && printf '%s\n' "$quoted_lines" | grep -qi -F "$phrase"; then
-    violations="${violations}- \"${phrase}\" (use \"said\" or a physical beat instead)\n"
-  fi
-done <<'PHRASES'
-exclaimed
-opined
-mused
-interjected
-proclaimed
-declared
-retorted
-quipped
-remarked
-PHRASES
-
-# --- Report ---
-
-if [ -n "$violations" ]; then
-  # Plain text on stderr: with exit 2, the hook protocol feeds stderr to Claude
-  # (JSON-on-stdout is the exit-0 path), and plain text avoids escaping issues.
-  printf "Fiction cliche check failed on %s:\n%b\nRewrite to show the sensation through physical detail or action. See the worldsmith prose-craft skill.\n" "$file_path" "$violations" >&2
-  exit 2
-fi
-
-exit 0
+printf '%s' "$input" | jq -r --arg f "$field" '.tool_input[$f] // ""' \
+  | python3 "$WORLDSMITH_SCRIPTS_DIR/../../scripts/count_patterns.py" --check-text \
+      --project-dir "${CLAUDE_PROJECT_DIR:-.}" --label "$file_path"
