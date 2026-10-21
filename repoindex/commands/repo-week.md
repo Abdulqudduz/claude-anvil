@@ -1,108 +1,56 @@
 ---
-name: repo-week
-description: Weekly activity summary across the repo collection (commits, releases, top churn).
-argument-hint: "[window, e.g. 7d or 30d, default 7d]"
+description: Weekly activity summary across the repo collection (commits, releases, top churn) via `repoindex digest`.
+argument-hint: "[window, e.g. 7d, 30d, 1w, or YYYY-MM-DD; default 7d]"
 allowed-tools:
-  - mcp__repoindex__run_sql
-  - mcp__repoindex__get_manifest
+  - Bash(repoindex digest:*)
 ---
 
 # /repo-week
 
-Summarize recent activity across the repository collection. Default window is 7 days.
-
-## Arguments
-
-- No argument: use 7 days.
-- One argument like `7d`, `14d`, `30d`, `90d`: parse the integer and use that many days.
-- If the argument does not match `\d+d`, fall back to 7 days and note this at the top.
+Thin wrapper around `repoindex digest`, which computes the activity rollup. Do not recompute it with SQL.
 
 ## Workflow
 
-Call `mcp__repoindex__run_sql` with the queries below, substituting the chosen window into `datetime('now', '-N days')`.
+### Step 1: Run the digest
 
-### 1. Top repos by commit churn
-
-```sql
-SELECT r.name, r.language, COUNT(*) AS commits, MAX(e.timestamp) AS last
-FROM events e JOIN repos r ON e.repo_id = r.id
-WHERE e.type = 'commit' AND e.timestamp > datetime('now', '-7 days')
-GROUP BY r.id
-ORDER BY commits DESC
-LIMIT 15
+```bash
+repoindex digest --json --top 10 --since <window>
 ```
 
-### 2. Releases in the window
+Pass the argument as `<window>` unchanged, or `7d` if none was given. The CLI validates it; if it exits with `cannot parse time spec`, rerun with `7d` and say so at the top.
 
-Git tags, plus forge `release` events when forge events have been refreshed (`refresh(forge_events=true)`; off by default). The same release often appears as both, so dedupe by `ref`.
+### Step 2: Render
 
-```sql
-SELECT r.name, e.type, e.ref, e.timestamp, e.message
-FROM events e JOIN repos r ON e.repo_id = r.id
-WHERE e.type IN ('git_tag', 'release') AND e.timestamp > datetime('now', '-7 days')
-ORDER BY e.timestamp DESC
-```
+The JSON has:
 
-### 3. Overall totals
+- `period`: `{since, until, days}`
+- `summary`: `{repos_active, total_commits, total_tags, total_merges}` (collection-wide, not limited by `--top`)
+- `projects`: top repos by commit count, each `{name, language, commits, by_type, scopes, recent_messages, tags, is_dirty}`
+- `releases`: `{repo, tag, timestamp}`, newest first (from git tags)
+- `languages`: `[[language, active_repo_count], ...]`
 
-```sql
-SELECT type, COUNT(*) AS n
-FROM events
-WHERE timestamp > datetime('now', '-7 days')
-GROUP BY type
-ORDER BY n DESC
-```
-
-### 4. Dormant repos that woke up
-
-Repos with activity in the window but no prior activity in the 30 days before that:
-
-```sql
-WITH recent AS (
-  SELECT DISTINCT repo_id FROM events
-  WHERE type = 'commit' AND timestamp > datetime('now', '-7 days')
-),
-before AS (
-  SELECT DISTINCT repo_id FROM events
-  WHERE type = 'commit'
-    AND timestamp BETWEEN datetime('now', '-37 days') AND datetime('now', '-7 days')
-)
-SELECT r.name, r.language FROM repos r
-JOIN recent rc ON rc.repo_id = r.id
-LEFT JOIN before b ON b.repo_id = r.id
-WHERE b.repo_id IS NULL
-ORDER BY r.name
-```
-
-## Output
-
-Keep it scannable. Suggested layout:
+Layout:
 
 ```
-Week in review (last N days)
+Week in review (since..until)
 
-Commits: X across Y repos
-Releases: Z tags across W repos
+Commits: total_commits across repos_active repos, total_tags tags, total_merges merges
 
 Top churn
-  repo-a   (python)    42 commits, last 2h ago
-  repo-b   (rust)      18 commits, last 1d ago
+  repo-a  (python)  42 commits  feat 20, fix 12  [dirty]
+          "most representative recent message"
   ...
 
 Releases
-  repo-a   v0.16.0     2 days ago
+  repo-a   v0.16.0   2 days ago
   ...
 
-Woke up
-  repo-c, repo-d
-
-Quiet week across the rest.
+Languages: Python 29, Rust 3, ...
 ```
 
-Do not list every repo. Cap to top 10 by churn. If totals are zero, say so briefly.
+Show `by_type` only when it has more than the `other` bucket, and one recent message per project. If `summary.total_commits` is 0, say it was a quiet period and stop.
 
 ## When to use
 
-- Weekly review at the start of the work week.
-- Monthly retrospective: pass `30d` as the argument.
-- Contrast with `repo-doctor`, which is a health triage rather than an activity summary.
+- Weekly review at the start of the work week; `30d` for a monthly retrospective.
+- Contrast with `/repo-sprint`, which is health triage rather than an activity summary.

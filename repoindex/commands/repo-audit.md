@@ -1,10 +1,9 @@
 ---
-name: repo-audit
-description: Read-only quality audit summary via `repoindex ops audit`. Shows critical and recommended gaps without fixing anything.
-argument-hint: "[--language X | --tag T | --recent 7d | --category essentials | --severity critical]"
+description: Read-only quality audit summary via `repoindex ops audit`. Shows failing checks by severity without fixing anything.
+argument-hint: "[--language X | --tag T | --recent 7d | --dirty | --category essentials | --severity critical]"
 allowed-tools:
-  - Bash
-  - mcp__repoindex__run_sql
+  - Bash(repoindex ops audit:*)
+  - Bash(jq:*)
 ---
 
 # /repo-audit
@@ -21,63 +20,62 @@ Forward any arguments directly to the CLI. Common filters:
 | `--tag work/active` | Only repos with a matching tag |
 | `--recent 7d` | Only repos with commits in the last 7 days |
 | `--dirty` | Only repos with uncommitted changes |
-| `--category essentials` | Scope to essentials, development, discoverability, or documentation |
-| `--severity critical` | Show only critical issues |
+| `--category essentials` | Scope to one category: essentials, development, discoverability, or documentation |
+| `--severity critical` | Minimum severity: `critical`, `recommended` (critical + recommended), or `suggested` (all) |
+
+## Output format of `ops audit --json`
+
+JSONL. Every line but the last is one repo: `{name, path, score, passed, total, categories, failed, fix_commands}`, where each `failed` entry is `{check_id, passed, fix_hint, fix_command?}` and carries **no severity**. The last line is a summary record: `{"type": "summary", total_repos, overall_score, checks, categories}`, where `checks` maps each `check_id` to `{label, category, severity, passed, total}`. Severity comes only from the summary's `checks`.
 
 ## Workflow
 
-### Step 1: Run the audit
-
-Always pass `--json` so the output is parseable.
+### Step 1: Run the audit and project it
 
 ```bash
-repoindex ops audit --json <forwarded args>
+repoindex ops audit --json <forwarded args> | jq -c 'if .type == "summary" then {summary: (.checks | map_values({label, severity, failing: (.total - .passed)})), total_repos} else select(.failed | length > 0) | {name, failed: [.failed[].check_id]} end'
 ```
 
-Each JSON line represents one repo with its score per category and a list of failed checks.
+This keeps only repos with failures (name plus failing `check_id`s) and the per-check counts, which is far smaller than the raw output.
 
 ### Step 2: Aggregate
 
-Walk the JSONL output and count:
+From the projected output:
 
-- Total repos audited.
-- Critical failures: sum of critical-severity failed checks, grouped by check name.
-- Recommended failures: same, grouped by check name.
-- Repos with zero issues (perfect score).
-- Worst offenders: repos with the most critical failures.
+- Total repos audited: `total_repos`.
+- Per check: `failing` count and `severity` from the summary; repo names from the per-repo lines whose `failed` contains that `check_id`.
+- Repos with no failures: `total_repos` minus the number of per-repo lines.
+- Worst offenders: repos with the most failing checks, broken down by severity via the summary lookup.
 
 ### Step 3: Summarize
-
-Produce a compact report:
 
 ```
 Audit summary (N repos, filters: ...)
 
-Critical gaps
-  no_license            7 repos: foo, bar, baz, ...
-  no_readme             3 repos: ...
-Recommended gaps
-  no_citation           12 repos: ...
-  no_ci                 9 repos: ...
+Critical
+  license (LICENSE)        112 repos: foo, bar, baz, ... (+109)
+  readme (README)           31 repos: ...
+Recommended
+  ci (CI/CD)               152 repos: ...
+Suggested
+  citation (Citation file)  ...
 
-Perfect (no gaps):  4 repos
+No gaps:  4 repos
 Worst offenders:
-  repo-a   4 critical, 6 recommended
-  repo-b   3 critical, 5 recommended
+  repo-a   2 critical, 5 recommended
 ```
 
-Cap each repo list to the first 5 names plus a count for the rest.
+Use the real `check_id` and `label`. Omit severity tiers with no failures. Cap each repo list at 5 names plus a count.
 
 ### Step 4: Offer follow-ups
 
-End with suggestions, do not execute them automatically:
+Suggest, do not execute:
 
-- To fix deterministic gaps across a subset: `repoindex ops generate <kind>` filtered with `--language`/`--tag`/`--recent`/`--dirty` (positional query strings were removed and now error).
-- To drill into one repo: use the `repo-polish` agent.
-- To re-run with tighter scope: `/repo-audit --severity critical --category essentials`.
+- Deterministic gaps across a subset: `repoindex ops generate <kind> --dry-run` filtered with `--language`/`--tag`/`--recent`/`--dirty` (see each failure's `fix_command`).
+- One repo in depth: the `repo-polish` agent.
+- Tighter scope: `/repo-audit --severity critical --category essentials`.
 
 ## When to use
 
 - Pre-release overview across a subset (for example `/repo-audit --language python`).
-- Contrast with the `repo-polish` agent: this command is a collection-wide read-only summary. `repo-polish` is a full single-repo release preparation workflow that actually writes files.
-- Contrast with the `repo-doctor` agent: `repo-doctor` covers dirty state, unpushed commits, staleness, and publication gaps. `/repo-audit` focuses specifically on the metadata completeness checks that `ops audit` encodes.
+- Contrast with `/repo-sprint`: sprint is the cross-cutting triage (git state, activity, stale, unpublished) and uses only the audit summary; `/repo-audit` is the full per-check breakdown with filters.
+- Contrast with the `repo-polish` agent: that is single-repo release prep and writes files.

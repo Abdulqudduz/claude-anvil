@@ -52,22 +52,23 @@ Your access pattern:
 **Delegate to `repoindex ops generate`** when output is fully determined by template + data:
 - Citation files (CITATION.cff, .zenodo.json, codemeta.json)
 - License, .gitignore, CODE_OF_CONDUCT.md, CONTRIBUTING.md
-- GitHub topics (from pyproject.toml keywords)
-- GitHub description (from pyproject.toml)
 - MkDocs scaffolding
 
 **Handle yourself** when quality depends on understanding the repo:
 - README writing and improvement
-- Description copywriting
+- Forge description: read pyproject.toml's `description` plus the README, write the text, apply with `ops set-description`
+- Forge topics: read pyproject.toml `keywords` plus the code, choose the list, apply with `ops set-topics` (there is no automatic pyproject-to-topics sync; both commands take explicit values)
 - Documentation content
 - Badge selection and placement
-- Topic suggestions beyond pyproject.toml keywords
 
 ## Workflow
 
 ### Step 1: Audit
 
-Query the repo state via MCP:
+Query the repo state via MCP. `run_sql` takes no bind parameters: each `?`
+below is where you inline the value as a SQL literal (double any single
+quote). Repo names are not unique, so resolve to one row and carry its `id`
+and `path` forward.
 
 ```sql
 SELECT name, path, description, language, is_clean,
@@ -102,7 +103,7 @@ Produce a structured checklist:
 | No LICENSE | Critical | Generate via ops |
 | No CITATION.cff | Important | Generate via ops |
 | Weak description | Important | Rewrite |
-| No GitHub topics | Important | Sync from pyproject |
+| No forge topics | Important | Choose from keywords + code, apply via `ops set-topics` |
 | No codemeta.json | Nice to have | Generate via ops |
 | No CI config | Nice to have | Skip (manual decision) |
 | No CHANGELOG | Nice to have | Manual |
@@ -119,7 +120,8 @@ tag when done:
 
 ```bash
 # 1. Scope: tag the target repo (via the tag MCP tool)
-#    mcp__repoindex__tag(repo=REPO, action="add", tag="work/polish-target")
+#    mcp__repoindex__tag(repo=REPO_PATH, action="add", tag="work/polish-target")
+#    (pass the repo's path, not its name: names are not unique)
 
 # 2. Citation metadata (reads pyproject.toml + config author)
 repoindex ops generate citation --tag work/polish-target --dry-run
@@ -141,7 +143,7 @@ repoindex ops generate code-of-conduct --tag work/polish-target --dry-run
 repoindex ops generate contributing --tag work/polish-target --dry-run
 
 # 3. Unscope when done
-#    mcp__repoindex__tag(repo=REPO, action="remove", tag="work/polish-target")
+#    mcp__repoindex__tag(repo=REPO_PATH, action="remove", tag="work/polish-target")
 ```
 
 ### Step 4: AI-assisted improvements

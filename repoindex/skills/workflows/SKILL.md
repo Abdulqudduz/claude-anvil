@@ -11,7 +11,7 @@ The plugin exposes three layers. Pick the smallest one that answers the question
 |-------|----------|
 | MCP tool calls (`run_sql`, `get_manifest`) | Single question, clear query, one answer. |
 | Slash commands (`/repo-week`, `/repo-status`, `/repo-audit`, `/repo-sprint`, `/repo-mirror`) | Named recurring task with a fixed shape. |
-| Agents (`repo-doctor`, `repo-polish`, `repo-explorer`) | Multi-step reasoning, prose synthesis, or file writing. |
+| Agents (`repo-polish`, `repo-explorer`) | Multi-step reasoning, prose synthesis, or file writing. |
 
 ## Picking the layer
 
@@ -29,17 +29,16 @@ Same for "how many repos do I have", "which repos are on PyPI", "what are my mos
 
 These have a known output format and the user invokes them by name:
 
-- `/repo-week [Nd]`: weekly activity. Top churn, releases, dormant-wake, totals.
+- `/repo-week [window]`: activity rollup via `repoindex digest`. Top churn, releases, totals.
 - `/repo-status [name]`: collection overview or single-repo detail card.
-- `/repo-audit [filters]`: read-only summary of `ops audit` findings.
-- `/repo-sprint`: "what's open?" kickoff context (dirty, unpushed, recent, release candidates).
+- `/repo-audit [filters]`: read-only per-check summary of `ops audit` findings.
+- `/repo-sprint`: the triage entry point. "What needs attention / what's open?" (dirty, unpushed, active, release candidates, audit gaps, stale, unpublished).
 - `/repo-mirror [flags]`: dry-run-first wrapper around `ops mirror` for redundancy pushes.
 
 Slash commands never write files on their own (mirror is the one exception, and only with `--force-real`).
 
 ### Use an agent for multi-step or prose work
 
-- `repo-doctor`: fixed triage workflow. "What needs attention?" Produces a prioritized action list.
 - `repo-polish`: single-repo release prep. Audits, generates citation/license/codemeta, writes README improvements, syncs GitHub metadata. Writes files.
 - `repo-explorer`: open-ended analysis. Custom SQL across multiple tables with narrative synthesis.
 
@@ -80,22 +79,16 @@ Or `30d` for a monthly rollup.
 
 ## Tag strategy
 
-Tags live in the `tags` table. The `source` column tells you where a tag came from:
+Tags live in the `tags` table. The `source` column says where a tag came from: `user` for tags assigned via `mcp__repoindex__tag`, everything else derived during refresh (repo state, forge topics, project keywords, registries). Query the current set rather than assuming it:
 
-| Source | Meaning |
-|--------|---------|
-| `user` | Explicitly assigned via `mcp__repoindex__tag` or `repoindex tag add` |
-| `implicit` | Derived by repoindex from repo state (for example `has:ci`, `has:license`) |
-| `github` | Imported from GitHub topics |
-| `gitea` | Imported from Gitea topics |
-| `pyproject` | Extracted from `pyproject.toml` keywords |
-| `pypi` / `cran` | Registry-derived |
+```sql
+SELECT source, COUNT(*) FROM tags GROUP BY source
+```
 
-Naming conventions that work well for user-source tags:
+Naming conventions for user tags:
 
 - `work/<area>` for work-in-progress groupings: `work/active`, `work/paused`, `work/release-queue`.
-- `lang:<name>` is already reserved for the implicit language tag. Do not duplicate.
-- `published:<registry>` is already reserved for implicit publication tags.
+- Do not reuse the `prefix:` namespaces that derived tags occupy (`lang:`, `topic:`, `keyword:`, `has:`, `published:`; check with `SELECT DISTINCT substr(tag, 1, instr(tag, ':')) FROM tags WHERE instr(tag, ':') > 0`).
 - Project-domain tags: short nouns like `ml`, `cli`, `dsl`, `paper`, `plugin`.
 
 Use `mcp__repoindex__tag` to add/remove user tags. Filter by tag with the `--tag` flag (accepted by `copy`, `link`, `ops` subcommands, and `export`; supports `*` wildcards, for example `--tag 'work/*'`), or from `run_sql` with the `EXISTS (SELECT 1 FROM tags t WHERE t.repo_id = r.id AND t.tag = '...')` pattern.
@@ -103,7 +96,7 @@ Use `mcp__repoindex__tag` to add/remove user tags. Filter by tag with the `--tag
 ## Anti-patterns to avoid
 
 - Do not invoke `repo-explorer` for a question that is one `run_sql` call.
-- Do not invoke `repo-doctor` for single-repo questions. That is `/repo-status` or `repo-polish`.
+- Do not run `/repo-sprint` for single-repo questions. That is `/repo-status` or `repo-polish`.
 - Do not run `repoindex ops` commands without `--dry-run` on the first pass. `/repo-mirror` enforces this; other ops commands rely on the user choosing.
 - Do not bypass MCP. The CLI and the MCP server share a database, but MCP is the canonical read path inside Claude Code sessions.
 
@@ -114,9 +107,8 @@ Single question        → run_sql
 Weekly rollup          → /repo-week
 Glanceable status      → /repo-status
 Read-only audit        → /repo-audit
-Morning kickoff        → /repo-sprint
+Triage / kickoff       → /repo-sprint
 Redundancy push        → /repo-mirror
-Fixed triage           → repo-doctor agent
 Release prep (writes)  → repo-polish agent
 Ad-hoc deep analysis   → repo-explorer agent
 ```

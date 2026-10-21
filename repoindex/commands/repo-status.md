@@ -25,6 +25,8 @@ Quick, read-only status view. Two modes depending on whether a repo name is pass
 
 The argument is a repo name (possibly a fragment). Resolve it with fuzzy matching.
 
+`run_sql` takes no bind parameters: the `?` below are where you inline the value as a SQL string literal, doubling any single quote (`O'Brien` becomes `'O''Brien'`). Repo names are not unique, so once resolved, select by `id`.
+
 ### Step 1: Resolve the name
 
 ```sql
@@ -55,7 +57,7 @@ Once a single repo is identified, run these three queries in parallel:
 SELECT name, path, language, description, is_clean, ahead, behind,
        has_readme, has_license, has_ci, has_citation, has_codemeta,
        stars, forks_count, topics, forge_description,
-       is_archived
+       is_archived, is_fork, is_private
 FROM repos WHERE id = ?
 ```
 
@@ -79,7 +81,7 @@ FROM publications WHERE repo_id = ?
 Show a compact repo card:
 
 ```
-repo-name  (language, github stars, path)
+repo-name  (language, stars, path)
 description line if present
 
 Git: clean / dirty, N ahead, M behind
@@ -100,4 +102,4 @@ Omit empty sections. No need to repeat zero counts.
 
 - `/repo-status` alone: morning glance at the collection.
 - `/repo-status name`: quick lookup of a single repo.
-- Contrast with the `repo-doctor` agent: this command is a read-only detail view, not a triage. For a prioritized action list across the whole collection, use `repo-doctor`.
+- Contrast with `/repo-sprint`: this command is a read-only detail view, not a triage. For a prioritized action list across the whole collection, use `/repo-sprint`.

@@ -3,8 +3,8 @@ name: repo-mirror
 description: Wrapper around `repoindex ops mirror`. Pushes repos to configured redundancy targets. Dry run by default.
 argument-hint: "[--to NAME] [--all] [--dirty | --language X | --tag T] [--force-real]"
 allowed-tools:
-  - Bash
-  - Read
+  - Bash(repoindex ops mirror:*)
+  - Bash(repoindex config get:*)
 ---
 
 # /repo-mirror

@@ -6,24 +6,25 @@ description: >-
   comparing repos, generating reports, or answering complex questions that
   require multiple queries.
 
-  Different from repo-doctor (which runs a fixed triage workflow), repo-explorer
-  answers ad-hoc questions that need custom SQL and cross-table reasoning.
+  Different from /repo-sprint (a fixed triage) and from a single run_sql call
+  (one question, one query), repo-explorer answers ad-hoc questions that need
+  several queries, cross-table reasoning, and a written synthesis.
 
-  Triggers on: "analyze my repos", "compare repos", "find repos that",
-  "repo statistics", "collection report", "which repos ...".
+  Triggers on: "analyze my repos", "compare repos", "collection report",
+  "patterns across my repos".
 
   <example>
-  Context: User wants to understand their repository collection.
-  user: "Which of my Python repos are published on PyPI?"
-  assistant: "I'll use the repo-explorer agent to cross-reference your Python repos with publication data."
-  <commentary>Requires joining repos and publications tables for multi-query analysis.</commentary>
+  Context: User wants to know where release effort pays off.
+  user: "Which of my published packages are actively maintained but have no citation or DOI, and how do their downloads compare to the ones that do?"
+  assistant: "I'll use the repo-explorer agent to cross-reference publications, citation metadata, and recent activity, then compare the two groups."
+  <commentary>Several queries across publications, repos, and events, followed by a comparison and narrative.</commentary>
   </example>
 
   <example>
-  Context: User wants activity patterns.
-  user: "Show me which repos I've worked on the most this month, broken down by language."
-  assistant: "I'll use the repo-explorer agent to aggregate event data and join with repo metadata."
-  <commentary>Multi-query analysis across events and repos, with grouping and synthesis.</commentary>
+  Context: User wants a picture of how their work has shifted.
+  user: "How has my activity shifted between languages and topics over the last six months, and which repos drove the change?"
+  assistant: "I'll use the repo-explorer agent to bucket commit events by month, join language and topic tags, and identify the repos behind each shift."
+  <commentary>Time-bucketed aggregation, tag joins, and drill-down into the contributing repos: multi-step analysis with synthesis.</commentary>
   </example>
 tools:
   - mcp__repoindex__get_manifest
@@ -50,31 +51,26 @@ You have direct access to the repoindex database via MCP tools.
 
 Four main tables, all joined through `repo_id`:
 
-**repos**: core identity and metadata
-- `id`, `name`, `path`, `remote_url`, `owner`
-- `language`, `description`, `branch`, `is_clean`
-- `has_readme`, `has_license`, `has_ci`, `has_citation`, `has_codemeta`,
-  `has_funding`, `has_contributors`, `has_changelog`
-- `stars`, `forks_count`, `topics`, `forge_description`,
-  `is_fork`, `is_private`, `is_archived`
-- `keywords` (JSON array from pyproject.toml/Cargo.toml/package.json)
+- **repos**: identity (`id`, `name`, `path`), git state (`is_clean`, `ahead`,
+  `behind`), metadata (`language`, `description`, `keywords`), `has_*` asset
+  flags, citation metadata (`citation_doi`, ...), and forge metadata (`stars`,
+  `topics`, `forge_description`, `is_fork`, `is_private`, `is_archived`)
+- **publications**: one row per repo+registry: `registry`, `package_name`,
+  `current_version`, `published`, `doi` (version DOI), `concept_doi` (the DOI
+  a paper cites), `downloads_total`, `downloads_30d`
+- **events**: `type`, `timestamp`, `ref`, `message`, `author`. Count releases
+  as `type IN ('git_tag', 'release')`
+- **tags**: `tag`, `source`
+- **repos_fts**: FTS5 over name, description, README; use `MATCH`, not `LIKE`
+- Views: `v_active_repos` (commit in 30 days), `v_stale_repos` (none in 180
+  days, the one definition of stale), `v_repo_stats` (per-repo commit counts
+  and `activity_status`)
 
-**publications**: registry metadata (one row per repo+registry)
-- `repo_id`, `registry` (pypi, cran, npm, cargo, zenodo, ...)
-- `package_name`, `current_version`, `published` (0 or 1)
-- `url`, `doi`, `downloads_total`, `downloads_30d`
-
-**events**: git activity
-- `repo_id`, `type`: local git (commit, git_tag, branch, merge); forge (release, pull_request, issue), present only after `refresh(forge_events=true)`; registry publishes (pypi_publish, cran_publish, ...). `SELECT DISTINCT type FROM events` shows what this database actually has
-- `timestamp`, `ref`, `message`, `author`
-
-**tags**: classification labels (auto-derived + user-assigned)
-- `repo_id`, `tag`, `source` (user, implicit, github, gitea, pyproject, pypi, cran, zenodo, go, npm)
-- Auto-populated tags include `topic:python`, `lang:python`, `has:ci`, `published:pypi`
-
-Views: `v_repo_stats`, `v_active_repos`, and `v_stale_repos`. If `v_repo_stats`
-errors with `no such column: r.github_stars`, the CLI predates the view-sync fix;
-say so and query `repos` directly.
+`get_schema()` is the authority for columns. For enumerations, query rather
+than assume: `SELECT DISTINCT registry FROM publications`, `SELECT DISTINCT
+type FROM events` (forge events appear only after `refresh(forge_events=true)`),
+`SELECT source, COUNT(*) FROM tags GROUP BY source`. Derived tags use prefixes
+such as `lang:`, `topic:`, `keyword:`, `has:`, `published:`.
 
 ## Analysis patterns
 
@@ -113,10 +109,10 @@ FROM events e JOIN repos r ON e.repo_id = r.id
 WHERE e.type = 'commit' AND e.timestamp > datetime('now', '-30 days')
 GROUP BY r.id ORDER BY commits DESC LIMIT 20
 
--- Repos with DOI
-SELECT r.name, p.doi
+-- Repos with a DOI (prefer the concept DOI, which papers cite)
+SELECT r.name, p.registry, COALESCE(p.concept_doi, p.doi) AS doi
 FROM repos r JOIN publications p ON r.id = p.repo_id
-WHERE p.doi IS NOT NULL AND p.doi != ''
+WHERE COALESCE(p.concept_doi, p.doi) IS NOT NULL
 
 -- Repos tagged as both 'cli' and 'has:ci'
 SELECT r.name FROM repos r
@@ -139,6 +135,6 @@ FROM repos GROUP BY language ORDER BY n DESC
 
 ## When to defer to other agents
 
-- **repo-doctor**: for the fixed "what needs attention?" triage workflow
+- **/repo-sprint**: for the fixed "what needs attention?" triage
 - **repo-polish**: for single-repo release preparation (audit + fix + improve)
 - **Direct MCP calls** (no agent): for single queries like "show me my Python repos"
