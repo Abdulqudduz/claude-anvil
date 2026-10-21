@@ -1,71 +1,57 @@
 ---
 name: synthesize
 description: >-
-  Force a research-agent run to conclude. Launches the researcher in
-  synthesis mode: it reads state.md and log.md, writes
-  .research/synthesis.md with outcome, key findings, failed approaches,
-  open questions, and recommendations, then exits. Use when current
-  results are good enough or the agent is stalling.
+  Make a research-agent run conclude and write synthesis.md (outcome, key
+  findings, failed approaches, open questions, recommendations). Signals a
+  live researcher to wrap up, or launches one in synthesis mode when none is
+  running. Use when results are good enough or the agent is stalling.
+argument-hint: "[branch-name]"
 ---
 
 # Synthesize Research
 
-Force the researcher to write its final synthesis and conclude, even if
-it would otherwise continue exploring. If the user names a branch, add
-`<branch>name</branch>` to the launch prompt to conclude only that branch
-(output: `.research/branches/<name>/synthesis.md`). A main-line synthesis
-automatically compares all branches.
+Conclude the research run per: $ARGUMENTS
+
+A main-line synthesis also compares all branches. Naming a branch concludes only that branch (output: `.research/branches/<name>/synthesis.md`).
 
 ## When to use
 
 - Current results are good enough; lock them in
-- The agent is stalling (eval flat/declining for several cycles)
+- The agent is stalling (eval flat or declining for several cycles)
 - A deadline forces a conclusion regardless of completeness
 - The user wants a checkpoint before pivoting to a related research line
 
-## Step 1: Verify .research/ exists
+## Step 1: Resolve the Run Root
 
-Use the Read tool on `.research/state.md`. If the file does not exist, tell the user there is no research to synthesize and suggest `/research-agent:research` to start one.
+- With a branch name, the run root is `.research/branches/<name>/`; it must exist (Glob tool).
+- Otherwise the run root is `.research/`.
+- `.research/goal.md` marks a research run. If it is absent, tell the user there is nothing to synthesize and suggest `/research-agent:research`. A missing state.md is fine: the researcher reconstructs from log.md.
 
-## Step 2: Check whether already synthesized
+## Step 2: If a Researcher Is Live, Signal It
 
-Use the Glob tool for `.research/synthesis.md`. If it already exists, ask the user whether they want to overwrite (re-synthesize, which makes sense after `/research-agent:resume` reopened the concluded run on explicit confirmation) or stop.
+Read `<run root>/run.json` if present. The run is **live** when `status` is `running` or `stopping` and `heartbeat` is less than `stale_after_minutes` old (compare against `date -u +%Y-%m-%dT%H:%M:%SZ`).
 
-## Step 3: Launch the researcher with synthesis framing
+- `status: stopping` and live: a stop is already pending. Tell the user and stop.
+- `status: running` and live: change only that field with the Edit tool, `"status": "running"` to `"status": "stopping"`. Do NOT launch a second researcher. Tell the user:
 
-Spawn the researcher agent (Agent tool, subagent_type `research-agent:researcher`) with this prompt:
+  > Stop requested. The live researcher will finish its current step, settle its background jobs, and write `{run root}/synthesis.md` itself at its next cycle boundary. `/research-agent:status` shows when `status` becomes `concluded`.
+
+  Then stop; skip the remaining steps.
+
+## Step 3: Check Whether Already Synthesized
+
+If `<run root>/synthesis.md` exists, ask the user whether to re-synthesize (the agent archives the old file as `synthesis-<timestamp>.md`) or stop.
+
+## Step 4: Launch the Researcher in Synthesis Mode
+
+Spawn the researcher (Agent tool, `subagent_type: research-agent:researcher`) with only these tags; the agent's synthesize-mode initialization defines the steps:
 
     <mode>synthesize</mode>
-
+    <branch>{name}</branch>        (only when concluding a branch)
     <working_directory>
     {absolute path to current working directory}
     </working_directory>
 
-    Synthesize your research and conclude. Do NOT run new attempts. Do
-    NOT start new cycles. The user has decided to lock in current
-    results.
+## Step 5: Inform the User
 
-    Step 1: Read .research/state.md and .research/log.md in full to
-    recall every sub-problem, hypothesis, and attempt.
-
-    Step 2: Update .research/state.md with final statuses. Mark every
-    sub-problem as one of: resolved, abandoned, or unresolved. Mark
-    every hypothesis as one of: confirmed, refuted, inconclusive.
-
-    Step 3: Write .research/synthesis.md per the Termination Protocol
-    in your system prompt. Required sections: Goal, Outcome (one
-    paragraph), Key Findings, Failed Approaches, Open Questions,
-    Recommendations.
-
-    Step 4: Append a final entry to .research/log.md noting the forced
-    conclusion and pointing at synthesis.md.
-
-    Be honest in the synthesis. If the goal was not achieved, say so
-    plainly. If results are partial, describe their scope precisely.
-    The synthesis is the single document a future reader will rely on.
-
-## Step 4: Inform the user
-
-After launching, tell the user:
-
-> Researcher synthesizing. It will read state.md and log.md, finalize statuses, and write .research/synthesis.md. This usually completes in one cycle (no new attempts).
+> Researcher synthesizing. It will finalize statuses and write {run root}/synthesis.md without starting new attempts.
