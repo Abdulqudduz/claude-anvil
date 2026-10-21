@@ -1,4 +1,4 @@
-"""Unit tests for analyzer JSON parsing — runs without an API key."""
+"""Unit tests for analyzer JSON parsing: runs without an API key."""
 
 from vista.pipeline.analyze import _extract_json_array
 
@@ -34,3 +34,8 @@ def test_empty_array():
 def test_dropped_non_dict():
     out = _extract_json_array('[{"direction": "A"}, "raw string", null]')
     assert len(out) == 1
+
+
+def test_structured_output_object_is_unwrapped():
+    assert _extract_json_array('{"directions": [{"direction": "x"}]}') == [{"direction": "x"}]
+    assert _extract_json_array('{"other": 1}') == []

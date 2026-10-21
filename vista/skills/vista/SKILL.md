@@ -31,7 +31,7 @@ Read the user's question carefully and route:
 | "Search the local catalog of distilled directions" | `search_directions(query, ...)` | Use after a build run. Searches what the user has already mined. |
 | "List interesting / open / started directions" | `list_directions(...)` | Curation/review. |
 | "Mark this direction as interesting" | `mark_direction(direction_id, status, notes)` | User curation. |
-| "Save these directions for paper X" | `submit_directions(paper_id, directions)` | After you've synthesized directions, persist them so future runs can search them. |
+| "Save these directions for paper X" | `submit_directions(paper_id, directions)` | After you've synthesized directions, persist them so future runs can search them. Appends by default; curation is never lost. |
 | "What papers / directions / fields are in the store?" | `status()` or `run_sql(...)` | Inspection. |
 
 If unsure: prefer `topic_followups` for topic questions and `paper_followups`
@@ -41,34 +41,11 @@ for paper questions. If the user wants breadth or surprise, use
 
 ## Synthesis pattern after a tool call
 
-Each on-demand tool returns:
-
-```jsonc
-{
-  "topic": "diffusion models",
-  "params": { ... },
-  "papers": [
-    {
-      "paper_id": "Wxxxxxxx",
-      "title": "...",
-      "authors": [...],
-      "year": 2023,
-      "venue": "...",
-      "cited_by_count": 1234,
-      "doi": "...", "arxiv_id": "...", "arxiv_url": "...", "doi_url": "...",
-      "abstract": "...",
-      "sections": [
-        {"type": "future_work", "heading": "Future Work", "content": "...", "char_count": ...},
-        {"type": "limitations", "heading": "Limitations",  "content": "...", "char_count": ...},
-        {"type": "discussion",  "heading": "Discussion",   "content": "...", "char_count": ...},
-        {"type": "conclusion",  "heading": "Conclusion",   "content": "...", "char_count": ...}
-      ]
-    },
-    ...
-  ],
-  "paper_count": 8
-}
-```
+Each on-demand tool returns `{..., "papers": [Paper, ...], "paper_count": N}`,
+where each Paper carries metadata, links, and a `sections` list of
+`{type, heading, method, content, char_count}` (`type` is one of
+`future_work`, `limitations`, `discussion`, `conclusion`). The full shapes
+are in `references/output-shape.md`.
 
 For each paper:
 
@@ -85,7 +62,7 @@ For each paper:
 
 Then synthesize across papers:
 
-- **Consensus directions**: themes that appear across ≥2 papers.
+- **Consensus directions**: themes that appear across 2 or more papers.
 - **Frontier directions**: novel, mentioned by one paper, well-supported.
 - **Conspicuous absences**: areas the user might expect to be flagged but
   aren't (use sparingly; it's interpretive).
@@ -95,8 +72,15 @@ Present the synthesis with explicit citations to paper title and year, and
 include the arXiv or DOI URL so the user can drill in.
 
 If the user wants the synthesized directions persisted, call
-`submit_directions(paper_id, directions)` per paper. Otherwise leave the
-catalog alone, since the conversation answer is enough.
+`submit_directions(paper_id, directions)` per paper. The default
+`mode="append"` adds new directions and updates ones with the same text in
+place (keeping the user's status and notes, merging tags); pass
+`mode="replace"` only to drop the paper's other uncurated directions.
+Otherwise leave the catalog alone, since the conversation answer is enough.
+
+`paper_followups` with a title accepts only an exact (normalized) title. If it
+returns `"error": "not found"` with `candidates`, show them to the user or
+retry with the chosen candidate's `paper_id` (an OpenAlex id resolves free).
 
 ## Defaults to nudge
 

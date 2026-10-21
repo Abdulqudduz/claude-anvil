@@ -1,15 +1,19 @@
-"""Configuration: fields, citation thresholds, model choices, paths."""
+"""Configuration: fields, citation thresholds, model choices, paths.
+
+Paths are module attributes read at call time (`config.DB_PATH`, not a
+`from vista.config import DB_PATH` snapshot), so tests and callers can redirect
+storage by patching this module.
+"""
 
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from platformdirs import user_data_dir
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 # Data and output live in a user-scoped directory, not the package directory,
@@ -24,10 +28,9 @@ def _path_from_env_or(default: Path, env: str) -> Path:
 DEFAULT_DATA_DIR = Path(user_data_dir("vista", appauthor="queelius"))
 DATA_DIR = _path_from_env_or(DEFAULT_DATA_DIR, "VISTA_DATA_DIR")
 PDF_DIR = DATA_DIR / "pdfs"
-TEXT_DIR = DATA_DIR / "text"
-SEEDS_DIR = DATA_DIR / "seeds"
 DB_PATH = DATA_DIR / "papers.db"
 OUT_DIR = _path_from_env_or(DATA_DIR / "out", "VISTA_OUT_DIR")
+
 
 def _package_version() -> str:
     try:
@@ -48,13 +51,14 @@ USER_AGENT = f"vista/{VERSION} (mailto:{CONTACT_EMAIL})"
 def openalex_api_key() -> str | None:
     return os.environ.get("OPENALEX_API_KEY") or None
 
+
 # OpenAlex concept and source IDs (verified against api.openalex.org May 2026).
 #
 # Concepts are hierarchical; we filter by concept and (optionally) restrict to
 # canonical venues. Some venues like IEEE S&P, CCS, AAAI year proceedings are
-# fragmented across yearly sources in OpenAlex — rather than enumerate every
+# fragmented across yearly sources in OpenAlex, so rather than enumerate every
 # year, we fall back to concept + keyword filtering for those fields.
-# OpenAlex's `is_oa` flag is conservative — NeurIPS / ICML etc. papers aren't
+# OpenAlex's `is_oa` flag is conservative: NeurIPS / ICML etc. papers aren't
 # flagged OA even though arXiv mirrors exist. We therefore don't pre-filter by
 # is_oa. Instead each field declares a `fulltext_filter` strategy:
 #   - "arxiv-required": require the work to also live on arXiv (S4306400194).
@@ -106,6 +110,21 @@ FIELDS: dict[str, dict] = {
     },
 }
 
+
+def validate_fields(names: Iterable[str]) -> list[str]:
+    """Return `names` as a list, raising ValueError on any key not in FIELDS."""
+    names = list(names)
+    unknown = [n for n in names if n not in FIELDS]
+    if unknown:
+        raise ValueError(f"unknown field(s) {unknown}; valid: {sorted(FIELDS)}")
+    return names
+
+
+def concept_ids_for(names: Iterable[str]) -> list[str]:
+    """Concept ids for the given FIELDS keys (validated)."""
+    return [cid for n in validate_fields(names) for cid in FIELDS[n].get("concept_ids", [])]
+
+
 # Anthropic model defaults for the unattended analyzer path. Default to current
 # Sonnet for cost, escalate to Fable for premium runs (--premium flag in CLI).
 # Each is overridable by environment variable; the first variable set wins.
@@ -130,12 +149,9 @@ class RunConfig:
     year_min_legacy: int = 2005
     per_field_limit: int = 25
     legacy_per_field_limit: int = 8
-    require_open_access: bool = True
     model: str = DEFAULT_MODEL
-    skip_llm: bool = False  # set True to populate sections without invoking LLM yet
-    extra_query: str | None = None
 
 
 def ensure_dirs() -> None:
-    for p in (DATA_DIR, PDF_DIR, TEXT_DIR, OUT_DIR, SEEDS_DIR):
+    for p in (DATA_DIR, PDF_DIR, OUT_DIR):
         p.mkdir(parents=True, exist_ok=True)

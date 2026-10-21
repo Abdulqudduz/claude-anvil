@@ -1,6 +1,6 @@
 [project]
 name = "vista"
-version = "0.3.1"
+version = "0.4.0"
 description = "Mine 'future work' sections from highly-cited papers to surface research directions"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -16,7 +16,6 @@ dependencies = [
     "bibtexparser>=1.4",
     "platformdirs>=4.2",
     "tenacity>=8.5",
-    "pyyaml>=6.0",
     "mcp>=1.2",
 ]
 
@@ -27,7 +26,7 @@ vista-mcp = "vista.mcp_server:main"
 [project.optional-dependencies]
 # Anthropic SDK is only needed for the unattended (cron) batch path.
 # The MCP server does NOT need it; the conversation does the synthesis.
-api = ["anthropic>=0.39"]
+api = ["anthropic>=0.97"]  # output_config structured outputs
 viz = ["datasette>=0.64"]
 
 [dependency-groups]

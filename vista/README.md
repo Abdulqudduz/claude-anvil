@@ -112,11 +112,11 @@ After wiring, verify in Claude Code: the `vista` skill should appear, and
 | Tool | Purpose |
 |------|---------|
 | `topic_followups(topic, max_papers, year_min, min_citations)` | Top-cited recent papers on a topic, with their FW/Lim/Disc/Conc sections. |
-| `paper_followups(identifier)` | Single paper by DOI / arXiv id / OpenAlex id / title. |
+| `paper_followups(identifier)` | Single paper by DOI / arXiv id or URL / OpenAlex id / exact title (near misses come back as candidates). |
 | `find_seminal(topic, year_max, min_citations)` | Older highly-cited papers; the "neglected futures" angle. |
 | `broad_followups(query, fields)` | Cross-field exploratory; for serendipity outside your prior work. |
 
-All four cache results to the local SQLite store (`data/papers.db`) and
+All four cache results to the local SQLite store (`papers.db` in the data dir) and
 return structured JSON: paper metadata, abstract, raw section text per type.
 
 ### Stored corpus
@@ -126,7 +126,7 @@ return structured JSON: paper metadata, abstract, raw section text per type.
 | `search_directions(query, ...)` | Keyword + filter search over distilled directions. |
 | `list_directions(field, track, status, limit)` | Paginated catalog listing. |
 | `get_paper(paper_id)` | Full paper record with sections and any directions. |
-| `submit_directions(paper_id, directions[])` | Persist synthesized directions for a paper. |
+| `submit_directions(paper_id, directions[], mode)` | Persist synthesized directions. `append` (default) adds or updates by direction text; `replace` also drops uncurated others. Curation is never lost. |
 | `mark_direction(direction_id, status, notes)` | Curation: open / interesting / started / abandoned. |
 
 ### Pipeline
@@ -134,7 +134,7 @@ return structured JSON: paper metadata, abstract, raw section text per type.
 | Tool | Purpose |
 |------|---------|
 | `discover(fields, track, per_field)` | Bulk OpenAlex query. |
-| `extract_pending()` | Fetch + extract any papers not yet processed. |
+| `extract_pending(max_papers, retry_failed)` | Fetch + extract any papers not yet processed. |
 | `render_markdown()` | Regenerate `out/index.md` plus per-paper files. |
 | `status()` | Counts dashboard. |
 
@@ -142,15 +142,16 @@ return structured JSON: paper metadata, abstract, raw section text per type.
 
 | Tool | Purpose |
 |------|---------|
-| `run_sql(query)` | Read-only SQL against the local store. DDL/DML blocked. |
+| `run_sql(query, limit)` | Read-only SQL against the local store; the engine denies anything but reads. |
 | `get_schema()` | Schema and view definitions. |
 
 ## CLI commands
 
 ```
 vista discover     OpenAlex query, store paper metadata
-vista fetch        download arXiv / OA PDFs
-vista extract      PyMuPDF text + heading regex for the four section types
+vista fetch        download arXiv / OA PDFs (--retry-failed to retry past failures)
+vista extract      sections via PDF outline, then font headings, then heading regex
+                   (--retry-empty to retry papers where nothing was found)
 vista analyze      Anthropic-API distillation (optional, needs API key)
 vista render       browseable markdown index plus per-paper files
 vista seed-bib     ingest .bib entries, resolve via OpenAlex
@@ -203,7 +204,7 @@ WHERE id = 42;
 Browse with Datasette:
 
 ```bash
-uv run --with datasette datasette data/papers.db
+uv run --with datasette datasette "$VISTA_DATA_DIR/papers.db"
 ```
 
 ## Output layout
@@ -215,10 +216,9 @@ out/
 ├── queries.md                     example SQL for mining the store
 └── papers/
     └── <field>--<slug>--<id>.md   one file per paper
-data/
+<data dir>/                        VISTA_DATA_DIR, default platformdirs user data dir
 ├── papers.db                      SQLite store
-├── pdfs/                          cached PDFs
-└── text/                          cached plain-text extracts
+└── pdfs/                          cached PDFs
 ```
 
 Per-paper markdown files have YAML frontmatter compatible with Hugo, so the
@@ -244,7 +244,7 @@ vista/                         Python package (CLI + pipeline + MCP server)
 
 - **Future work inside conclusions.** Some papers do not have a separate
   Future Work heading; the future work prose sits at the tail of Conclusion.
-  The regex extractor captures the Conclusion section in that case, and the
+  The extractor captures the Conclusion section in that case, and the
   MCP returns it. Synthesis pulls directions out of conclusion text fine.
 - **OpenAlex venue coverage is sparse for NeurIPS, ICML, and ICLR.** OpenAlex
   does not index every NeurIPS paper as type `article` with `is_oa=true`. The
@@ -257,6 +257,8 @@ vista/                         Python package (CLI + pipeline + MCP server)
   and OpenAlex stopped tagging new works with concepts when Topics replaced
   them in 2024. Recent papers can therefore be missing from field-based
   discovery; keyword and paper lookups are unaffected. See vista's CLAUDE.md.
-- **Heading regex is conservative.** Some papers use creative headings
-  ("Outlook", "Where We Go From Here") that the regex misses. Add patterns
-  to `vista/pipeline/extract.py` as needed.
+- **Heading classification is conservative.** Sections are located from the
+  PDF outline or typography when available, but deciding that a heading is
+  "Future Work" still matches it against `SECTION_PATTERNS`. Creative headings
+  ("Where We Go From Here") are missed; add patterns to
+  `vista/pipeline/extract.py` as needed.

@@ -1274,7 +1274,7 @@ wheels = [
 
 [[package]]
 name = "vista"
-version = "0.3.1"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "bibtexparser" },
@@ -1282,7 +1282,6 @@ dependencies = [
     { name = "mcp" },
     { name = "platformdirs" },
     { name = "pymupdf" },
-    { name = "pyyaml" },
     { name = "rich" },
     { name = "tenacity" },
     { name = "typer" },
@@ -1303,14 +1302,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", marker = "extra == 'api'", specifier = ">=0.39" },
+    { name = "anthropic", marker = "extra == 'api'", specifier = ">=0.97" },
     { name = "bibtexparser", specifier = ">=1.4" },
     { name = "datasette", marker = "extra == 'viz'", specifier = ">=0.64" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "mcp", specifier = ">=1.2" },
     { name = "platformdirs", specifier = ">=4.2" },
     { name = "pymupdf", specifier = ">=1.24" },
-    { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.7" },
     { name = "tenacity", specifier = ">=8.5" },
     { name = "typer", specifier = ">=0.12" },

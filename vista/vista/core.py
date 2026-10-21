@@ -10,24 +10,32 @@ caller's job.
 
 from __future__ import annotations
 
-import datetime as dt
 import json
-import logging
 import re
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
 import httpx
 
-from vista.config import ARXIV_SOURCE_ID, FIELDS, USER_AGENT
-from vista.pipeline.extract import extract_paper
-from vista.pipeline.fetch import fetch_pdf
-from vista.sources.openalex import OpenAlexClient, OpenAlexWork, build_filter, search_filter
-from vista.storage.db import Paper, Section, Store
+from vista.config import ARXIV_SOURCE_ID, concept_ids_for
+from vista.pipeline.extract import extract_and_store, should_extract
+from vista.pipeline.fetch import fetch_and_record
+from vista.sources.openalex import (
+    ARXIV_ID_PATTERN,
+    OpenAlexClient,
+    OpenAlexWork,
+    TitleMatch,
+    build_filter,
+    find_by_title,
+)
+from vista.storage.db import Paper, Store
 
-log = logging.getLogger(__name__)
-
-ARXIV_RE = re.compile(r"^(?:arxiv:)?(\d{4}\.\d{4,5}|[a-z\-]+/\d{7})(?:v\d+)?$", re.IGNORECASE)
+ARXIV_RE = re.compile(
+    rf"^(?:arxiv:|(?:https?://)?(?:www\.)?arxiv\.org/(?:abs|pdf)/)?"
+    rf"({ARXIV_ID_PATTERN})(?:v\d+)?(?:\.pdf)?/?$",
+    re.IGNORECASE,
+)
 # arXiv mints a DataCite DOI for every paper; OpenAlex resolves it directly.
 ARXIV_DOI_PREFIX = "10.48550/arxiv."
 DOI_RE = re.compile(r"^(?:doi:|https?://(?:dx\.)?doi\.org/)?(10\.\d{4,9}/\S+)$", re.IGNORECASE)
@@ -38,102 +46,49 @@ OPENALEX_RE = re.compile(r"^(?:https?://openalex\.org/)?(W\d+)$")
 # Identifier resolution
 # ---------------------------------------------------------------------------
 
-def resolve_identifier(identifier: str, client: OpenAlexClient) -> OpenAlexWork | None:
-    """Resolve a free-form paper identifier (DOI, arXiv id, OpenAlex id, or title)."""
+def resolve_identifier(identifier: str, client: OpenAlexClient) -> TitleMatch:
+    """Resolve a free-form paper identifier (DOI, arXiv id or URL, OpenAlex id, or title).
+
+    Exact identifiers are one free lookup. A title is a search that accepts
+    only a normalized-equal title; near misses come back as `candidates`.
+    """
     s = identifier.strip()
-    m = OPENALEX_RE.match(s)
-    if m:
-        return client.work_by_id(m.group(1))
-    m = DOI_RE.match(s)
-    if m:
-        return client.work_by_doi(m.group(1))
-    m = ARXIV_RE.match(s)
-    if m:
-        return client.work_by_doi(ARXIV_DOI_PREFIX + m.group(1).lower())
-    # Fall back to title search.
-    for w in client.works(
-        filter_str=search_filter("title", s), per_page=5, max_results=5, sort="cited_by_count:desc"
-    ):
-        if w.title.lower().strip()[:80] == s.lower().strip()[:80]:
-            return w
-        if s.lower()[:60] in w.title.lower():
-            return w
-    return None
+    if m := OPENALEX_RE.match(s):
+        return TitleMatch(work=client.work_by_id(m.group(1)))
+    if m := DOI_RE.match(s):
+        return TitleMatch(work=client.work_by_doi(m.group(1)))
+    if m := ARXIV_RE.match(s):
+        return TitleMatch(work=client.work_by_doi(ARXIV_DOI_PREFIX + m.group(1).lower()))
+    return find_by_title(client, s)
 
 
 # ---------------------------------------------------------------------------
-# Live searches
+# Live search
 # ---------------------------------------------------------------------------
 
-def topic_search(
+def search_works(
     client: OpenAlexClient,
     *,
-    topic: str,
-    year_min: int = 2020,
+    query: str | None = None,
+    fields: Iterable[str] | None = None,
+    year_min: int | None = None,
     year_max: int | None = None,
-    min_citations: int = 20,
+    min_citations: int = 0,
     max_papers: int = 10,
     require_arxiv: bool = True,
 ) -> list[OpenAlexWork]:
-    parts = [build_filter(
+    """Top-cited works matching a keyword query and/or FIELDS concepts.
+
+    Raises ValueError for a field name not in config.FIELDS.
+    """
+    filt = build_filter(
+        concept_ids=concept_ids_for(fields or []) or None,
+        location_source_ids=[ARXIV_SOURCE_ID] if require_arxiv else None,
         year_min=year_min,
         year_max=year_max,
-        min_citations=min_citations,
-        keyword_search=topic,
-    )]
-    if require_arxiv:
-        parts.append(f"locations.source.id:{ARXIV_SOURCE_ID}")
-    filt = ",".join(p for p in parts if p)
-    return list(client.works(filter_str=filt, max_results=max_papers))
-
-
-def seminal_search(
-    client: OpenAlexClient,
-    *,
-    topic: str | None,
-    year_max: int = 2019,
-    year_min: int = 2000,
-    min_citations: int = 1000,
-    max_papers: int = 10,
-    require_arxiv: bool = False,
-) -> list[OpenAlexWork]:
-    """Old highly-cited papers. The 'neglected futures' candidates."""
-    parts = [build_filter(
-        year_min=year_min,
-        year_max=year_max,
-        min_citations=min_citations,
-        keyword_search=topic,
-    )]
-    if require_arxiv:
-        parts.append(f"locations.source.id:{ARXIV_SOURCE_ID}")
-    filt = ",".join(p for p in parts if p)
-    return list(client.works(filter_str=filt, max_results=max_papers))
-
-
-def broad_search(
-    client: OpenAlexClient,
-    *,
-    query: str,
-    fields: list[str] | None = None,
-    year_min: int = 2020,
-    min_citations: int = 30,
-    max_papers: int = 15,
-    require_arxiv: bool = True,
-) -> list[OpenAlexWork]:
-    """Cross-field exploratory search. Combines keyword + (optional) concept ORs."""
-    concept_ids: list[str] = []
-    if fields:
-        for f in fields:
-            concept_ids.extend(FIELDS.get(f, {}).get("concept_ids", []))
-    parts = [build_filter(
-        concept_ids=concept_ids or None,
-        year_min=year_min,
         min_citations=min_citations,
         keyword_search=query,
-    )]
-    if require_arxiv:
-        parts.append(f"locations.source.id:{ARXIV_SOURCE_ID}")
-    filt = ",".join(p for p in parts if p)
+    )
     return list(client.works(filter_str=filt, max_results=max_papers))
 
 
@@ -142,83 +97,40 @@ def broad_search(
 # ---------------------------------------------------------------------------
 
 def cache_work(store: Store, w: OpenAlexWork, *, field: str, track: str) -> None:
-    p = Paper(
-        id=w.id,
-        doi=w.doi,
-        arxiv_id=w.arxiv_id,
-        title=w.title,
-        authors_json=json.dumps(w.authors, ensure_ascii=False),
-        year=w.year,
-        venue=w.venue,
-        venue_id=w.venue_id,
-        abstract=w.abstract,
-        cited_by_count=w.cited_by_count,
-        field=field,
-        track=track,
-        oa_url=w.oa_url,
-        pdf_url=w.pdf_url,
-        raw_json=json.dumps(w.raw, ensure_ascii=False),
-    )
-    store.upsert_paper(p)
+    store.upsert_paper(Paper.from_work(w, field=field, track=track))
 
 
-def fetch_and_extract(
-    store: Store,
-    paper_id: str,
-    *,
-    http: httpx.Client | None = None,
-) -> dict[str, Any]:
-    """Idempotent: fetch PDF if missing, extract sections if missing.
+def fetch_and_extract(store: Store, paper_id: str, *, http: httpx.Client) -> dict[str, Any]:
+    """Idempotent: fetch the PDF if missing, extract sections if `should_extract`.
 
-    Returns a structured summary the caller can present to a synthesizer.
+    A paper with section text, or a current-version empty placeholder, is not
+    re-parsed; an error or older-extractor placeholder is. Returns the structured summary MCP tools emit.
     """
     row = store.get_paper(paper_id)
     if row is None:
         return {"paper_id": paper_id, "error": "not in store"}
 
-    own_http = http is None
-    if own_http:
-        http = httpx.Client(
-            headers={"User-Agent": USER_AGENT, "Accept": "application/pdf,*/*"},
-            timeout=60.0,
-        )
-    try:
-        if not row["pdf_path"] or not Path(row["pdf_path"]).exists():
-            pdf_path = fetch_pdf(row, client=http)
-            if pdf_path:
-                store.update_paper_pdf(
-                    paper_id, str(pdf_path), dt.datetime.utcnow().isoformat()
-                )
-                row = store.get_paper(paper_id)
-            else:
-                return summarize_paper(row, sections=[], note="pdf_unavailable")
+    if not row["pdf_path"] or not Path(row["pdf_path"]).exists():
+        if not fetch_and_record(store, row, client=http):
+            return summarize_paper(store.get_paper(paper_id), sections=[],
+                                   note="pdf_unavailable")
+        row = store.get_paper(paper_id)
 
-        existing_sections = store.get_sections(paper_id)
-        if not existing_sections or all(not s["content"] for s in existing_sections):
-            try:
-                extracted = extract_paper(Path(row["pdf_path"]))
-            except Exception as e:
-                log.warning("extract failed for %s: %s", paper_id, e)
-                extracted = []
-            if extracted:
-                store.upsert_sections(
-                    Section(
-                        paper_id=paper_id,
-                        section_type=s.section_type,
-                        heading=s.heading,
-                        content=s.content,
-                        method="regex",
-                    )
-                    for s in extracted
-                )
-            sections = store.get_sections(paper_id)
-        else:
-            sections = existing_sections
+    sections = store.get_sections(paper_id)
+    if should_extract(sections):
+        extract_and_store(store, paper_id, Path(row["pdf_path"]))
+        sections = store.get_sections(paper_id)
+    return summarize_paper(row, sections=sections)
 
-        return summarize_paper(row, sections=sections)
-    finally:
-        if own_http:
-            http.close()
+
+def research(store: Store, works: Iterable[OpenAlexWork], *, track: str,
+             http: httpx.Client, field: str = "ad-hoc") -> list[dict[str, Any]]:
+    """Cache each work, fetch and extract it, and return the paper summaries."""
+    out = []
+    for w in works:
+        cache_work(store, w, field=field, track=track)
+        out.append(fetch_and_extract(store, w.id, http=http))
+    return out
 
 
 def summarize_paper(row, *, sections: list, note: str | None = None) -> dict[str, Any]:
@@ -228,18 +140,18 @@ def summarize_paper(row, *, sections: list, note: str | None = None) -> dict[str
         authors = json.loads(row["authors_json"] or "[]")
     except json.JSONDecodeError:
         pass
-    section_payload: list[dict[str, Any]] = []
-    for s in sections:
-        if not s["content"]:
-            continue
-        section_payload.append({
+    section_payload = [
+        {
             "type": s["section_type"],
             "heading": s["heading"],
+            "method": s["method"],
             "content": s["content"],
             "char_count": len(s["content"]),
-        })
-
+        }
+        for s in sections if s["content"]
+    ]
     arxiv_id = row["arxiv_id"]
+    doi = row["doi"]
     out: dict[str, Any] = {
         "paper_id": row["id"],
         "title": row["title"],
@@ -247,13 +159,11 @@ def summarize_paper(row, *, sections: list, note: str | None = None) -> dict[str
         "year": row["year"],
         "venue": row["venue"],
         "cited_by_count": row["cited_by_count"],
-        "doi": row["doi"],
+        "doi": doi,
         "arxiv_id": arxiv_id,
         "arxiv_url": f"https://arxiv.org/abs/{arxiv_id}" if arxiv_id else None,
-        "doi_url": (
-            row["doi"] if (row["doi"] or "").startswith("http")
-            else (f"https://doi.org/{row['doi']}" if row["doi"] else None)
-        ),
+        "doi_url": (doi if (doi or "").startswith("http")
+                    else (f"https://doi.org/{doi}" if doi else None)),
         "abstract": row["abstract"],
         "field": row["field"],
         "track": row["track"],

@@ -11,13 +11,15 @@ from __future__ import annotations
 import logging
 import re
 import time
-from dataclasses import dataclass
-from typing import Any, Iterator
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+from typing import Any
 
 import httpx
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
-from vista.config import USER_AGENT, VERSION, openalex_api_key
+from vista.config import USER_AGENT, openalex_api_key
+from vista.net import is_transient
 
 API = "https://api.openalex.org"
 MAX_RETRY_AFTER_SECONDS = 60.0
@@ -39,14 +41,7 @@ def _budget_exhausted(response: httpx.Response) -> bool:
 
 
 def _is_retryable(exc: BaseException) -> bool:
-    if isinstance(exc, OpenAlexBudgetExhausted):
-        return False
-    if isinstance(exc, httpx.TransportError):
-        return True
-    if isinstance(exc, httpx.HTTPStatusError):
-        status = exc.response.status_code
-        return status == 429 or status >= 500
-    return False
+    return not isinstance(exc, OpenAlexBudgetExhausted) and is_transient(exc)
 
 
 def _retry_after_seconds(exc: BaseException | None) -> float | None:
@@ -58,6 +53,12 @@ def _retry_after_seconds(exc: BaseException | None) -> float | None:
     except ValueError:  # HTTP-date form; fall back to exponential backoff
         return None
 
+
+# An arXiv identifier: new style (2106.01234) or old style with an optional
+# subject class (hep-th/9901001, math.AG/0101001). Shared by URL sniffing here
+# and identifier resolution in vista.core.
+ARXIV_ID_PATTERN = r"[0-9]{4}\.[0-9]{4,5}|[a-z\-]+(?:\.[A-Za-z]{2})?/[0-9]{7}"
+_ARXIV_URL_RE = re.compile(rf"arxiv\.org/(?:abs|pdf)/({ARXIV_ID_PATTERN})")
 
 _backoff = wait_exponential_jitter(initial=1, max=15)
 
@@ -84,7 +85,7 @@ class OpenAlexWork:
     raw: dict
 
     @classmethod
-    def from_api(cls, w: dict) -> "OpenAlexWork":
+    def from_api(cls, w: dict) -> OpenAlexWork:
         oa = w.get("open_access", {}) or {}
         primary = w.get("primary_location") or {}
         source = primary.get("source") or {}
@@ -99,7 +100,7 @@ class OpenAlexWork:
             if not loc:
                 continue
             url = (loc.get("landing_page_url") or "") + " " + (loc.get("pdf_url") or "")
-            m = re.search(r"arxiv\.org/(?:abs|pdf)/([0-9]{4}\.[0-9]{4,5}|[a-z\-]+/[0-9]{7})", url)
+            m = _ARXIV_URL_RE.search(url)
             if m:
                 arxiv_id = m.group(1)
                 break
@@ -154,13 +155,11 @@ class OpenAlexClient:
     def __init__(
         self,
         *,
-        mailto: str | None = None,
         api_key: str | None = None,
         timeout: float = 30.0,
         transport: httpx.BaseTransport | None = None,
     ):
-        ua = USER_AGENT if not mailto else f"vista/{VERSION} (mailto:{mailto})"
-        headers = {"User-Agent": ua, "Accept": "application/json"}
+        headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
         key = api_key or openalex_api_key()
         if key:
             # Bearer header rather than the equivalent `api_key` query param, so
@@ -175,7 +174,7 @@ class OpenAlexClient:
     def close(self) -> None:
         self.client.close()
 
-    def __enter__(self) -> "OpenAlexClient":
+    def __enter__(self) -> OpenAlexClient:
         return self
 
     def __exit__(self, *exc) -> None:
@@ -263,10 +262,42 @@ def search_filter(field: str, text: str) -> str:
     return f"{field}.search:{' '.join(text.translate(_FILTER_SEPARATORS).split())}"
 
 
+def normalize_title(title: str) -> str:
+    """Casefolded alphanumerics only: ignores case, punctuation, braces, spacing."""
+    return "".join(ch for ch in title.casefold() if ch.isalnum())
+
+
+@dataclass
+class TitleMatch:
+    """Outcome of a title lookup: an exact match, or the near misses to offer."""
+
+    work: OpenAlexWork | None
+    candidates: list[OpenAlexWork] = field(default_factory=list)
+
+
+def find_by_title(client: OpenAlexClient, title: str, *, max_candidates: int = 5) -> TitleMatch:
+    """Search titles and accept only a normalized-equal match.
+
+    Substring matching is deliberately not used: a short query like "BERT"
+    would otherwise silently resolve to the most-cited title containing it.
+    Non-matching hits come back as `candidates` for the caller to present.
+    """
+    want = normalize_title(title)
+    hits = list(client.works(
+        filter_str=search_filter("title", title), per_page=max_candidates,
+        max_results=max_candidates, sort="cited_by_count:desc",
+    ))
+    for w in hits:
+        if normalize_title(w.title) == want:
+            return TitleMatch(work=w)
+    return TitleMatch(work=None, candidates=hits)
+
+
 def build_filter(
     *,
     concept_ids: list[str] | None = None,
     venue_ids: list[str] | None = None,
+    location_source_ids: list[str] | None = None,
     year_min: int | None = None,
     year_max: int | None = None,
     min_citations: int | None = None,
@@ -279,6 +310,9 @@ def build_filter(
         parts.append("concepts.id:" + "|".join(concept_ids))
     if venue_ids:
         parts.append("primary_location.source.id:" + "|".join(venue_ids))
+    if location_source_ids:
+        # Any location (not just primary) at these sources, e.g. an arXiv mirror.
+        parts.append("locations.source.id:" + "|".join(location_source_ids))
     if year_min and year_max:
         parts.append(f"publication_year:{year_min}-{year_max}")
     elif year_min:
@@ -292,7 +326,5 @@ def build_filter(
     if types:
         parts.append("type:" + "|".join(types))
     if keyword_search:
-        # OpenAlex supports `default.search` via the `search` param, but we
-        # prefer filter-style: title_and_abstract.search
         parts.append(search_filter("title_and_abstract", keyword_search))
     return ",".join(parts)

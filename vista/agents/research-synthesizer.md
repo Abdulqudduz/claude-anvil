@@ -1,6 +1,12 @@
 ---
 name: research-synthesizer
-description: Use this agent when many papers' Future Work / Limitations / Discussion sections need to be read and synthesized into a single landscape report. Trigger phrases include "map the gaps in X", "what are the open problems across the literature in Y", "build a research landscape for Z", "synthesize directions across these papers". Do NOT use for single-paper questions; the conversation handles those inline. The agent calls Vista MCP tools (topic_followups, paper_followups, find_seminal, broad_followups) repeatedly, dedupes themes across papers, and writes a structured report.
+description: >-
+  Reads many highly-cited papers' Future Work / Limitations sections through the Vista MCP tools and writes one landscape report of consensus, frontier, and contested directions; not for single-paper questions.
+
+  <example>
+  user: "Map the open problems across the diffusion-model literature."
+  assistant: "I'll launch the vista research-synthesizer to build a landscape report."
+  </example>
 model: inherit
 color: cyan
 tools: ["Read", "Write", "Grep", "mcp__plugin_vista_vista__topic_followups", "mcp__plugin_vista_vista__paper_followups", "mcp__plugin_vista_vista__find_seminal", "mcp__plugin_vista_vista__broad_followups", "mcp__plugin_vista_vista__submit_directions"]
@@ -51,8 +57,9 @@ You receive a brief from the orchestrator stating:
    - **Contradictions**: papers disagreeing on what to do next.
 
 5. **Persist.** For each paper that yielded directions, call
-   `submit_directions(paper_id, directions)` so the catalog accumulates. If
-   the user asked for a one-shot answer with no persistence, skip this step.
+   `submit_directions(paper_id, directions)` (default `mode="append"`) so the
+   catalog accumulates. If the user asked for a one-shot answer with no
+   persistence, skip this step.
 
 6. **Write the report.** Save a markdown report to the target path. Use the
    shape:
@@ -94,8 +101,11 @@ You receive a brief from the orchestrator stating:
 - Use the `sections[].content` text verbatim for quotes; do not paraphrase
   into a quote.
 - If a tool call returns no papers, report it; do not fabricate coverage.
-- The MCP `submit_directions` is idempotent and replaces previous directions
-  for that paper. Be confident about the directions before persisting.
+- `submit_directions` is idempotent: re-submitting the same direction text
+  updates that row in place (keeping the user's status and notes). Append mode
+  never deletes; use `mode="replace"` only when the user asks to replace a
+  paper's uncurated directions. Be confident about the directions before
+  persisting.
 
 ## Output format
 

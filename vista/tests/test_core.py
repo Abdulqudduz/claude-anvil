@@ -5,7 +5,9 @@ or title) and calls the right client method. A fake client records the calls,
 so no network is touched.
 """
 
-from vista.core import resolve_identifier
+import pytest
+
+from vista.core import resolve_identifier, search_works
 from vista.sources.openalex import OpenAlexWork
 
 
@@ -41,7 +43,7 @@ class FakeClient:
 def test_resolve_bare_openalex_id():
     c = FakeClient(work=_work(id="W42"))
     out = resolve_identifier("W42", c)
-    assert out.id == "W42"
+    assert out.work.id == "W42"
     assert c.calls == [("by_id", "W42")]
 
 
@@ -62,7 +64,7 @@ def test_resolve_arxiv_id_via_datacite_doi():
     # directly, so an arXiv id is one exact lookup, not a search.
     target = _work(id="Wx", arxiv_id="2106.01234")
     c = FakeClient(work=target)
-    assert resolve_identifier("2106.01234", c) is target
+    assert resolve_identifier("2106.01234", c).work is target
     assert c.calls == [("by_doi", "10.48550/arxiv.2106.01234")]
 
 
@@ -81,10 +83,47 @@ def test_resolve_old_style_arxiv_id():
 def test_resolve_title_fallback():
     target = _work(id="Wt", title="A Comprehensive Survey on Graph Neural Networks")
     c = FakeClient(works_list=[target])
-    out = resolve_identifier("A Comprehensive Survey on Graph Neural Networks", c)
-    assert out is target
+    out = resolve_identifier("a comprehensive survey on graph neural networks.", c)
+    assert out.work is target, "case and punctuation are ignored"
 
 
 def test_resolve_returns_none_when_nothing_matches():
     c = FakeClient(works_list=[])
-    assert resolve_identifier("Totally Unmatched Title Xyzzy", c) is None
+    out = resolve_identifier("Totally Unmatched Title Xyzzy", c)
+    assert out.work is None and out.candidates == []
+
+
+def test_short_title_does_not_resolve_to_a_superstring():
+    # The bug: substring matching made "BERT" resolve to the most-cited title
+    # containing "bert". Near misses now come back as candidates instead.
+    roberta = _work(id="Wr", title="RoBERTa: A Robustly Optimized BERT Pretraining Approach")
+    out = resolve_identifier("BERT", FakeClient(works_list=[roberta]))
+    assert out.work is None
+    assert out.candidates == [roberta]
+
+
+@pytest.mark.parametrize("ident, arxiv_id", [
+    ("https://arxiv.org/abs/2106.01234", "2106.01234"),
+    ("https://arxiv.org/abs/2106.01234v3", "2106.01234"),
+    ("arxiv.org/pdf/2106.01234v2.pdf", "2106.01234"),
+    ("http://www.arxiv.org/abs/hep-th/9901001", "hep-th/9901001"),
+    ("math.AG/0101001", "math.ag/0101001"),
+])
+def test_resolve_arxiv_urls_and_subject_classes(ident, arxiv_id):
+    c = FakeClient(work=_work())
+    resolve_identifier(ident, c)
+    assert c.calls == [("by_doi", "10.48550/arxiv." + arxiv_id)]
+
+
+def test_search_works_builds_one_filter_and_rejects_unknown_fields():
+    c = FakeClient(works_list=[_work()])
+    search_works(c, query="graph, nets", fields=["ml"], year_min=2020,
+                 min_citations=30, max_papers=3, require_arxiv=True)
+    (_, kw), = c.calls
+    f = kw["filter_str"]
+    assert "concepts.id:C119857082" in f
+    assert "locations.source.id:S4306400194" in f
+    assert "title_and_abstract.search:graph nets" in f
+    assert kw["max_results"] == 3
+    with pytest.raises(ValueError, match="valid"):
+        search_works(c, query="x", fields=["statistics"])

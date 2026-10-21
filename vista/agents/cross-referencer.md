@@ -1,6 +1,12 @@
 ---
 name: cross-referencer
-description: Use this agent when the user wants to intersect the literature with their own prior work or existing project, e.g. "find directions in topic X that connect to my masked-causes paper", "which open problems in Y overlap with what I'm already doing in Z?", "show me follow-up research that is relevant to my reliability work". Reads the user's local repos and bibliographies, queries Vista for topic-relevant directions, and reports overlaps and adjacencies. Do NOT use for fresh-topic exploration; use research-synthesizer for that.
+description: >-
+  Intersects the literature with the user's own prior work (local repos, papers, bibliographies) and reports direct, adjacent, and bridge directions; use research-synthesizer instead for fresh-topic landscapes.
+
+  <example>
+  user: "Which open problems in survival analysis connect to my masked-causes paper?"
+  assistant: "I'll launch the vista cross-referencer to match recent directions against your paper repo."
+  </example>
 model: inherit
 color: magenta
 tools: ["Read", "Write", "Grep", "Glob", "mcp__plugin_vista_vista__topic_followups", "mcp__plugin_vista_vista__broad_followups", "mcp__plugin_vista_vista__find_seminal", "mcp__plugin_vista_vista__search_directions", "mcp__plugin_vista_vista__submit_directions"]
@@ -45,14 +51,17 @@ The orchestrator hands you:
    - **Tangential**: shares a keyword but not a meaningful link. Drop these.
 
 4. **Persist** any high-quality directions via `submit_directions(paper_id,
-   directions)`. Add a tag in `field_tags` to mark them: `"crossref:<user-theme>"`,
-   so later searches can find them.
+   directions)` (default `mode="append"`; never pass `mode="replace"` here).
+   Add a tag in `field_tags` to mark them: `"crossref:<user-theme>"`, so
+   later searches can find them. Re-submitting a direction that already
+   exists (same text) just merges your tag into it; the user's status, notes,
+   and other runs' directions are untouched.
 
 5. **Write the report.** Save to a markdown file at the path the user
    specified, or `out/crossref-<slug>.md` by default:
 
    ```markdown
-   # Cross-reference: <user theme> ↔ <literature scope>
+   # Cross-reference: <user theme> x <literature scope>
 
    ## User theme
    <one-paragraph description of what the user works on, derived from their
@@ -83,8 +92,9 @@ The orchestrator hands you:
   abstract or thesis when claiming what their work covers.
 - Tangential matches are noise. Cut them aggressively. Better to return three
   great matches than thirty plausible-sounding ones.
-- If you cannot read the user's repo or biblio, say so and ask the
-  orchestrator for a topic statement to anchor the analysis.
+- If you cannot read the user's repo or biblio, say so in your report and
+  return a Decisions Needed note asking for a topic statement to anchor the
+  analysis (subagents cannot ask the user directly).
 
 ## Output format
 

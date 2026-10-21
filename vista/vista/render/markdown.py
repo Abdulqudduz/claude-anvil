@@ -1,27 +1,31 @@
 """Render the SQLite store to browseable markdown.
 
-Layout:
-  out/index.md                    -- master index, grouped by field+track
-  out/by-field/<field>.md         -- one file per field
-  out/by-direction/<tag>.md       -- one file per common tag
-  out/papers/<paper_id>.md        -- one file per paper with full directions
-  out/queries.md                  -- example SQL queries to mine the data
+Layout (under config.OUT_DIR unless out_dir is given):
+  index.md                              master index, grouped by field
+  by-tag.md                             directions grouped by field tag
+  papers/<field>--<slug>--<id>.md       one file per paper with full directions
+  queries.md                            example SQL queries to mine the data
 """
 
 from __future__ import annotations
 
 import json
 import re
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 
-from vista.config import OUT_DIR
+from vista import config
 from vista.storage.db import Store
 
 
 def _slug(s: str, maxlen: int = 80) -> str:
     s = re.sub(r"[^A-Za-z0-9]+", "-", s).strip("-").lower()
     return s[:maxlen] or "untitled"
+
+
+def paper_relpath(field: str, title: str | None, paper_id: str) -> str:
+    """Path of a paper's markdown file relative to the output directory."""
+    return f"papers/{field}--{_slug(title or 'untitled')}--{paper_id}.md"
 
 
 def _md_link_for_paper(row) -> str:
@@ -57,9 +61,7 @@ def render_paper_md(store: Store, paper_row, out_dir: Path) -> Path:
     directions = store.get_directions(pid)
 
     title = paper_row["title"] or "Untitled"
-    slug = _slug(title)
-    fname = f"{paper_row['field']}--{slug}--{pid}.md"
-    path = out_dir / "papers" / fname
+    path = out_dir / paper_relpath(paper_row["field"], paper_row["title"], pid)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     link = _md_link_for_paper(paper_row)
@@ -149,30 +151,27 @@ def render_index(store: Store, out_dir: Path) -> Path:
         by_field[r["field"]].append(r)
 
     lines: list[str] = ["# Vista: research-direction index\n"]
-    lines.append("This index is auto-generated. Use `sqlite3 data/papers.db` "
+    lines.append(f"This index is auto-generated. Use `sqlite3 {config.DB_PATH}` "
                  "or browse the per-paper files for deeper context.\n")
 
-    total_dirs = store.conn.execute(
-        "SELECT COUNT(*) FROM directions"
-    ).fetchone()[0]
+    n_dirs_by_paper = dict(store.conn.execute(
+        "SELECT paper_id, COUNT(*) FROM directions GROUP BY paper_id"
+    ).fetchall())
+    total_dirs = sum(n_dirs_by_paper.values())
     lines.append(f"**Papers:** {len(rows)} · **Directions:** {total_dirs}\n")
 
     for field in sorted(by_field):
         flines = sorted(by_field[field], key=lambda r: -(r["cited_by_count"] or 0))
         lines.append(f"\n## {field} ({len(flines)} papers)\n")
         for r in flines:
-            n_dirs = store.conn.execute(
-                "SELECT COUNT(*) FROM directions WHERE paper_id=?", (r["id"],)
-            ).fetchone()[0]
-            link_path = (
-                f"papers/{field}--{_slug(r['title'] or 'untitled')}--{r['id']}.md"
-            )
+            n_dirs = n_dirs_by_paper.get(r["id"], 0)
+            link_path = paper_relpath(field, r["title"], r["id"])
             year = r["year"] or "?"
             cb = r["cited_by_count"] or 0
             track_tag = f"[{r['track']}]" if r["track"] != "recent" else ""
             lines.append(
                 f"- {track_tag} **{r['title']}** ({year}, cited {cb}x, "
-                f"{n_dirs} directions) — [open]({link_path})"
+                f"{n_dirs} directions): [open]({link_path})"
             )
     path = out_dir / "index.md"
     path.write_text("\n".join(lines))
@@ -198,9 +197,8 @@ def render_by_tag(store: Store, out_dir: Path) -> Path:
         items = by_tag[tag]
         lines.append(f"\n## `{tag}` ({len(items)})\n")
         for d in items[:50]:
-            slug = _slug(d["paper_title"] or "untitled")
-            link = f"papers/{d['field']}--{slug}--{d['paper_id']}.md"
-            lines.append(f"- {d['direction']} — _from_ [{d['paper_title']}]({link})")
+            link = paper_relpath(d["field"], d["paper_title"], d["paper_id"])
+            lines.append(f"- {d['direction']} (from [{d['paper_title']}]({link}))")
     path = out_dir / "by-tag.md"
     path.write_text("\n".join(lines))
     return path
@@ -209,8 +207,8 @@ def render_by_tag(store: Store, out_dir: Path) -> Path:
 def render_queries(out_dir: Path) -> Path:
     body = """# Example queries
 
-The store is at `data/papers.db`. Use `sqlite3` or
-[Datasette](https://datasette.io) (`uv run --with datasette datasette data/papers.db`).
+The store is at `DB_PATH`. Use `sqlite3` or
+[Datasette](https://datasette.io) (`uv run --with datasette datasette DB_PATH`).
 
 ## High-feasibility, recent directions
 
@@ -261,11 +259,12 @@ WHERE paper_id = 'W2741809807';
 ```
 """
     path = out_dir / "queries.md"
-    path.write_text(body)
+    path.write_text(body.replace("DB_PATH", str(config.DB_PATH)))
     return path
 
 
-def render_all(store: Store, out_dir: Path = OUT_DIR) -> dict[str, int]:
+def render_all(store: Store, out_dir: Path | None = None) -> dict[str, int]:
+    out_dir = out_dir or config.OUT_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
     rows = store.papers()
     n_paper_files = 0
