@@ -11,25 +11,33 @@ plugin is the judgment layer; the mechanics live in an external `crier` CLI.
 ## External dependency: the MCP server is not in-tree
 
 `.mcp.json` does NOT bundle a server. It shells out to a globally-installed
-`crier` CLI run as `crier mcp` (`pip install "crier[mcp]"`; plain `pip install
-crier` omits the `mcp` package and `crier mcp` fails). The SessionStart hook
-(`hooks/scripts/detect-crier-setup.sh`) warns the user if the CLI is missing.
+`crier` CLI run as `crier mcp` (`uv tool install 'crier[mcp]'`; installing
+without the `[mcp]` extra omits the `mcp` package and `crier mcp` fails). The
+SessionStart hook (`hooks/scripts/detect-crier-setup.sh`) warns the user if the
+CLI is missing or its interpreter (resolved from the `crier` script's shebang)
+cannot find the `mcp` package. It must stay fast: no `crier --version` (~0.5s).
 Editors must not expect a bundled server, and must not add `${CLAUDE_PLUGIN_ROOT}`
 to the `.mcp.json` command: invoking the global `crier` binary is correct by
 design.
 
 ## Components
 
-- **`skills/crier/SKILL.md`**: judgment context the tools cannot encode, namely rewrite
-  guidelines, platform culture, workflow tips.
-- **Commands**: `/crier` (quick audit-and-publish), `/chronicler` (weekly
-  cross-posting catch-up). Keep them thin; logic lives in the skill/agents.
+- **`skills/crier/SKILL.md`** (`/crier:crier [file]`): the single home of every
+  rule: target and limit discovery, rewrites and their budget, the two-step
+  publish, manual/import platforms, failures, agent dispatch. Never restate
+  these elsewhere; point at the skill section instead.
+- **Command**: `/crier:chronicler` (date-scoped batch catch-up). It adds only
+  scope, proposal format, and batching, and follows the skill for rules. There is
+  deliberately no `commands/crier.md`: inside a plugin a same-name command
+  shadows the skill, which then never loads.
 - **Agents**: `cross-poster` (autonomous bulk publishing), `auditor` (read-only
   gap, performance, staleness, and failure analysis). Each agent's `tools` list
   should grant only the crier MCP tools it uses, plus `Read`. Never grant
   `AskUserQuestion`: Claude Code removes it from every subagent. Agents return a
   `## Decisions Needed` section (or the auditor's recommendations menu) and the
-  main session (the skill or command that dispatched them) does the asking. IMPORTANT: because the server is plugin-bundled, the tools
+  main session (the skill or command that dispatched them) does the asking.
+  The cross-poster Reads `${CLAUDE_PLUGIN_ROOT}/skills/crier/SKILL.md` for its
+  rules. IMPORTANT: because the server is plugin-bundled, the tools
   register as `mcp__plugin_crier_crier__crier_*` (NOT `mcp__crier__crier_*`);
   an allowlist with the short prefix matches nothing and locks the agent out.
   Do not grant `Bash`: the agents do not shell out, and the SessionStart hook
@@ -47,16 +55,21 @@ sync or drop the number.
 
 ## Platform model and contracts
 
-- **Platform modes**: API (automatic: devto, hashnode, bluesky, mastodon),
-  import (medium: user imports from the canonical URL), paste (twitter, threads,
-  linkedin: manual).
-- **Short-form rewrite contract**: short platforms (bluesky 300, mastodon 500,
-  twitter 280, threads 500) need a rewrite. Claude writes it and passes it via
-  `rewrite_content`; crier appends the canonical URL automatically, so never
-  include the URL in the rewrite.
+- **No hand-copied platform data.** Modes are per-user config (`api`, `manual`,
+  `import`), not fixed per platform, and crier ships more platforms than any
+  list here would track. Targets come from `crier_doctor()` (`status`), limits
+  and short-form flags from the `crier://platforms` resource (`mode`,
+  `max_content_length`, `is_short_form`). Do not add platform tables or limit
+  numbers to any file.
+- **Short-form rewrite contract**: Claude writes the rewrite and passes it via
+  `rewrite_content`; crier appends the canonical URL, so the rewrite never
+  includes it and its budget is `limit - (len(canonical_url) + 2)`.
 - **Two-step confirmation** for destructive ops (publish, delete): call once
   without a token to get a preview plus token, then call again with the token to
-  execute. Agents and commands all depend on this.
+  execute. The token carries all arguments; step-2 caller args are ignored.
+- **Manual/import posts** are recorded with `crier_record` (with `platform_id`
+  set, else crier still counts them missing) only after the user says they are
+  live. Never suggest the CLI's `--yes`, which records them unposted.
 - **Remote-published failures**: `crier_publish` can return
   `remote_published: true` (live on the platform, registry write failed). Since
   crier 2.1.0 the MCP path checks crier's recovery receipt before any remote
@@ -74,5 +87,6 @@ site-management logic here.
 
 ## Version bumps
 
-Keep `.claude-plugin/plugin.json` and the `crier` entry in the root
-`.claude-plugin/marketplace.json` in sync (both currently 1.3.1).
+Follow "Version Bumps" in the root `CLAUDE.md`: the version lives in
+`.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json` tracks it with a
+`+codex.<timestamp>` suffix.

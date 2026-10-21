@@ -1,127 +1,89 @@
 ---
 name: chronicler
 description: Weekly catch-up on cross-posting. Scans recent metafunctor posts, finds platform gaps, proposes cross-posts with rewrites for short-form. Opinionated defaults so you don't have to choose.
+argument-hint: "[since, e.g. 2w|1m] [--dry] [--long-form|--short-form]"
 ---
 
-# /chronicler
+# /crier:chronicler
 
-Run when you remember (Friday afternoon, end of month, after a posting spree). The goal is to make "did I cross-post the recent stuff?" a one-prompt workflow.
+Make "did I cross-post the recent stuff?" a one-prompt workflow. This is the
+date-scoped batch version of the `crier` skill: follow that skill for every rule
+it defines (target and limit discovery, rewrites and their budget, the two-step
+publish, manual/import platforms, failures). This command adds only scope, the
+proposal format, and batching.
+
+Arguments: `$ARGUMENTS`
 
 ## Scope
 
-Default: posts from the last `2w`, all configured API platforms.
+- Window: default `2w`; any `since` value `crier_search` accepts (`3d`, `1m`, `6w`).
+- `--long-form` (or `longform`): only targets whose `is_short_form` is false.
+- `--short-form` (or `social`): only short-form targets.
+- `--dry`: run steps 1-3 and stop after the proposal.
+- A single file: use `/crier:crier <file>` instead.
 
-Override via argument: `/chronicler 1m`, `/chronicler 3d`, `/chronicler 6w`. Anything `crier_search` accepts as `since`.
+## 1. Scan
 
-Configured API platforms are usually `devto`, `hashnode`, `bluesky`, `mastodon`. Skip platforms in `import` mode (medium) or `paste` mode (twitter, threads, linkedin), they need browser/clipboard.
+1. Get targets from `crier_doctor()` and limits from `crier://platforms`, as the
+   skill says. Batch mode covers API targets only; list `manual_mode` and
+   `import_mode` platforms at the end of the proposal as optional manual follow-ups.
+2. `crier_search(since=<window>)` for recent files. It has no draft field: skip
+   a file only if `Read` shows `draft: true` in its front matter.
+3. `crier_missing(platforms=<targets>)` for registry gaps, plus
+   `crier_article(<file>)` for each search result not in that list ("Article not
+   found" means it is on no platform).
+4. Skip files already on every target, and files where `crier_check` reports errors.
 
-## Workflow
+## 2. Propose
 
-### 1. Scan
-
-Run `crier_doctor()` first and note any platform in an error state: skip those
-platforms in the proposal (or flag them as "needs config fix") rather than
-proposing actions guaranteed to fail at execute time.
-
-Run `crier_search(since=<scope>)` to get recent files with metadata.
-
-For each file, check status with `crier_article(<canonical_url_or_file>)`. Note which platforms it's missing from.
-
-Also run `crier_missing(platforms=[devto, hashnode, bluesky, mastodon])` to catch tracked-but-incomplete posts.
-
-Skip:
-- Files with `draft: true` in front matter
-- Files already on all 4 configured platforms
-- Files where `crier_check` reports errors (broken, missing title, etc.)
-
-### 2. Build proposals
-
-For each candidate post, draft the cross-post plan:
-
-- **Long-form platforms** (devto, hashnode): no rewrite needed, use the full body.
-- **Short-form platforms** (bluesky, mastodon): generate a rewrite. Read the article first (use `Read` tool on the source file), then write a rewrite that:
-  - Leads with the most specific or provocative claim. **Not** "I wrote a post about X."
-  - Stays under the budget: crier appends `\n\n<canonical URL>` before enforcing
-    the platform limit, so budget = limit minus (URL length + 2). For typical
-    metafunctor URLs that means **bluesky ~230 chars** (limit 300) and
-    **mastodon ~430** (limit 500).
-  - Contains no canonical URL: crier appends it automatically.
-  - Doesn't say "new blog post" or "check out my latest." Just say the thing.
-  - Can be more nuanced on mastodon than bluesky. Bluesky is one punch.
-
-### 3. Present an opinionated proposal
-
-Format the user-facing summary like this. Keep it dense:
+Draft the rewrites for short-form gaps (skill rules), then present one item per
+post, never per platform, and never list an already-posted platform as an action:
 
 ```
 3 posts to cross-post (8 platform actions total):
 
 1. "Intelligence is a Shape, Not a Scalar" (2026-04-05, 2393w)
-   → devto, hashnode (full body)
-   → bluesky (271 chars):
-     "Chollet says intelligence is a ball that's already round. Wrong. It's a shape:
-      every architecture trades performance on some problems for performance on others."
-   → mastodon (442 chars):
-     "Chollet says intelligence is like a ball that's already pretty round. He's right
-      it's not a scalar. Wrong about the ball. ..."
+   -> devto, hashnode (full body)
+   -> bluesky (198/228 chars): "Chollet says intelligence is a ball that's already round. ..."
+   -> mastodon (402/428 chars): "..."
 
 2. "Posthumous: A Federated Dead Man's Switch" (2026-02-14, 1298w)
-   → devto, hashnode (full body)
-   → bluesky (already posted)
-   → mastodon (236 chars): "..."
+   -> devto, hashnode (full body)
+   -> mastodon (236/428 chars): "..."
 
-3. "dapple: Terminal Graphics, Composed" (2026-02-15, 1033w)
-   ...
+Manual follow-ups available: twitter (manual), medium (import)
 
 Approve all (a) | Approve some (e.g. 1,3) | Edit rewrite (e <num> <platform>) | Skip <num> (s <num>) | Abort (q)
 ```
 
-### 4. Execute
+Show each rewrite's length against its URL-aware budget. Regenerate any bland
+rewrite before the user sees it.
 
-For each approved item × platform:
+## 3. Approve
 
-1. Long-form: `crier_publish(file, platform)` for step 1, `crier_publish(file, platform, confirmation_token=...)` for step 2.
-2. Short-form: `crier_publish(file, platform, rewrite_content=<rewrite>, rewrite_author="claude-code")` for step 1, then step 2 with token.
+Never publish without explicit approval; if the answer is unclear, abort. If the
+approved set is large (more than ~5 posts or ~15 platform actions), offer to
+dispatch the `cross-poster` agent with the approved posts, platforms, and
+rewrites as its explicit scope.
 
-Run platforms in parallel where possible (single message, multiple tool calls).
+## 4. Execute
 
-If a publish fails (length, API error), report it but continue with the others. Don't abort the batch.
+Run the skill's two-step publish for each approved post and platform, in
+parallel where possible. A failure does not abort the batch: handle it as the
+skill's "Failures" section says and continue.
 
-If a failure carries `"remote_published": true`, the post is live and only the registry write failed: never republish it. Repair the record with `crier_record` using the error's `article_id` and `url` (see "Failures" in the crier skill) and count it as a success.
-
-### 5. Report
-
-Final summary table. Include URLs for successes, error messages for failures.
+## 5. Report
 
 ```
 Cross-posted:
-  Intelligence is a Shape   devto: https://dev.to/...   hashnode: https://...   bluesky: https://...   mastodon: https://...
-  Posthumous                devto: https://dev.to/...   hashnode: https://...   bluesky: (already)      mastodon: https://...
-  dapple                    devto: ✓   hashnode: ✗ (rate limited, retry later)   bluesky: ✓   mastodon: ✓
+  Intelligence is a Shape   devto: https://dev.to/...   hashnode: https://...   bluesky: https://...
+  dapple                    devto: ok   hashnode: FAILED (rate limited)   bluesky: ok
 
 Failures (1):
-  dapple → hashnode: API rate limit
-
-Retry with: crier audit --retry   (replays recovery receipts; never double-posts)
+  dapple -> hashnode: API rate limit (retry: see the crier skill's "Failures")
 ```
 
-## Important rules
+## Other tools
 
-- **Never auto-publish without explicit approval.** If the user doesn't respond clearly, abort.
-- **Group by post in the proposal**, not by platform. One item per post even if it's missing 4 platforms.
-- **If the count is large** (more than ~5 posts to publish, or more than ~15 platform actions), suggest dispatching the `cross-poster` agent instead: "That's 23 platform actions. Want me to dispatch the cross-poster agent to run autonomously, or step through each one with you?" When dispatching, pass the approved items × platforms (and any approved rewrites) as the explicit scope: the agent cannot ask questions, so it publishes exactly that and returns anything else under `## Decisions Needed` for you to put to the user.
-- **Skip already-posted platforms.** Don't propose re-posts. The MCP tools handle deduplication, but the proposal should never list "→ devto (already)" as an action.
-- **Quality bar for rewrites**: if the rewrite is bland or just summarizes the title, regenerate it. The user will catch this anyway, but you should catch it first.
-
-## Mode shortcuts
-
-- `/chronicler --dry` or just looking at proposals without executing: run steps 1–3, stop after presenting. The user can copy any rewrite and run it manually with `crier publish` if they want.
-- `/chronicler --long-form` or `/chronicler longform`: only propose devto + hashnode, skip social. Useful when batching technical posts.
-- `/chronicler --short-form` or `/chronicler social`: only propose bluesky + mastodon. Useful when you've already done long-form via the web UIs.
-
-## When to use other crier capabilities instead
-
-- **One specific post, all platforms**: just use `/crier <file>`.
-- **Bulk publishing 20+ posts autonomously**: dispatch the `cross-poster` agent.
-- **"What should I cross-post?" without a date scope**: use the `auditor` agent for analysis-driven recommendations.
-- **Re-running failures**: see the crier skill's "Failures" section. For a bulk re-run, `crier audit --retry --dry-run`, then `crier audit --retry` (CLI).
+- "What should I cross-post?" with no date scope, performance or failure analysis:
+  dispatch the `auditor` agent.
