@@ -1,23 +1,11 @@
 ---
 description: Draft and execute the paired notebook for a chapter (separable from prose drafting)
-allowed-tools: Read, Write, Bash, Glob, Agent
+allowed-tools: Read, Glob, Agent
 argument-hint: "<chapter-name-or-number>"
 ---
 
 # /bookwright:notebook
 
-Dispatch the `notebook-author` agent to draft (or refresh) the paired notebook for a chapter. Separate command from `/bookwright:draft` so notebooks can be updated without re-drafting prose.
+Dispatch `bookwright:notebook-author` (Agent tool) with the chapter argument and the path of that chapter's plan under `docs/superpowers/plans/`. It reads the stack from `docs/superpowers/bookwright.config.yaml`, drafts or refreshes the notebook, executes it from a fresh kernel, and commits only when every sanity target passes. This is separate from `/bookwright:draft` so notebooks can be refreshed without re-drafting prose.
 
-## What it does
-
-1. Reads the chapter's plan file to find the notebook content checklist and numerical-sanity targets.
-2. Reads `docs/superpowers/bookwright.config.yaml` to determine notebook stack (Python+uv / R+renv / Quarto).
-3. Dispatches the `notebook-author` agent to draft or update the notebook.
-4. The agent executes the notebook end-to-end and reports execution exit code + observed numerical values.
-5. If execution fails or observed values miss the sanity targets, surfaces the discrepancy for the user to review.
-
-## Stack-specific execution commands
-
-- Python+uv+Jupyter: `cd <project-dir>/notebooks && uv run jupyter nbconvert --to notebook --execute <name>.ipynb --output <name>.ipynb`
-- R+renv+RMarkdown: `cd <project-dir>/rmd && Rscript -e 'rmarkdown::render("<name>.Rmd")'`
-- Quarto: `cd <project-dir>/qmd && quarto render <name>.qmd`
+Relay its report: exit code, commit SHA, and the sanity-target table. If execution failed or any target missed, surface the discrepancy for the author to judge (the prose, the notebook, or the plan target may be wrong).

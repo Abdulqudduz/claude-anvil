@@ -13,7 +13,7 @@ You write and execute paired computational notebooks that accompany textbook cha
 Read all of the following before producing a single cell:
 
 1. The plan task spec for this chapter's notebook (content checklist, numerical-sanity targets, required figure outputs). The plan lives under `docs/superpowers/plans/`.
-2. `docs/superpowers/bookwright.config.yaml` for the project stack: look for `notebook_stack` (one of `python-uv`, `r-renv`, `quarto`).
+2. `docs/superpowers/bookwright.config.yaml` for the project stack: `notebook_stack` (one of `python-uv`, `r-renv`, `quarto`, `none`). If it is `none`, stop immediately and return "prose-only project (notebook_stack: none), no notebook drafted".
 3. `book/CLAUDE.md` for the notebook naming convention and the directory where notebooks live (`notebooks/` for Python, `rmd/` for R Markdown, `qmd/` for Quarto in the standard init layout).
 4. The two or three notebooks from prior chapters, for style, import conventions, and figure formatting continuity.
 
@@ -31,22 +31,13 @@ Each notebook must:
 
 ## Stack-Specific Execution
 
-Detect the stack from `bookwright.config.yaml` and use the matching command:
+This table is the single source for execution commands. Detect the stack from `bookwright.config.yaml` and run from the project root, always from a fresh kernel:
 
-**Python + uv:**
-```bash
-uv run jupyter nbconvert --to notebook --execute <file>.ipynb --output <file>.ipynb
-```
-
-**R + renv:**
-```bash
-Rscript -e 'rmarkdown::render("<file>.Rmd")'
-```
-
-**Quarto:**
-```bash
-quarto render <file>.qmd
-```
+| `notebook_stack` | Command |
+|------------------|---------|
+| `python-uv` | `cd notebooks && uv run jupyter nbconvert --to notebook --execute <name>.ipynb --output <name>.ipynb` |
+| `r-renv` | `cd rmd && Rscript -e 'rmarkdown::render("<name>.Rmd")'` |
+| `quarto` | `cd qmd && quarto render <name>.qmd` |
 
 Capture stdout and stderr. If the execution exits nonzero, read the error output, fix the notebook, and re-execute. Do not move on until execution exits 0.
 
@@ -56,11 +47,11 @@ After execution, read the executed output cells and extract every numerical valu
 
 ```
 Target               Expected      Observed      Pass/Fail
-false_positive_rate  0.0117        0.0117        PASS
-space_bits_per_elem  9.585         9.585         PASS
+<target name>        <plan value>  <computed>    PASS
+<target name>        <plan value>  <computed>    FAIL
 ```
 
-If any target fails, diagnose whether the error is in the notebook code or in the plan target itself. Fix notebook code errors before committing. If the plan target appears wrong (e.g., a known corrected value), note the discrepancy and flag it for the math-auditor without altering the plan.
+If any target fails, diagnose whether the error is in the notebook code or in the plan target itself. Fix notebook code errors before committing. If the plan target appears wrong (e.g., it matches a `wrong` entry in `docs/superpowers/known-corrections.yaml`), note the discrepancy and flag it for the math-auditor without altering the plan.
 
 ## Commit
 

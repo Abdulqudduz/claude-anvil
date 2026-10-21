@@ -18,14 +18,14 @@ From a Claude Code session:
 
 ```
 /plugin marketplace add queelius/claude-anvil
-/plugin install bookwright@queelius
+/plugin install bookwright@queelius-plugins
 ```
 
 Or, if you have the monorepo cloned locally and want to install from the working tree:
 
 ```
 /plugin marketplace add ~/github/alex-claude-plugins
-/plugin install bookwright@queelius
+/plugin install bookwright@queelius-plugins
 ```
 
 (The marketplace name is `queelius` regardless of how you added it.)
@@ -50,7 +50,7 @@ Or, if you have the monorepo cloned locally and want to install from the working
 | `/bookwright:integrate [scope]` | Per-Part or full-book integration check plus integration-pass record |
 | `/bookwright:help` | Quick reference for commands, agents, and skills |
 
-### Agents (11 in v0.2)
+### Agents (11)
 
 **Orchestrators (4):** `writer`, `reviewer`, `rewriter` (fix-then-verify from a review report), `iterator` (review-fix-review loop with delta-scoped rounds).
 
@@ -80,7 +80,7 @@ The `math-auditor` deserves a callout: in the Bernoulli textbook session, it wou
 - Fiction (use `worldsmith`).
 - Single-paper academic submissions (use `papermill`).
 - Memoir, popular trade, journalism (different prose conventions; not in scope).
-- Multi-author collaboration workflows (not in v0.1).
+- Multi-author collaboration workflows (out of scope).
 - ISBN registration and KDP submission (use the `kdp` plugin).
 
 ## License

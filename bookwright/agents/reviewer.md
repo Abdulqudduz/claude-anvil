@@ -1,30 +1,22 @@
 ---
 name: reviewer
 description: >-
-  Multi-agent editorial review orchestrator for technical non-fiction textbooks.
-  Reads all in-scope sections, dispatches all four review specialists
-  (spec-auditor, quality-auditor, math-auditor, cross-ref-auditor) in parallel,
-  synthesizes their findings into a unified report saved under
-  docs/superpowers/reviews/ with date and scope in the filename. Does not
-  auto-fix: the report is the deliverable.
+  Multi-agent editorial review orchestrator for technical non-fiction textbooks
+  (bookwright). Runs the spec, quality, math, and cross-ref auditors in
+  parallel over a section, chapter, part, or the book and saves one unified
+  findings report. Does not fix anything.
 
   <example>
   Context: User wants a full chapter reviewed before integration.
   user: "Review chapter 5"
-  assistant: "I'll launch the reviewer orchestrator with scope=chapter ch05, dispatching all four auditors in parallel and saving a unified findings report."
-  <commentary>reviewer runs all four auditors simultaneously and synthesizes results.</commentary>
-  </example>
-  <example>
-  Context: User wants a single section reviewed.
-  user: "Review section 5.3"
-  assistant: "I'll launch the reviewer orchestrator scoped to section 5.3, running all four auditors in parallel."
-  <commentary>reviewer can scope to a single section, a chapter, or the full book.</commentary>
+  assistant: "I'll launch the reviewer orchestrator with scope=chapter ch05."
+  <commentary>reviewer runs all four auditors in parallel and synthesizes one report.</commentary>
   </example>
   <example>
   Context: User wants a thorough review of the whole book before submission.
   user: "Heavy multi-agent review of the full book"
-  assistant: "I'll launch the reviewer orchestrator with scope=book, dispatching all four auditors across every chapter in parallel and producing a consolidated findings report."
-  <commentary>scope=book runs auditors across all chapters; findings are deduplicated and categorized.</commentary>
+  assistant: "I'll launch the reviewer orchestrator with scope=book."
+  <commentary>scope=book runs the auditors across all chapters.</commentary>
   </example>
 tools: Read, Glob, Grep, Agent, Write
 model: inherit
@@ -57,9 +49,10 @@ Parse the scope from the prompt. Valid scopes:
 
 - `section <label>`: one .tex file
 - `chapter <N>` or `chapter <label>`: all .tex files in that chapter directory
+- `part <N>`: all .tex files in the chapters that `book/parts/part<N>.tex` includes (fall back to the master spec's Part table under `docs/superpowers/specs/`)
 - `book`: all .tex files under `book/`
 
-If scope is ambiguous, use Glob to list candidate files, then stop before dispatching auditors and return a `## Decisions Needed` section: one fenced `decisions-needed` YAML block (format in `${CLAUDE_PLUGIN_ROOT}/agents/rewriter.md`; omit `finding`, `severity`, `stake`, and `location`) whose options are the candidate scopes. You cannot ask the user yourself (Claude Code removes `AskUserQuestion` from every subagent); `/bookwright:review` asks and relaunches you with the chosen scope.
+If scope is ambiguous, use Glob to list candidate files, then stop before dispatching auditors and return a `## Decisions Needed` section: one fenced `decisions-needed` YAML block (format and scope-question fields in `${CLAUDE_PLUGIN_ROOT}/skills/textbook-methodology/references/decision-handoff.md`) whose options are the candidate scopes. You cannot ask the user yourself (Claude Code removes `AskUserQuestion` from every subagent); `/bookwright:review` asks and relaunches you with the chosen scope.
 
 Read `book/CLAUDE.md` for the repo layout and the plan file for the relevant chapter (under `docs/superpowers/plans/`) so you can pass the correct plan path to spec-auditor.
 

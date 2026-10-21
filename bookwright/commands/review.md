@@ -15,7 +15,7 @@ Launch the `reviewer` orchestrator. Dispatches all four review specialists in pa
 - `part <name>`: all chapters of the named Part.
 - `book`: everything (heavy; do not use casually).
 
-If the reviewer returns a `decisions-needed` YAML block instead of a report (it stops when the scope is ambiguous, since subagents cannot ask questions), ask the author with AskUserQuestion: one question per item, using its `question`, its `options` (label as the option, consequence as the description), and the `recommended` option listed first with "(Recommended)". Batch at most 4 questions per call and group items that touch the same section. Then relaunch the reviewer with the chosen scope.
+If the reviewer returns a `decisions-needed` YAML block instead of a report (ambiguous scope), ask and relaunch it with the chosen scope per `${CLAUDE_PLUGIN_ROOT}/skills/textbook-methodology/references/decision-handoff.md`.
 
 ## Output
 

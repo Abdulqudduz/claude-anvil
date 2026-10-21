@@ -1,6 +1,6 @@
 ---
 name: textbook-methodology
-description: "Use when drafting prose sections for a bookwright (technical non-fiction) project. Encodes the Bernoulli-textbook workflow: atom-outward design, deferral discipline, running threads, page budgets, Path A subagent pattern, header comment block convention."
+description: "Use when drafting prose sections for a bookwright (technical non-fiction) project. Covers atom-outward design, deferral discipline, running threads, page budgets, per-section subagent cadence, and commit discipline."
 metadata:
   type: methodology
 ---
@@ -33,26 +33,17 @@ Per-section page targets are stated in the per-chapter plan. Plans 1-3 of Bernou
 
 If a section comes in significantly over, reviewers should ask: is the math density justifying it (acceptable), or is the prose padded (cut)?
 
-## Path A subagent discipline
+## Per-section subagent discipline
 
-For each section drafting task, the cadence is:
+Each section is drafted, then audited (spec and quality in parallel), then fixed until clean, all in subagents: this protects main-conversation context and catches issues per section rather than per chapter. The `bookwright:writer` orchestrator runs this cadence; `/bookwright:draft` launches it.
 
-1. Implementer subagent: drafts the section per the plan's content checklist, builds the book, commits.
-2. spec-auditor subagent: checks against the content checklist.
-3. quality-auditor subagent: cold-reads for clarity and craft.
-4. If either auditor surfaces substantive findings: a fix subagent applies the changes, then the relevant auditor is re-run to verify.
+## Header comment block
 
-This pattern protects main conversation context and catches issues per-section rather than per-chapter.
+Every section file opens with a DEFINED / RESOLVED / FORWARD label block; the template is in `bookwright:cross-reference-discipline`.
 
-## Header comment block convention
+## Judgment calls
 
-Every section file starts with a comment block (LaTeX % lines) that documents:
-
-- DEFINED here: labels this section creates.
-- RESOLVED: labels from prior chapters that this section cites (cite each, with file path).
-- FORWARD: labels this section cites that resolve in later sections/chapters (cite the resolving section).
-
-The cross-ref-auditor reads these blocks to verify integrity.
+Agents never ask the author directly; they return a `decisions-needed` block that the launching command asks about. Schema and asking procedure: `references/decision-handoff.md`.
 
 ## Source-paper reformulation
 
@@ -68,4 +59,5 @@ If the book draws on prior research papers, the cite-don't-copy discipline appli
 ## What this skill does NOT cover
 
 - Cross-reference label naming and the header comment block template: see `bookwright:cross-reference-discipline`.
+- The decision-handoff schema: see `references/decision-handoff.md`.
 - Notebook execution and numerical-sanity-target conventions: see `bookwright:notebook-paired-with-prose`.

@@ -16,9 +16,9 @@ Launch the `rewriter` orchestrator on a review report produced by `/bookwright:r
 
 ## Decisions Needed
 
-The rewriter cannot ask questions itself (Claude Code removes AskUserQuestion from subagents). In its default interactive mode it fixes every mechanical and specialist finding and defers every judgment call to a `decisions-needed` YAML block, returned in its final message and written into the revision report. If that block is non-empty:
+In its default interactive mode the rewriter fixes every mechanical and specialist finding and defers every judgment call to a `decisions-needed` YAML block, returned in its final message and written into the revision report. If that block is non-empty:
 
-1. Ask the author with AskUserQuestion: one question per item, using its `question`, its `options` (label as the option, consequence as the description), and the `recommended` option listed first with "(Recommended)". Batch at most 4 questions per call and group items that touch the same section.
+1. Ask the author per `${CLAUDE_PLUGIN_ROOT}/skills/textbook-methodology/references/decision-handoff.md`.
 2. Relaunch the rewriter with the same `<report>`, `<prior-revision>` = the first pass's revision report, and a `<decisions>` block listing each answered item as `id`, `finding`, and `choice` (the chosen label). It fixes and verifies only those findings and writes `<report-basename>-revision-decisions.md`.
 3. Report both passes' counts. Items the author skips stay open: list them, and note that re-running `/bookwright:revise` on the same report picks them up.
 

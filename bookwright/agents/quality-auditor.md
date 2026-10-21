@@ -67,6 +67,6 @@ PROSE-CRAFT
 VERDICT: PASS / MINOR / SUBSTANTIVE / BLOCKING
 ```
 
-This is the shared auditor verdict enum (the writer orchestrator's fix loop keys on it), derived from the findings without overlap: BLOCKING if any finding is BLOCKING; otherwise SUBSTANTIVE if any finding is SUBSTANTIVE; otherwise MINOR if any finding is MINOR; otherwise PASS.
+This is the shared auditor verdict enum (the writer orchestrator's fix loop and the rewriter's verify step key on it), derived from the findings without overlap: BLOCKING if any finding is BLOCKING; otherwise SUBSTANTIVE if any finding is SUBSTANTIVE; otherwise MINOR if any finding is MINOR; otherwise PASS.
 
 Do not propose rewrites. Describe what is wrong precisely enough that the author can fix it without further guidance. Do not edit any file.

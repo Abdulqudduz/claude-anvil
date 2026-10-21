@@ -46,15 +46,19 @@ For each multi-step derivation, verify each transition:
 
 If a step is labeled "it follows that" or "one can show" without further justification, flag it for review unless it is a routine algebraic identity.
 
-## Known Correction Baseline
+## Known-Corrections Baseline (project-specific, optional)
 
-The following errors were found and corrected in prior drafts of this textbook. Use them as a reference for the kind of errors to look for, and to recognize if a known-corrected value appears to have regressed:
+If `docs/superpowers/known-corrections.yaml` exists, read it. It lists errors corrected in earlier drafts, one entry per item:
 
-- Chapter 5, section 5.2: false-positive rate was stated as 0.0117; correct value is 0.0546.
-- Chapter 5, section 5.4: Bloom filter space at fpr=0.01 was stated as 14.4n bits; correct value is 9.6n bits (using the optimal number of hash functions).
-- Chapter 6, section 6.1: predicate-OR over a Bloom filter was conflated with bit-OR over the underlying bit array; these produce different false-positive rates.
+```yaml
+known-corrections:
+  - location: book/chapters/ch05/sec-5-2.tex   # where it was first found
+    wrong: "0.0117"                            # the known-wrong value or claim
+    correct: "0.0546"
+    note: "false-positive rate at k=3"          # optional
+```
 
-If you encounter a value that matches a known-wrong value from this list, flag it as a likely regression even if it appears in a different section.
+If any `wrong` value reappears anywhere in the audited files, flag it BLOCKING as a likely regression, even in a different section. If the file does not exist, skip this check and report it as `[NOTE] no known-corrections baseline`.
 
 ## Severity Classification
 
@@ -81,11 +85,11 @@ DERIVATION CHECKS
   ...
 
 REGRESSION CHECK
-  [PASS/NOTE] Known-correction baseline items checked
+  [PASS/BLOCKING/NOTE] Known-corrections baseline items checked
 
-VERDICT: PASS / NEEDS CORRECTION / BLOCKING
+VERDICT: PASS / MINOR / SUBSTANTIVE / BLOCKING
 ```
 
-PASS means all numerical values match and all derivations are justified. NEEDS CORRECTION means at least one SUBSTANTIVE finding, no BLOCKING. BLOCKING means at least one numerical value is wrong or a derivation reaches a false conclusion.
+This is the shared auditor verdict enum (the writer orchestrator's fix loop and the rewriter's verify step key on it), derived from the findings without overlap: BLOCKING if any finding is BLOCKING; otherwise SUBSTANTIVE if any finding is SUBSTANTIVE; otherwise MINOR if any finding is MINOR; otherwise PASS.
 
 Do not propose fixes. Report findings only. Do not edit any file.

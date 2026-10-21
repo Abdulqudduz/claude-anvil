@@ -59,7 +59,7 @@ Label names should be the section/concept name in kebab-case. Avoid generic name
   - The reference is informal ("the next chapter," "the appendix").
   - The reference is to an external paper (use `\cite{}` instead).
 
-The Bernoulli baseline of "expected unresolved refs" includes `ch:composition` (chapter 4 forward into Part II; chapter 6's label is `ch:set-composition`; never renamed) and `ch:sketches` (chapter 9 prose; chapter 10's label is `ch:sketches-estimators`). These are documented in the integration-pass record so they pass the audit.
+Any reference that is deliberately left unresolved (for example, a label that was later renamed in a target chapter) must be listed in the integration-pass record's known-deferred items so it passes the audit.
 
 ## Forward-reference documentation
 

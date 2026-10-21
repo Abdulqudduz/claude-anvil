@@ -1,45 +1,62 @@
 #!/usr/bin/env bash
-# Smoke test: the plugin.json is valid and declares the expected fields.
+# Structure test: manifest, required directories, and every hook script that
+# hooks.json references exists and is executable. Derived from the files on
+# disk, so no hand-kept component lists.
 
-set -euo pipefail
+set -uo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+source "$PLUGIN_ROOT/hooks/scripts/find_python.sh"
+find_python || { echo "FAIL: no python3 with PyYAML (set \$PYTHON, pip install pyyaml, or install uv)"; exit 1; }
 
-# plugin.json exists
-[ -f "$PLUGIN_ROOT/.claude-plugin/plugin.json" ] || { echo "FAIL: plugin.json missing"; exit 1; }
+"${PY_CMD[@]}" - "$PLUGIN_ROOT" <<'PYEOF'
+import json, os, shlex, sys
+from pathlib import Path
 
-# plugin.json is valid JSON
-python3 -m json.tool "$PLUGIN_ROOT/.claude-plugin/plugin.json" > /dev/null || { echo "FAIL: plugin.json invalid"; exit 1; }
+root = Path(sys.argv[1])
+failures = []
 
-# plugin.json declares name=bookwright
-NAME=$(python3 -c "import json; print(json.load(open('$PLUGIN_ROOT/.claude-plugin/plugin.json'))['name'])")
-[ "$NAME" = "bookwright" ] || { echo "FAIL: plugin name is '$NAME' not 'bookwright'"; exit 1; }
+manifest = root / ".claude-plugin/plugin.json"
+try:
+    data = json.loads(manifest.read_text())
+    if data.get("name") != "bookwright":
+        failures.append(f"plugin.json name is {data.get('name')!r}, not 'bookwright'")
+    for key in ("version", "description", "author"):
+        if key not in data:
+            failures.append(f"plugin.json missing {key!r}")
+except (OSError, json.JSONDecodeError) as e:
+    failures.append(f"plugin.json unreadable or invalid: {e}")
 
-# README exists
-[ -f "$PLUGIN_ROOT/README.md" ] || { echo "FAIL: README.md missing"; exit 1; }
+for rel in ("README.md", "CLAUDE.md", "commands", "agents", "skills", "hooks/hooks.json", "tests"):
+    if not (root / rel).exists():
+        failures.append(f"{rel} missing")
 
-# Required directories exist
-for dir in commands agents skills hooks tests; do
-    [ -d "$PLUGIN_ROOT/$dir" ] || { echo "FAIL: $dir/ missing"; exit 1; }
-done
+for kind, pattern in (("command", "commands/*.md"), ("agent", "agents/*.md"), ("skill", "skills/*/SKILL.md")):
+    if not list(root.glob(pattern)):
+        failures.append(f"no {kind} files match {pattern}")
 
-# Each command file exists
-for cmd in init design plan draft notebook check review integrate help; do
-    [ -f "$PLUGIN_ROOT/commands/$cmd.md" ] || { echo "FAIL: commands/$cmd.md missing"; exit 1; }
-done
+hooks = json.loads((root / "hooks/hooks.json").read_text())
+scripts = 0
+for groups in hooks.get("hooks", {}).values():
+    for group in groups:
+        for hook in group.get("hooks", []):
+            if hook.get("type") != "command":
+                continue
+            for arg in shlex.split(hook["command"]):
+                if "${CLAUDE_PLUGIN_ROOT}" not in arg:
+                    continue
+                scripts += 1
+                path = Path(arg.replace("${CLAUDE_PLUGIN_ROOT}", str(root)))
+                if not path.is_file():
+                    failures.append(f"hook script missing: {arg}")
+                elif not os.access(path, os.X_OK):
+                    failures.append(f"hook script not executable: {arg}")
+if scripts == 0:
+    failures.append("hooks.json references no plugin scripts")
 
-# Each agent file exists
-for ag in writer reviewer section-writer notebook-author source-reformulator spec-auditor quality-auditor math-auditor cross-ref-auditor; do
-    [ -f "$PLUGIN_ROOT/agents/$ag.md" ] || { echo "FAIL: agents/$ag.md missing"; exit 1; }
-done
-
-# Each skill exists
-for sk in textbook-methodology cross-reference-discipline notebook-paired-with-prose; do
-    [ -f "$PLUGIN_ROOT/skills/$sk/SKILL.md" ] || { echo "FAIL: skills/$sk/SKILL.md missing"; exit 1; }
-done
-
-# Hooks
-[ -f "$PLUGIN_ROOT/hooks/hooks.json" ] || { echo "FAIL: hooks/hooks.json missing"; exit 1; }
-[ -x "$PLUGIN_ROOT/hooks/scripts/check-latex-macro-leak.sh" ] || { echo "FAIL: hooks/scripts/check-latex-macro-leak.sh missing or not executable"; exit 1; }
-
-echo "PASS: bookwright plugin structure check"
+for f in failures:
+    print(f"FAIL: {f}")
+if failures:
+    sys.exit(1)
+print("PASS: bookwright plugin structure check")
+PYEOF

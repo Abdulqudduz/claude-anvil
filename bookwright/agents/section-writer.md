@@ -44,7 +44,7 @@ List every `\label{}` this file declares under DEFINED here. List every `\Cref{}
 
 ## Prose Discipline
 
-- Use the notation macros from `alex.sty` (or the project's macro package) in math environments, but never write macro names as reader-visible prose. Write "the false-positive rate" not "\fpr".
+- Use the notation macros from the project's macro package (`macro_package` in `docs/superpowers/bookwright.config.yaml`) in math environments, but never write macro names as reader-visible prose. Write "the false-positive rate" not "\fpr".
 - No em-dashes. Use commas, colons, periods, or parentheses.
 - No banned phrases. See `book/CLAUDE.md` for the list.
 - Each theorem, proposition, and definition must match the label and statement required by the plan's content checklist. Do not add or remove environments not listed in the checklist.

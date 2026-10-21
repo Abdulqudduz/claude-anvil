@@ -19,7 +19,7 @@ Required:
 
 Optional or omitted:
 
-- Theory-only chapters (no worked examples, no algorithms). Bernoulli's chapters 4, 13, 17 had no notebooks; the master spec marks them theory-only.
+- Theory-only chapters (no worked examples, no algorithms); the master spec marks them theory-only.
 - Bridge chapters that exist only to connect Parts.
 
 The master spec's chapter outline marks which chapters have notebooks. The per-chapter plan's notebook task spec lists the content + numerical-sanity targets.
@@ -35,13 +35,7 @@ The notebook-author agent computes these and compares. Match = pass. Miss = flag
 
 ## Exec-from-fresh-kernel requirement
 
-Notebooks MUST execute end-to-end from a fresh kernel with no errors. The notebook-author runs:
-
-- Python+uv+Jupyter: `cd <project>/notebooks && uv run jupyter nbconvert --to notebook --execute <name>.ipynb --output <name>.ipynb`
-- R+renv+RMarkdown: `cd <project>/rmd && Rscript -e 'rmarkdown::render("<name>.Rmd")'`
-- Quarto: `cd <project>/qmd && quarto render <name>.qmd`
-
-Exit code 0 is required for commit.
+Notebooks MUST execute end-to-end from a fresh kernel with no errors; exit code 0 is required for commit. The per-stack execution commands live in one place, the notebook-author agent's Stack-Specific Execution table.
 
 ## Common gotchas
 
@@ -62,7 +56,7 @@ Match the cell count of prior chapter notebooks for the project (typically 12-18
 
 ## Pluggable stack
 
-The project's `docs/superpowers/bookwright.config.yaml` records the stack choice (set during `/bookwright:init`). The notebook-author reads this config before drafting. Stack-specific commands above; stack-specific conventions (Python uv, R renv, Quarto rendering) are picked up from the config.
+The project's `docs/superpowers/bookwright.config.yaml` records the stack choice (`notebook_stack`, set during `/bookwright:init`). The notebook-author reads it before drafting; `none` means a prose-only project and no notebook is ever drafted.
 
 ## Skipping a notebook
 

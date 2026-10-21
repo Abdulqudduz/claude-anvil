@@ -20,6 +20,6 @@ A per-Part spec covers: purpose of this part, inherited commitments from the mas
 
 1. Read the master spec if it exists (for per-Part work).
 2. Run a Socratic Q&A with the user (use AskUserQuestion) on: audience, scope, structure, sources, notebook discipline, page budgets, running threads.
-3. Synthesize answers into a design-spec markdown file. Follow the structure of the Bernoulli spec at `~/github/bernoulli/docs/superpowers/specs/2026-05-02-bernoulli-textbook-part1-design.md` as the reference template.
+3. Synthesize answers into a design-spec markdown file with one `##` section per item in the master or per-Part list above, in that order. If an earlier spec exists in `docs/superpowers/specs/`, match its structure and tone.
 4. Save to the spec path; report it back to the user.
 5. Suggest next step: `/bookwright:plan chapterN` for the first chapter.

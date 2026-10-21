@@ -10,16 +10,16 @@ Scaffold a fresh book project at the current working directory (or a named subdi
 
 ## What it creates
 
-- `book/` with `chapters/`, `frontmatter/`, `appendices/`, `parts/`, `alex.sty` (or empty placeholder for project's own notation), `preamble.tex`, `references.bib`, `book.tex`, `Makefile`.
+- `book/` with `chapters/`, `frontmatter/`, `appendices/`, `parts/`, a notation macro package (`<macro_package>.sty`, empty placeholder unless the author supplies one), `preamble.tex`, `references.bib`, `book.tex`, `Makefile`.
 - `notebooks/` (Jupyter) OR `rmd/` (R Markdown) OR `qmd/` (Quarto) per user choice.
 - `papers/` (empty; user can git-subtree-add source papers later).
 - `docs/superpowers/specs/` and `docs/superpowers/plans/`.
-- `docs/superpowers/bookwright.config.yaml` recording the notebook stack choice and other project settings (key: `notebook_stack: python-uv | r-renv | quarto | none`; `none` means prose-only and notebook-author is never dispatched).
-- `book/CLAUDE.md` recording the build command (matching the Makefile), the banned-phrase list, label-naming conventions, and the notebook directory. Five agents read this file; a project without it breaks the drafting chain.
+- `docs/superpowers/bookwright.config.yaml` recording the notebook stack choice and other project settings (keys: `notebook_stack: python-uv | r-renv | quarto | none`, where `none` means prose-only and notebook-author is never dispatched; `macro_package: <name>`, the notation package basename without `.sty`, which the macro-leak hook uses to flag reader-visible mentions of it). Optionally `docs/superpowers/known-corrections.yaml` later records corrected errors for math-auditor's regression check (format in `agents/math-auditor.md`).
+- `book/CLAUDE.md` recording the build command (matching the Makefile), the banned-phrase list, label-naming conventions, and the notebook directory. The drafting, review, and revision agents all read this file; a project without it breaks the drafting chain.
 
 ## Steps
 
-1. Ask the user (via AskUserQuestion) which notebook stack: Python+uv+Jupyter / R+renv+RMarkdown / Quarto / none.
+1. Ask the user (via AskUserQuestion) which notebook stack: Python+uv+Jupyter / R+renv+RMarkdown / Quarto / none, and the macro package name (default: the book name).
 2. Create the directory tree.
 3. Write a minimal `book.tex` that includes empty `parts/part1.tex` and references it.
 4. Write a minimal `Makefile` with the standard cleanall + biber + pdflatex pipeline.

@@ -14,8 +14,8 @@ Run mechanical diagnostics. No editorial judgment; checks that can be automated.
 2. Cross-reference resolution: `grep "undefined" book/book.log | grep -iE "reference|citation"` (LaTeX writes "LaTeX Warning: Reference `x' on page N undefined", so the literal string "Reference undefined" never appears). Expects only the documented baseline.
 3. Per-chapter page-count audit: read `book.toc`, compute per-chapter page spans, compare to the per-chapter targets in the plan files. Expects each chapter within plus-or-minus 30 percent of its target.
 4. Running-thread inventory: for each thread named in the master spec, grep chapter files for thread keywords; verify the thread carries across the chapters the spec assigned it to.
-5. Soul-voice audit: re-run the soul-voice hook's pattern checks across all chapter .tex files (the hook runs at edit time, but `/check` re-runs as a defense-in-depth audit).
-6. LaTeX-macro-leak audit: re-run the macro-leak hook's pattern checks.
+5. Banned-phrase audit: grep the in-scope .tex files for each phrase in the banned-phrase list in `book/CLAUDE.md`, and for em-dashes (defense in depth behind the soul plugin's edit-time hook).
+6. LaTeX-macro-leak audit: run `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_latex_macro_leak.py` on each in-scope .tex file by piping `{"tool_input": {"file_path": <path>, "content": <file text>}}` to it (build the JSON with `python3 -c 'import json,sys; ...'`, never by string concatenation); exit 2 means a leak, and its stderr names it.
 
 ## Scope
 

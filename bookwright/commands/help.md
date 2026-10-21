@@ -22,7 +22,7 @@ Print a quick reference.
 - `/bookwright:integrate [scope]`: per-Part or full-book integration check plus written record.
 - `/bookwright:help`: this reference.
 
-## Agents (v0.2)
+## Agents
 
 Orchestrators: `writer`, `reviewer`, `rewriter`, `iterator`. Drafting specialists: `section-writer`, `notebook-author`, `source-reformulator`. Review specialists: `spec-auditor`, `quality-auditor`, `math-auditor`, `cross-ref-auditor`.
 
