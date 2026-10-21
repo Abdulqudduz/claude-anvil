@@ -1,0 +1,62 @@
+name: validate
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml pytest
+      - name: Plugin conventions
+        run: python scripts/check-plugins.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Validate marketplace and plugins
+        run: |
+          claude plugin validate .
+          for d in */; do
+            [ -f "$d/.claude-plugin/plugin.json" ] || continue
+            claude plugin validate "$d"
+          done
+      - name: Hook tests (worldsmith, bookwright)
+        run: |
+          for t in worldsmith/tests/*.sh bookwright/tests/*.sh; do
+            echo "== $t"; bash "$t"
+          done
+          python -m pytest -q worldsmith/tests
+
+  vista:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vista
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv run --python 3.12 pytest -q
+
+  kdp-mcp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kdp/mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: kdp/mcp/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test

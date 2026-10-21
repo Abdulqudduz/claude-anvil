@@ -4,151 +4,142 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A Claude Code **plugin marketplace** (`queelius`). All plugins are distributed as a single git repo. No build system, test suite, or compiled code — the codebase is Markdown files with YAML frontmatter.
+A Claude Code **plugin marketplace** named `queelius-plugins` (the `name` in `.claude-plugin/marketplace.json`; the GitHub repo is `queelius/claude-anvil`). All plugins are distributed as a single git repo. Most plugins are Markdown with YAML frontmatter; vista (Python, pytest via uv) and kdp's MCP server (TypeScript, vitest via npm) carry real code and tests, and worldsmith/bookwright have hook scripts with shell and pytest suites. CI (`.github/workflows/validate.yml`) runs all of them plus `scripts/check-plugins.py`.
 
 **Install**: `/plugin marketplace add queelius/claude-anvil`
-**Install a plugin**: `/plugin install repoindex@queelius`
+**Install a plugin**: `/plugin install repoindex@queelius-plugins`
 
-| Plugin | Dir | Purpose | Version |
-|--------|-----|---------|---------|
-| **papermill** | `papermill/` | Academic paper lifecycle: thesis, lit survey, experiment, review, venue, submission | 0.9.1 |
-| **worldsmith** | `worldsmith/` | Documentation-first fiction worldbuilding (the "Silmarillion approach") | 0.15.0 |
-| **pub-pipeline** | `pub-pipeline/` | Publication workflows: R/CRAN/JOSS, Python/PyPI | 0.9.0 |
-| **mf** | `mf/` | Metafunctor site management: blog architecture, content workflows, crier | 1.3.1 |
-| **repoindex** | `repoindex/` | Agent-driven repository intelligence (repo-doctor, repo-polish, repo-explorer) plus five workflow slash commands. MCP-first over a local git catalog | 2.3.4 |
-| **alex-confidential** | `locksmith/` | Confidentiality toolkit: cryptoid, pagevault, gpg encryption | 0.3.1 |
-| **kdp** | `kdp/` | Amazon KDP book publishing: manuscript audit, listing craft, submission workflow | 0.7.0 |
-| **crier** | `crier/` | Cross-post blog content to multiple platforms via the crier CLI | 1.3.3 |
-| **research-agent** | `research-agent/` | Autonomous research agent with parallel sub-agent dispatch and a status/resume/synthesize control surface for managing long runs | 0.5.2 |
-| **vista** | `vista/` | Surface salient research directions from highly-cited papers. Live OpenAlex search, PDF section extraction, structured catalog | 0.3.1 |
-| **bookwright** | `bookwright/` | Non-fiction book authoring: LaTeX + paired computational notebooks, multi-agent drafting/review, design→plan→draft→integrate workflow | 0.3.0 |
+| Plugin | Dir | Purpose |
+|--------|-----|---------|
+| **papermill** | `papermill/` | Academic paper lifecycle: thesis, lit survey, experiment, review, venue, submission |
+| **worldsmith** | `worldsmith/` | Documentation-first fiction worldbuilding (the "Silmarillion approach") |
+| **pub-pipeline** | `pub-pipeline/` | Publication workflows: R/CRAN/JOSS, Python/PyPI |
+| **mf** | `mf/` | Metafunctor site management: CLI workflows over the Hugo site |
+| **repoindex** | `repoindex/` | Repository intelligence (repo-polish, repo-explorer) plus five workflow slash commands. MCP-first over a local git catalog |
+| **alex-confidential** | `alex-confidential/` | Confidentiality toolkit: cryptoid, pagevault, gpg |
+| **kdp** | `kdp/` | Amazon KDP book publishing: manuscript audit, listing craft, submission workflow, cover MCP server |
+| **crier** | `crier/` | Cross-post blog content to multiple platforms via the crier MCP server |
+| **research-agent** | `research-agent/` | Autonomous research agent with a status/resume/synthesize/branch control surface for long runs |
+| **vista** | `vista/` | Surface salient research directions from highly-cited papers. Live OpenAlex search, PDF section extraction, structured catalog |
+| **bookwright** | `bookwright/` | Non-fiction book authoring: LaTeX + paired computational notebooks, multi-agent drafting/review, design→plan→draft→integrate workflow |
 
-> **Note**: A `profiler/` directory exists locally as a symlink to `~/github/personal/profiles/` but is intentionally not in `marketplace.json` (the symlink targets an absolute path outside the repo, so a marketplace install would break for other users). Re-add when the plugin is properly in-tree or a git submodule.
+Versions are not listed here on purpose: each plugin's `.claude-plugin/plugin.json` is the only place a version lives (see Version Bumps).
+
+### How this machine consumes the marketplace
+
+`~/.claude/settings.json` declares `queelius-plugins` under `extraKnownMarketplaces` as a `directory` source pointing at this checkout. Relative-path plugins from a directory marketplace **load in place** from this working tree (the copy under `~/.claude/plugins/cache/` is bookkeeping, not what runs), so local edits take effect at the next session start or `/reload-plugins` with no version bump. Other users add the GitHub source and get updates via `claude plugin marketplace update` / `claude plugin update`, which is what the version bump is for.
 
 ### Per-repo plugin scoping (context economy)
 
-The three authoring plugins (papermill, worldsmith, bookwright) are 38 of the marketplace's agents and are mutually exclusive by project type: a repo is a paper, a novel, or a textbook, never all three. They are therefore **disabled at user scope** (`"papermill@queelius-plugins": false` etc. in `~/.claude/settings.json` under `enabledPlugins`) and enabled per repo. Settings precedence is user < project < local, so to enable one in a repo, add to that repo's `.claude/settings.json`:
+The three authoring plugins (papermill, worldsmith, bookwright) are 38 of the marketplace's agents and are mutually exclusive by project type: a repo is a paper, a novel, or a textbook, never all three. Their catalog entries set `"defaultEnabled": false`, and on this machine they are also `false` at user scope (`enabledPlugins` in `~/.claude/settings.json`); enable one per repo. Settings precedence is user < project < local, so add to that repo's `.claude/settings.json`:
 
 ```json
 { "enabledPlugins": { "papermill@queelius-plugins": true } }
 ```
 
-or run `/plugin enable papermill@queelius-plugins` from inside the repo. mf, pub-pipeline, kdp, crier, and research-agent are enabled globally. repoindex, vista, and alex-confidential are also `false` at user scope as of 2026-10 (repoindex's MCP server is configured separately at user scope in `~/.claude.json`, so its tools stay available without the plugin); enable them the same way when needed. Check `enabledPlugins` in `~/.claude/settings.json` rather than trusting this list. The former `jot` plugin was removed from the marketplace entirely (the `jot` CLI in `~/github/golang/jot` is unaffected).
+or run `/plugin enable papermill@queelius-plugins` from inside the repo. mf, pub-pipeline, kdp, crier, and research-agent are enabled globally. repoindex, vista, and alex-confidential are also `false` at user scope as of 2026-10 (repoindex's MCP server is configured separately at user scope in `~/.claude.json`, so its tools stay available without the plugin; see repoindex/CLAUDE.md for why the plugin does not ship a `.mcp.json`); enable them the same way when needed. Check `enabledPlugins` in `~/.claude/settings.json` rather than trusting this list.
 
-### Three plugins say "research" and they do not overlap
+### Three plugins say "research" and they occupy different stages
 
-`vista`, `research-agent`, and `papermill` all sound like the same thing and are not. They occupy three different stages of the research lifecycle:
+`vista`, `research-agent`, and `papermill` all sound like the same thing and are not:
 
-- **vista (*finds the questions*).** Read-only reconnaissance over the *published literature*. Mines the Future Work / Limitations / Discussion / Conclusion sections of highly-cited OpenAlex papers and synthesizes candidate directions. The MCP server is deliberately *mechanical* (returns raw section text plus metadata as JSON, no LLM calls); the in-conversation Claude does the synthesis. It tells you what is worth working on; it does not do the work. Bounded and fast.
-- **research-agent (*attacks a question*).** An autonomous, fire-and-forget reasoning loop (decompose, hypothesize, attempt, evaluate, reflect) that proves theorems, writes code, runs simulations, and hunts counterexamples, persisting everything to `.research/` in the *target project*. Unbounded; the deliverable is `.research/synthesis.md`.
-- **papermill (*writes the paper*).** Multi-agent thesis/draft/review/venue lifecycle once you have results to report.
+- **vista (*finds the questions*).** Read-only reconnaissance over the *published literature*. Mines the Future Work / Limitations / Discussion / Conclusion sections of highly-cited OpenAlex papers and synthesizes candidate directions. The MCP server is deliberately *mechanical* (returns raw section text plus metadata as JSON, no LLM calls); the in-conversation Claude does the synthesis. Bounded and fast.
+- **research-agent (*attacks a question*).** An autonomous reasoning loop (decompose, hypothesize, attempt, evaluate, reflect) that proves theorems, writes code, runs simulations, and hunts counterexamples, persisting everything to `.research/` in the *target project*. Runs until it concludes, is asked to stop, or exhausts an optional budget; the deliverable is `.research/synthesis.md`.
+- **papermill (*writes the paper*).** Multi-agent thesis/draft/review/venue lifecycle once you have results to report. Its proof, simulation, and experiment skills are interactive, paper-scoped design aids; research-agent executes those modalities autonomously.
 
-The natural pipeline is **vista, then research-agent, then papermill**: scope a direction, work it, write it up. The shared word "synthesis" is the main trap: vista synthesizes *other people's* stated future work, while research-agent synthesizes *its own* attempt results. (Likewise vista's `research-synthesizer` agent writes a *literature landscape report*, whereas research-agent's `researcher` writes up *experimental findings*; both dispatch subagents, but the content is unrelated.)
+The natural pipeline is **vista, then research-agent, then papermill**: scope a direction, work it, write it up. The shared word "synthesis" is the main trap: vista synthesizes *other people's* stated future work, while research-agent synthesizes *its own* attempt results.
 
 ## Plugin Anatomy
 
-Each plugin directory follows Claude Code plugin conventions:
-
 ```
 <plugin>/
-├── .claude-plugin/plugin.json   # Manifest: name, version, description, author
-├── skills/<name>/SKILL.md       # Interactive skills (the core logic)
-├── commands/<name>.md            # Slash commands (thin wrappers or rich command docs)
-├── agents/<name>.md              # Autonomous subagents with system prompts
-└── CLAUDE.md                     # Per-plugin editing guidance (read before editing)
+├── .claude-plugin/plugin.json   # Manifest: name, version, description, author (the only version)
+├── skills/<name>/SKILL.md       # Skills: the core logic AND the /plugin:<name> slash entry points
+├── commands/<name>.md            # Legacy-format slash commands (only where no same-name skill exists)
+├── agents/<name>.md              # Subagents with system prompts
+├── hooks/hooks.json              # Event handlers (optional)
+├── .mcp.json                     # MCP server registration (optional)
+└── CLAUDE.md                     # Per-plugin editing guidance (read before editing; not loaded at runtime)
 ```
 
-Not all plugins use every component. Minimal plugins like alex-confidential have only a skill. Larger plugins add extras: worldsmith has `hooks/`, `scripts/`; pub-pipeline has `docs/` (reference material and design plans).
+Not all plugins use every component. alex-confidential has only a skill. crier, kdp, and vista ship MCP servers.
 
 ## File Format Conventions
 
 ### Skills (`skills/<name>/SKILL.md`)
-YAML frontmatter with `name` and `description` (description contains trigger phrases for auto-detection). Body style varies by plugin: pub-pipeline/papermill use numbered workflow steps with tool annotations `(Read tool)`; worldsmith uses lean methodology with `references/` subdirectories for detailed content.
+YAML frontmatter with `name` and `description` (description contains trigger phrases for auto-detection). A skill is also the slash command `/plugin:<name>`, and supports the command frontmatter (`argument-hint`, `allowed-tools`, `disable-model-invocation`) and `$ARGUMENTS`. Put reference material in `skills/<name>/references/` and point to it with `${CLAUDE_PLUGIN_ROOT}`.
 
 ### Commands (`commands/<name>.md`)
-YAML frontmatter with `description`. Most are minimal (3-5 lines) with a one-line instruction triggering the corresponding skill. Worldsmith commands are richer — they include `allowed-tools`, `argument-hint`, and inline rules/awareness for Claude.
+Commands are the older format; the docs recommend skills for new work. **Never give a command the same name as a skill in the same plugin**: on a clash the command wins (verified on Claude Code 2.1.306), so the skill's description and body never load and a one-line "run the X skill" wrapper turns `/plugin:x` into a dead end. `scripts/check-plugins.py` fails on a clash. Existing commands (worldsmith, bookwright, repoindex, crier's chronicler) are standalone workflows with no same-name skill.
 
 ### Agents (`agents/<name>.md`)
-YAML frontmatter with `name`, `description`, `tools` (list of allowed tools), `model`, and `color`. Body is the agent's system prompt.
+YAML frontmatter with `name`, `description`, `tools` (list of allowed tools), `model`, and `color`. Body is the agent's system prompt. The tool that spawns subagents is `Agent` (formerly `Task`).
 
-**Agent description policy (context cost).** Every enabled plugin's agent descriptions load into the main context of every session; agent bodies load only when spawned. So descriptions follow two tiers. User-facing entry points (the writer/reviewer/rewriter/reviser/iterator orchestrators, surveyor, researcher, joss-writer/joss-reviewer, the repoindex, crier, and vista agents) keep rich descriptions with `<example>` blocks so auto-delegation can route to them. Internal specialists (section writers, scouts, auditors, checkers: anything an orchestrator dispatches by qualified name via the Agent tool) use a single-sentence description ending with "not intended for direct invocation" and NO example blocks; orchestrators reference them by hardcoded `plugin:agent` name in their own prompt bodies, so a specialist's description buys nothing and costs context in every session.
+**Agent description policy (context cost).** Every enabled plugin's agent descriptions load into the main context of every session; agent bodies load only when spawned. So descriptions follow two tiers. User-facing entry points (the writer/reviewer/rewriter/reviser/iterator orchestrators, surveyor, researcher, joss-writer/joss-reviewer, the repoindex, crier, and vista agents) keep descriptions with at most two `<example>` blocks so auto-delegation can route to them. Internal specialists (section writers, scouts, auditors, checkers: anything an orchestrator dispatches by qualified name) use a single-sentence description ending with "not intended for direct invocation" and NO example blocks.
 
-**Subagents cannot ask the user.** Claude Code removes `AskUserQuestion` from every subagent, even when listed in `tools`. Never grant it to an agent. Agents return judgment calls as a structured Decisions Needed block and the dispatching command or skill (main session) asks and re-dispatches; each authoring plugin's CLAUDE.md documents its own format. Nesting is limited to 3 subagent layers below the main session by default (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`); the deepest chain here (iterator, rewriter, specialist) uses all 3.
+**Subagents cannot ask the user.** Claude Code removes `AskUserQuestion` from every subagent, even when listed in `tools`. Never grant it to an agent. Agents return judgment calls as a structured Decisions Needed block and the dispatching skill or command (main session) asks and re-dispatches; each authoring plugin documents its schema in one reference file. Nesting is limited to 3 subagent layers below the main session by default (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`); the deepest chain here (iterator, rewriter, specialist) uses all 3.
 
-**Agent model policy.** Every plugin agent is a *subagent* (skills spawn the orchestrators via the Agent tool; orchestrators spawn specialists). Heavy agents (orchestrators, content writers, judgment auditors) use `model: inherit` so they run on whatever model the user selected for the session, choose Fable with `/model fable`. Do NOT pin `model: fable` in agent frontmatter: a subagent spawn that explicitly requests Fable can be rejected by an `availableModels` policy, the account's Fable access, or a Claude Code version older than v2.1.170, whereas `inherit` sidesteps all three and honors the user's choice. Mechanical auditors and cheap analysis agents (spec-auditor, cross-ref-auditor, format-validator, field-scout, software-auditor, community-auditor, surveyor, citation-verifier, repo-doctor, repo-explorer, the crier agents) pin an explicit cheaper tier (`sonnet` or `haiku`). vista's `PREMIUM_MODEL = claude-fable-5-1` is exempt: it is a direct Anthropic API call from the vista CLI, not a Claude Code subagent spawn, so the restriction does not apply.
+**Pass paths, not contents.** Orchestrators give specialists file paths to Read, never pasted manuscripts: an Agent prompt is output tokens the orchestrator must generate.
+
+**Agent model policy.** Heavy agents (orchestrators, content writers, judgment auditors) use `model: inherit` so they run on whatever model the user selected for the session. Do NOT pin `model: fable` in agent frontmatter: a subagent spawn that explicitly requests Fable can be rejected by an `availableModels` policy, the account's Fable access, or a Claude Code version older than v2.1.170, whereas `inherit` sidesteps all three. Mechanical auditors and cheap analysis agents (spec-auditor, cross-ref-auditor, format-validator, field-scout, software-auditor, community-auditor, surveyor, citation-verifier, repo-explorer, the crier agents) pin `sonnet` or `haiku`. vista's `PREMIUM_MODEL = claude-fable-5-1` is exempt: it is a direct Anthropic API call from the vista CLI, not a subagent spawn.
 
 ### Hooks (`hooks/hooks.json`)
-JSON with event handlers. Worldsmith uses two command hooks: `SessionStart` (ambient project detection) and `PostToolUse` on Write/Edit (propagation reminders via `additionalContext`, cliche detection via exit 2). Hooks run as separate processes and never see variables written to `$CLAUDE_ENV_FILE` (that only feeds Claude's Bash tool), so gate each hook on files on disk, not on inherited env vars; see worldsmith/CLAUDE.md. bookwright and crier each have one command hook.
+worldsmith (SessionStart project detection; PostToolUse propagation reminders and cliche detection), bookwright (PostToolUse LaTeX macro-leak check), crier (SessionStart crier/MCP install check), and kdp (SessionStart dependency check, silent outside book projects). Rules:
+- Quote `"${CLAUDE_PLUGIN_ROOT}"` in hook commands.
+- Hooks run as separate processes and never see variables written to `$CLAUDE_ENV_FILE`; gate each hook on files on disk.
+- A PostToolUse hook runs after the write; exit 2 feeds stderr back to Claude but does not undo anything, so messages must say "flagged", not "blocked".
+- Hooks needing PyYAML must find an interpreter that has it (the `python3` first on PATH may not); see bookwright's `hooks/scripts/find_python.sh` and worldsmith's `worldsmith_python`.
 
-### Slash-command name collisions
+### Slash-name collisions across plugins
 
-Several plugins share bare command names, which is fine because Claude Code
-namespaces every command as `plugin:command`. Always qualify when documenting or
-typing them:
+Several plugins share bare names, which is fine because every entry is namespaced as `/plugin:name`. Always qualify in docs and examples:
 
 | Bare name | Defined by |
 |-----------|------------|
-| `/draft` | papermill, worldsmith, bookwright |
-| `/review` | papermill, worldsmith, bookwright |
-| `/revise` | papermill, worldsmith, bookwright |
-| `/iterate` | worldsmith, bookwright |
-| `/check` | worldsmith, bookwright |
+| `/draft`, `/review`, `/revise` | papermill, worldsmith, bookwright |
+| `/iterate`, `/check`, `/help` | worldsmith, bookwright |
 | `/init` | papermill, bookwright |
-| `/help` | worldsmith, bookwright |
 | `/status` | papermill, research-agent |
-
-The three authoring plugins (papermill, worldsmith, bookwright) sharing `/draft`
-and `/review` is the highest-friction case. Prefer the qualified form
-(`/bookwright:draft`) in all docs and examples.
 
 ## Cross-Plugin Patterns
 
-**State files**: papermill (`.papermill.md`), pub-pipeline (`.claude/pub-pipeline.local.md`), and kdp (`.claude/kdp.local.md`) use per-project state files with YAML frontmatter + markdown body. These live in the *target* project, not in this repo.
+**State files**: papermill (`.papermill/state.md`), pub-pipeline (`.claude/pub-pipeline.local.md`), kdp (`.claude/kdp.local.md`), and research-agent (`.research/`) keep per-project state in the *target* project. Each plugin defines its schema in one file and the other files point to it.
 
-**`${CLAUDE_PLUGIN_ROOT}` references**: Skills reference sibling files via this variable (resolves to plugin installation directory at runtime). When adding references, verify the target file exists.
+**One source of truth for facts.** Facts that another system owns are read from it, not copied: mf reads the site's own CLAUDE.md, crier derives platforms and limits from `crier_doctor` and `crier://platforms`, repoindex queries enums and uses `ops audit`/`digest` output, kdp's specs live in `mcp/src/lib/kdp-specs.ts`. A copied table is a bug waiting to drift.
 
-**Router pattern**: pub-pipeline has a top-level router skill (`skills/pub-pipeline/SKILL.md`) that detects project type by indicator files (`DESCRIPTION` → R, `pyproject.toml` → Python, `.tex`+`.pdf` → academic paper) and delegates to the ecosystem-specific skill. The router has no command — it triggers via natural language.
+**`${CLAUDE_PLUGIN_ROOT}` references**: Skills and agents reference sibling files via this variable. Verify the target exists (`scripts/check-plugins.py` does).
 
-**Author metadata via deets CLI**: Plugins needing author info (papermill, pub-pipeline) can fall back to the `deets` CLI tool (`deets show --format json`), configured globally. Per-project config files (e.g. `.claude/pub-pipeline.local.md`) are checked first.
+**Author metadata via deets CLI**: Plugins needing author info (papermill, pub-pipeline) fall back to `deets show --format json` after per-project config.
 
-**Audit report pattern** (pub-pipeline, kdp): Audit skills produce structured gap reports with Critical (Must Fix) / Warnings (Should Fix) / Passed sections.
+**Audit report pattern** (pub-pipeline, kdp): structured gap reports with Critical (Must Fix) / Warnings (Should Fix) / Passed sections.
 
-**Propagation discipline** (worldsmith): Role-based document system — the plugin thinks in doc roles (timeline authority, lore, systems, characters, style conventions, outline, themes, editorial backlog), not hardcoded filenames. Each target project maps roles to its own file structure. Canonical docs are always updated before manuscript text.
+**Propagation discipline** (worldsmith): role-based docs (timeline authority, lore, systems, characters, style conventions, outline, themes, editorial backlog), not hardcoded filenames. Canonical docs are updated before manuscript text.
 
 ## Validation
 
-After editing any plugin, verify from that plugin's directory:
+From the repo root:
 
 ```bash
-# Skill frontmatter has name and description
-for f in skills/*/SKILL.md; do echo "=== $f ===" && head -5 "$f" && echo; done
-
-# Command frontmatter has description
-for f in commands/*.md; do echo "=== $f ===" && head -5 "$f" && echo; done
-
-# Agent frontmatter has name, description, tools, model
-for f in agents/*.md; do echo "=== $f ===" && head -10 "$f" && echo; done
-
-# ${CLAUDE_PLUGIN_ROOT} references point to existing files
-grep -roh '\${CLAUDE_PLUGIN_ROOT}/[^`"]*' skills/ commands/ | sort -u | while read ref; do
-  resolved="${ref/\$\{CLAUDE_PLUGIN_ROOT\}/\.}"
-  [ -f "$resolved" ] || echo "BROKEN: $ref"
-done
+python3 scripts/check-plugins.py        # structure: frontmatter, clashes, agent refs, plugin-root refs
+claude plugin validate .                # marketplace manifest
+for d in */; do [ -f "$d/.claude-plugin/plugin.json" ] && claude plugin validate "$d"; done
+(cd vista && uv run pytest -q)
+(cd kdp/mcp && npm ci && npm test)
+for t in worldsmith/tests/*.sh bookwright/tests/*.sh; do bash "$t"; done
+python3 -m pytest -q worldsmith/tests   # needs PyYAML + pytest
 ```
+
+`claude plugin validate` warns that each plugin-root `CLAUDE.md` is not loaded and that plugins have no icon; both are expected (those files are maintainer guidance).
 
 ## Version Bumps
 
-Versions live in **two places** that must stay in sync:
-1. `.claude-plugin/marketplace.json` — the marketplace catalog (drives update detection)
-2. Each plugin's `.claude-plugin/plugin.json` — the plugin manifest
-
-**Always update both.** If `marketplace.json` isn't bumped, Claude Code won't detect the update.
+The version lives in **one place**: each plugin's `.claude-plugin/plugin.json`. Catalog entries in `marketplace.json` carry no `version` (when both exist, `plugin.json` wins and the validator warns). Bump it when a change should reach GitHub installs; local directory-source use needs no bump. crier and kdp also have a Codex manifest (`.codex-plugin/plugin.json`) whose version tracks `plugin.json` with a `+codex.<timestamp>` suffix; update it in the same commit.
 
 ## Editing Guidelines
 
-- Each plugin has its own CLAUDE.md with plugin-specific conventions — read it before editing that plugin
-- Skills should be self-contained and work independently
-- Commands are thin wrappers — keep logic in skills, not commands
-- When editing a skill's workflow steps, preserve the existing structure and tool annotations
-- Agents need well-defined tool lists — only grant tools the agent actually needs
-- All plugins share one git history — use conventional commit prefixes scoped to plugin, e.g. `feat(pub-pipeline):`, `fix(worldsmith):`
+- Each plugin has its own CLAUDE.md with plugin-specific conventions; read it before editing that plugin
+- Skills are self-contained and are the slash entry points; never add a same-name command wrapper
+- State each rule once (in the skill or a `references/` file) and point to it from agents and commands
+- Agents need well-defined tool lists: only grant tools the agent actually needs
+- No em-dashes in prose (the user's style rule)
+- All plugins share one git history: use conventional commit prefixes scoped to plugin, e.g. `feat(pub-pipeline):`, `fix(worldsmith):`
