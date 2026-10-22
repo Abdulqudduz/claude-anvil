@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+"""Anvil: Universal Agent Skill CLI for Academic Research, Fiction, Textbooks, and Publishing.
+
+Commands:
+  detect [path]            Detects project type (paper, fiction, textbook, package, book)
+  status [path]            Shows active domain, state files, and repository health
+  check-latex [files...]   Audits LaTeX files for macro leaks
+  check-prose [files...]   Audits fiction manuscripts for cliches and craft violations
+  count-patterns <glob>    Counts patterns across manuscript files
+  mcp [status|info|run]    Manages and launches bundled MCP servers (vista, kdp, crier)
+  validate                 Runs validation on skill structure, frontmatter, and links
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS = ROOT / "scripts"
+
+
+def cmd_detect(args: argparse.Namespace) -> int:
+    from detect_project import detect_project_type
+    res = detect_project_type(args.path)
+    print(f"Project Path: {res['target_path']}")
+    print(f"Primary Type: {res['primary_type']} (Confidence: {res['confidence']})")
+    if res["signals"]:
+        print("Detected Signals:")
+        for domain, sigs in res["signals"].items():
+            print(f"  - {domain}: {', '.join(sigs)}")
+    else:
+        print("No domain-specific marker files detected.")
+    return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    path = Path(args.path).resolve()
+    from detect_project import detect_project_type
+    res = detect_project_type(path)
+
+    print("=== Anvil Workspace Status ===")
+    print(f"Directory:    {path}")
+    print(f"Project Type: {res['primary_type']} ({res['confidence']} confidence)")
+
+    # Check state files
+    state_files = []
+    checks = [
+        (".anvil/config.local.md", "Anvil Universal Project Config"),
+        (".papermill/state.md", "Papermill Academic State"),
+        (".research/state.md", "Research-Agent Autonomous State"),
+        ("project.yaml", "Worldsmith Project Descriptor"),
+        ("world/timeline.md", "Worldsmith Timeline Canon Authority"),
+        ("bookwright.config.yaml", "Bookwright Textbook Config"),
+        (".claude/pub-pipeline.local.md", "Pub-Pipeline Legacy Config"),
+        (".claude/kdp.local.md", "KDP Legacy Local Config"),
+    ]
+    for rel_path, desc in checks:
+        if (path / rel_path).exists():
+            state_files.append((rel_path, desc))
+
+    print("\nState Files Found:")
+    if state_files:
+        for f, desc in state_files:
+            print(f"  [✓] {f:<30} ({desc})")
+    else:
+        print("  None detected. (Run 'anvil detect' to inspect potential domains)")
+
+    # Git status check
+    try:
+        git_branch = subprocess.check_output(
+            ["git", "-C", str(path), "rev-parse", "--abbrev-ref", "HEAD"],
+            stderr=subprocess.DEVNULL, text=True
+        ).strip()
+        git_dirty = subprocess.check_output(
+            ["git", "-C", str(path), "status", "--porcelain"],
+            stderr=subprocess.DEVNULL, text=True
+        ).strip()
+        dirty_count = len(git_dirty.splitlines()) if git_dirty else 0
+        print(f"\nGit Branch:   {git_branch}")
+        print(f"Dirty Files:  {dirty_count} uncommitted file(s)")
+    except Exception:
+        pass
+
+    return 0
+
+
+def cmd_check_latex(args: argparse.Namespace) -> int:
+    cmd = [sys.executable, str(SCRIPTS / "check_latex_macro_leak.py")] + args.files
+    return subprocess.call(cmd)
+
+
+def cmd_check_prose(args: argparse.Namespace) -> int:
+    cmd = [sys.executable, str(SCRIPTS / "check_fiction_cliches.py")] + args.files
+    return subprocess.call(cmd)
+
+
+def cmd_count_patterns(args: argparse.Namespace) -> int:
+    cmd = [sys.executable, str(SCRIPTS / "count_patterns.py"), args.glob]
+    if args.patterns_file:
+        cmd.append(args.patterns_file)
+    return subprocess.call(cmd)
+
+
+def cmd_mcp(args: argparse.Namespace) -> int:
+    action = args.action or "status"
+    target = args.server
+
+    servers = {
+        "vista": {
+            "path": ROOT / "vista",
+            "type": "python-uv",
+            "command": "uv run --project vista vista-mcp",
+            "installed": (ROOT / "vista/vista/mcp_server.py").is_file(),
+        },
+        "kdp-cover": {
+            "path": ROOT / "kdp/mcp",
+            "type": "node-typescript",
+            "command": "bash kdp/mcp/run.sh",
+            "installed": (ROOT / "kdp/mcp/package.json").is_file(),
+        },
+        "crier": {
+            "path": ROOT / "crier",
+            "type": "cli",
+            "command": "crier mcp",
+            "installed": (ROOT / "crier/.mcp.json").is_file(),
+        },
+    }
+
+    if action == "status" or not target:
+        print("=== Anvil Bundled MCP Servers ===")
+        for name, info in servers.items():
+            status = "Ready" if info["installed"] else "Missing"
+            print(f"  {name:<12} [{status}] ({info['type']})")
+            print(f"    Command: {info['command']}")
+        return 0
+
+    if target not in servers:
+        print(f"Unknown MCP server '{target}'. Available: {', '.join(servers.keys())}", file=sys.stderr)
+        return 1
+
+    info = servers[target]
+    if action == "info":
+        print(f"Server:  {target}")
+        print(f"Type:    {info['type']}")
+        print(f"Path:    {info['path']}")
+        print(f"Command: {info['command']}")
+        return 0
+
+    if action == "run":
+        print(f"Starting MCP server {target}...", file=sys.stderr)
+        return subprocess.call(info["command"], shell=True)
+
+    return 0
+
+
+def cmd_validate(args: argparse.Namespace) -> int:
+    cmd = [sys.executable, str(SCRIPTS / "validate_skill.py")]
+    return subprocess.call(cmd)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        prog="anvil",
+        description="Universal agent skill CLI for research, fiction, textbooks, and publishing.",
+    )
+    subparsers = parser.add_subparsers(dest="subcommand", help="Subcommand to execute")
+
+    # detect
+    p_detect = subparsers.add_parser("detect", help="Detect project type and active domains")
+    p_detect.add_argument("path", nargs="?", default=".", help="Path to project directory")
+
+    # status
+    p_status = subparsers.add_parser("status", help="Show workspace status and state files")
+    p_status.add_argument("path", nargs="?", default=".", help="Path to project directory")
+
+    # check-latex
+    p_latex = subparsers.add_parser("check-latex", help="Audit LaTeX files for macro leaks")
+    p_latex.add_argument("files", nargs="+", help="LaTeX files to audit")
+
+    # check-prose
+    p_prose = subparsers.add_parser("check-prose", help="Audit fiction prose for cliches")
+    p_prose.add_argument("files", nargs="+", help="Manuscript files or glob pattern to audit")
+
+    # count-patterns
+    p_count = subparsers.add_parser("count-patterns", help="Count patterns across manuscript")
+    p_count.add_argument("glob", help="Glob pattern for manuscript files")
+    p_count.add_argument("patterns_file", nargs="?", help="Optional custom patterns.md")
+
+    # mcp
+    p_mcp = subparsers.add_parser("mcp", help="Inspect or launch bundled MCP servers")
+    p_mcp.add_argument("action", nargs="?", choices=["status", "info", "run"], default="status")
+    p_mcp.add_argument("server", nargs="?", choices=["vista", "kdp-cover", "crier"], default=None)
+
+    # validate
+    subparsers.add_parser("validate", help="Run self-validation suite on universal skill")
+
+    args = parser.parse_args()
+    if not args.subcommand:
+        parser.print_help()
+        return 0
+
+    dispatch = {
+        "detect": cmd_detect,
+        "status": cmd_status,
+        "check-latex": cmd_check_latex,
+        "check-prose": cmd_check_prose,
+        "count-patterns": cmd_count_patterns,
+        "mcp": cmd_mcp,
+        "validate": cmd_validate,
+    }
+
+    return dispatch[args.subcommand](args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

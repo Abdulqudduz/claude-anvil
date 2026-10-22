@@ -1,0 +1,30 @@
+# Worldsmith Project Configuration
+# Location: project.yaml or .worldsmith/project.yaml
+
+version: "1.0"
+project:
+  title: "<Work or Series Title>"
+  type: "novel" # novel | series | novella | anthology
+  genre: "speculative-fiction"
+  status: "worldbuilding" # worldbuilding | drafting | revising | completed
+
+structure:
+  mode: "single-work" # single-work | multi-work
+  manuscript_dir: "chapters"
+  canon_dir: "world"
+  plans_dir: "docs/plans"
+
+roles:
+  timeline: "world/timeline.md"
+  lore: "world/lore.md"
+  characters: "world/characters.md"
+  systems: "world/systems.md"
+  themes: "world/themes.md"
+  conventions: "world/conventions.md"
+  backlog: "world/editorial-backlog.md"
+
+craft:
+  dialogue_tag_audit: true
+  cliche_detection: true
+  filter_word_audit: true
+  patterns_file: ".worldsmith/patterns.md"
