@@ -100,26 +100,26 @@ claude-anvil/
 
 Antigravity discovers skills in `.agents/skills/<name>/SKILL.md` (project scope) or `~/.gemini/config/skills/<name>/` (global scope).
 
-#### Option A: Project Scope (In another project on this machine)
-Symlink or copy your local Anvil skill directory into your target project:
+#### Option A: Global Scope (Available across all Antigravity projects)
+Clone directly from your repository into your global Antigravity configuration directory:
+```bash
+mkdir -p ~/.gemini/config/skills
+git clone https://github.com/Abdulqudduz/claude-anvil.git ~/.gemini/config/skills/anvil
+```
+*(Or symlink your local working checkout: `ln -s /path/to/claude-anvil ~/.gemini/config/skills/anvil`)*
+
+#### Option B: Project Scope (In another project on this machine)
+Clone or symlink Anvil into your target project:
 ```bash
 cd /path/to/target/project
 mkdir -p .agents/skills
 
-# Symlink local checkout (recommended - changes here apply immediately)
+# From GitHub:
+git clone https://github.com/Abdulqudduz/claude-anvil.git .agents/skills/anvil
+
+# Or symlink local checkout (changes reflect immediately):
 ln -s /path/to/claude-anvil .agents/skills/anvil
-
-# Or copy if you prefer a detached snapshot
-cp -r /path/to/claude-anvil .agents/skills/anvil
 ```
-
-#### Option B: Global Scope (Available across all Antigravity projects)
-Symlink your local checkout directly into your global Antigravity configuration directory:
-```bash
-mkdir -p ~/.gemini/config/skills
-ln -s /path/to/claude-anvil ~/.gemini/config/skills/anvil
-```
-*(If you push this converted skill to your own remote Git repository later, you can also clone it: `git clone <your-repo-url> ~/.gemini/config/skills/anvil`)*
 
 #### In-Repo Development
 When opening this checkout directory directly in Antigravity, the repository already contains `.agents/skills/anvil/SKILL.md` pointing to the root skill, so Antigravity discovers it immediately with zero setup.
@@ -130,19 +130,18 @@ When opening this checkout directory directly in Antigravity, the repository alr
 
 OpenCode discovers skills from `.opencode/skills/<name>/SKILL.md`, `~/.config/opencode/skills/<name>/`, or `.agents/skills/<name>/`.
 
-#### Option A: Project Scope
+#### Option A: Global Scope
+```bash
+mkdir -p ~/.config/opencode/skills
+git clone https://github.com/Abdulqudduz/claude-anvil.git ~/.config/opencode/skills/anvil
+```
+
+#### Option B: Project Scope
 ```bash
 cd /path/to/target/project
 mkdir -p .opencode/skills
-ln -s /path/to/claude-anvil .opencode/skills/anvil
+git clone https://github.com/Abdulqudduz/claude-anvil.git .opencode/skills/anvil
 ```
-
-#### Option B: Global Scope
-```bash
-mkdir -p ~/.config/opencode/skills
-ln -s /path/to/claude-anvil ~/.config/opencode/skills/anvil
-```
-*(Or clone your published repository once pushed: `git clone <your-repo-url> ~/.config/opencode/skills/anvil`)*
 
 ---
 
@@ -150,7 +149,10 @@ ln -s /path/to/claude-anvil ~/.config/opencode/skills/anvil
 
 Claude Code users can continue installing via the plugin marketplace:
 ```bash
-# Add marketplace
+# Add marketplace from this repository
+/plugin marketplace add Abdulqudduz/claude-anvil
+
+# Or from upstream
 /plugin marketplace add queelius/claude-anvil
 
 # Install any plugin
@@ -295,8 +297,9 @@ python3 scripts/anvil validate
 ---
 
 ## License & Attribution
-
-- **Original Project**: [claude-anvil](https://github.com/queelius/claude-anvil)
-- **Author**: Alexander Towell (`lex@metafunctor.com`)
+ 
+- **Repository**: [Abdulqudduz/claude-anvil](https://github.com/Abdulqudduz/claude-anvil)
+- **Original Project**: [queelius/claude-anvil](https://github.com/queelius/claude-anvil)
+- **Original Author**: Alexander Towell (`lex@metafunctor.com`)
 - **License**: MIT License (see [LICENSE](LICENSE))
 - **Universal Skill Conversion**: Antigravity & OpenCode Compatible Architecture (2026)

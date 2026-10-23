@@ -21,9 +21,15 @@ This document specifies the discovery mechanisms, configuration conventions, too
 
 ### A. Skill Location and Discovery
 Google Antigravity automatically discovers skills during its workspace traversal. To make the Anvil skill available:
-- **Project Scope**: Place the repository at `.agents/skills/anvil/` within the project root.
-- **Global Scope**: Place the repository at `~/.gemini/config/skills/anvil/` to enable Anvil capabilities across all projects on your machine.
-- **In-Repo Development**: In the cloned `claude-anvil` repository itself, the workspace root contains `.agents/skills/anvil` pointing directly to the skill, allowing Antigravity to discover it natively upon opening the repository.
+- **Global Scope (Recommended)**: Clone directly to `~/.gemini/config/skills/anvil/`:
+  ```bash
+  git clone https://github.com/Abdulqudduz/claude-anvil.git ~/.gemini/config/skills/anvil
+  ```
+- **Project Scope**: Place the repository at `.agents/skills/anvil/` within the project root:
+  ```bash
+  git clone https://github.com/Abdulqudduz/claude-anvil.git .agents/skills/anvil
+  ```
+- **In-Repo Development**: In this repository itself, the workspace root contains `.agents/skills/anvil` pointing directly to the skill, allowing Antigravity to discover it natively upon opening the repository.
 
 ### B. Frontmatter Convention
 Antigravity parses the YAML frontmatter block at the top of `SKILL.md`:
@@ -80,9 +86,15 @@ Antigravity supports lifecycle hooks in `.agents/hooks.json`. To run Anvil's aut
 ## 3. OpenCode Integration
 
 ### A. Skill Location and Discovery
-OpenCode conforms to standard open-source Agent Skills conventions. Install Anvil via any of:
-- **Project Directory**: `.opencode/skills/anvil/` or `.agents/skills/anvil/`
-- **Global User Directory**: `~/.config/opencode/skills/anvil/`
+OpenCode conforms to standard open-source Agent Skills conventions. Install Anvil via:
+- **Global User Directory (Recommended)**:
+  ```bash
+  git clone https://github.com/Abdulqudduz/claude-anvil.git ~/.config/opencode/skills/anvil
+  ```
+- **Project Directory**:
+  ```bash
+  git clone https://github.com/Abdulqudduz/claude-anvil.git .opencode/skills/anvil
+  ```
 
 ### B. OpenCode Invocation
 When the user requests an academic research task, textbook chapter drafting, fiction worldbuilding, or package release, OpenCode matches the `description` in `SKILL.md`, reads the primary instructions, and accesses `references/` and `workflows/` via relative paths.
@@ -114,7 +126,7 @@ Configure Anvil's bundled MCP servers (Vista, KDP, Crier) in `.opencode/mcp.json
 The repository retains full backward compatibility with Claude Code:
 - The `.claude-plugin/marketplace.json` manifest remains intact and validated.
 - All 11 individual plugins (`papermill`, `worldsmith`, `bookwright`, `pub-pipeline`, `kdp`, `vista`, `crier`, `research-agent`, `repoindex`, `mf`, `alex-confidential`) remain in place with their existing `.claude-plugin/plugin.json`, commands, and hooks.
-- Claude Code users can continue installing via `/plugin marketplace add queelius/claude-anvil` and `/plugin install <name>@queelius-plugins`.
+- Claude Code users can continue installing via `/plugin marketplace add Abdulqudduz/claude-anvil` (or upstream `queelius/claude-anvil`) and `/plugin install <name>@queelius-plugins`.
 - Upstream verification scripts (`scripts/check-plugins.py`) and CI workflows continue to pass with 0 errors.
 
 ---
